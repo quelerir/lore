@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AuthUser } from "./auth/authClient";
 import { useAuth } from "./auth/useAuth";
-import ChainlitRuntimeProvider from "./chat/ChainlitRuntimeProvider";
+import ChainlitRuntimeProvider, {
+  type ChatMode,
+} from "./chat/ChainlitRuntimeProvider";
 import { setOn401 } from "./chat/chainlitClient";
 import { useThreads } from "./chat/useThreads";
 import ChatComposer from "./components/ChatComposer/ChatComposer";
@@ -19,6 +21,8 @@ type ChatModalState =
 interface AppContentProps {
   user: AuthUser;
   activeThreadId: string | null;
+  mode: ChatMode;
+  onModeChange: (mode: ChatMode) => void;
   onSelectThread: (id: string | null) => void;
   registerRefresh: (refresh: () => void) => void;
   onLogout: () => void;
@@ -27,6 +31,8 @@ interface AppContentProps {
 function AppContent({
   user,
   activeThreadId,
+  mode,
+  onModeChange,
   onSelectThread,
   registerRefresh,
   onLogout,
@@ -105,6 +111,8 @@ function AppContent({
           activeChatId={activeThreadId}
           isMobileOpen={isMobileSidebarOpen}
           user={user}
+          mode={mode}
+          onModeChange={onModeChange}
           errorText={threadsError}
           onSelectChat={handleSelectChat}
           onRenameChat={handleRenameChat}
@@ -198,7 +206,15 @@ function AppContent({
 export default function App() {
   const { state, login, logout, invalidate } = useAuth();
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [mode, setMode] = useState<ChatMode>("fast");
   const refreshThreadsRef = useRef<(() => void) | null>(null);
+
+  // Смена режима действует на новый чат: активный тред сбрасывается,
+  // SessionBridge создаст свежую сессию с выбранным профилем.
+  const handleModeChange = useCallback((next: ChatMode) => {
+    setMode(next);
+    setActiveThreadId(null);
+  }, []);
 
   useEffect(() => {
     setOn401(invalidate);
@@ -230,11 +246,14 @@ export default function App() {
   return (
     <ChainlitRuntimeProvider
       activeThreadId={activeThreadId}
+      chatProfile={mode}
       onServerThreadId={handleServerThreadId}
     >
       <AppContent
         user={state.user}
         activeThreadId={activeThreadId}
+        mode={mode}
+        onModeChange={handleModeChange}
         onSelectThread={setActiveThreadId}
         registerRefresh={registerRefresh}
         onLogout={() => void logout()}

@@ -1,5 +1,6 @@
 import { LogOut, PenSquare, UserRound, X } from "lucide-react";
 import type { AuthUser } from "../../auth/authClient";
+import type { ChatMode } from "../../chat/ChainlitRuntimeProvider";
 import type { Chat } from "../../types/chat";
 import ChatList from "../ChatList/ChatList";
 import styles from "./Sidebar.module.css";
@@ -9,6 +10,8 @@ interface SidebarProps {
   activeChatId: string | null;
   isMobileOpen: boolean;
   user: AuthUser;
+  mode: ChatMode;
+  onModeChange: (mode: ChatMode) => void;
   errorText?: string | null;
   onSelectChat: (chatId: string) => void;
   onRenameChat: (chatId: string) => void;
@@ -23,6 +26,8 @@ export default function Sidebar({
   activeChatId,
   isMobileOpen,
   user,
+  mode,
+  onModeChange,
   errorText,
   onSelectChat,
   onRenameChat,
@@ -54,6 +59,28 @@ export default function Sidebar({
           <PenSquare size={18} />
           <span>Новый чат</span>
         </button>
+
+        <div
+          className={styles.modeSwitch}
+          role="radiogroup"
+          aria-label="Режим ассистента"
+          title="Режим для нового чата; у существующего чата режим зафиксирован"
+        >
+          <button
+            type="button"
+            className={mode === "fast" ? styles.modeActive : styles.modeButton}
+            onClick={() => onModeChange("fast")}
+          >
+            Быстрый
+          </button>
+          <button
+            type="button"
+            className={mode === "deep" ? styles.modeActive : styles.modeButton}
+            onClick={() => onModeChange("deep")}
+          >
+            Умный
+          </button>
+        </div>
 
         {errorText ? <p className={styles.errorText}>{errorText}</p> : null}
 

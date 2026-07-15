@@ -15,8 +15,11 @@ import { RecoilRoot } from "recoil";
 import { chainlitApi } from "./chainlitClient";
 import { convertMessage, isChatMessage } from "./convertMessage";
 
+export type ChatMode = "fast" | "deep";
+
 interface ProviderProps {
   activeThreadId: string | null;
+  chatProfile: ChatMode;
   onServerThreadId: (id: string) => void;
   children: ReactNode;
 }
@@ -27,15 +30,22 @@ const appendMessageText = (message: AppendMessage): string =>
     .map((part) => part.text)
     .join("\n");
 
-function SessionBridge({ activeThreadId, onServerThreadId, children }: ProviderProps) {
-  const { connect, disconnect } = useChatSession();
+function SessionBridge({
+  activeThreadId,
+  chatProfile,
+  onServerThreadId,
+  children,
+}: ProviderProps) {
+  const { connect, disconnect, setChatProfile } = useChatSession();
   const { clear, sendMessage, stopTask, setIdToResume } = useChatInteract();
   const { messages, threadId } = useChatMessages();
   const { loading, connected } = useChatData();
 
-  // Одна WS-сессия на активный тред: смена треда = clear + resume + reconnect.
+  // Одна WS-сессия на активный тред: смена треда/режима = clear + reconnect.
+  // Профиль (fast/deep) уходит в WS-auth и фиксируется на треде сервером.
   useEffect(() => {
     clear();
+    setChatProfile(chatProfile);
     setIdToResume(activeThreadId ?? undefined);
     void connect({ userEnv: {} });
     return () => {
@@ -43,7 +53,7 @@ function SessionBridge({ activeThreadId, onServerThreadId, children }: ProviderP
     };
     // connect/clear/… стабильны между рендерами (recoil-колбэки react-client)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeThreadId]);
+  }, [activeThreadId, chatProfile]);
 
   // Сервер присвоил id новому треду (первое сообщение) — сообщаем наверх.
   useEffect(() => {
