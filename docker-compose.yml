@@ -24,6 +24,16 @@ services:
       CHAINLIT_JWT_SECRET: ${CHAINLIT_JWT_SECRET:-dev-only-secret-change-me-32-bytes!}
       CHAINLIT_JWT_AUDIENCE: ${CHAINLIT_JWT_AUDIENCE:-chainlit}
       CHAINLIT_JWT_ISSUER: ${CHAINLIT_JWT_ISSUER:-datacraft}
+      # authentik SSO — generic OAuth-провайдер Chainlit.
+      # CHAINLIT_URL нужен Chainlit для построения redirect_uri.
+      CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}
+      OAUTH_GENERIC_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-lore-chainlit}
+      OAUTH_GENERIC_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET:-dev-only-oauth-client-secret-change-me}
+      OAUTH_GENERIC_AUTH_URL: ${AUTHENTIK_PUBLIC_URL:-http://localhost:9100}/application/o/authorize/
+      OAUTH_GENERIC_TOKEN_URL: http://authentik-server:9000/application/o/token/
+      OAUTH_GENERIC_USER_INFO_URL: http://authentik-server:9000/application/o/userinfo/
+      OAUTH_GENERIC_SCOPES: openid profile email
+      OAUTH_GENERIC_USER_IDENTIFIER: preferred_username
     extra_hosts:
       # Доступ из контейнера к Ollama, запущенной на хосте (Linux).
       - "host.docker.internal:host-gateway"
@@ -31,6 +41,8 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       chainlit-db:
+        condition: service_healthy
+      authentik-server:
         condition: service_healthy
 
   chainlit-db:
