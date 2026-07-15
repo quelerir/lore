@@ -1,4 +1,5 @@
-import { PenSquare, X } from "lucide-react";
+import { LogOut, PenSquare, UserRound, X } from "lucide-react";
+import type { AuthUser } from "../../auth/authClient";
 import type { Chat } from "../../types/chat";
 import ChatList from "../ChatList/ChatList";
 import styles from "./Sidebar.module.css";
@@ -7,22 +8,26 @@ interface SidebarProps {
   chats: Chat[];
   activeChatId: string | null;
   isMobileOpen: boolean;
+  user: AuthUser;
   onSelectChat: (chatId: string) => void;
   onRenameChat: (chatId: string) => void;
   onDeleteChat: (chatId: string) => void;
   onCreateChat: () => void;
   onCloseMobileMenu: () => void;
+  onLogout: () => void;
 }
 
 export default function Sidebar({
   chats,
   activeChatId,
   isMobileOpen,
+  user,
   onSelectChat,
   onRenameChat,
   onDeleteChat,
   onCreateChat,
   onCloseMobileMenu,
+  onLogout,
 }: SidebarProps) {
   return (
     <>
@@ -55,6 +60,22 @@ export default function Sidebar({
           onRenameChat={onRenameChat}
           onDeleteChat={onDeleteChat}
         />
+
+        <div className={styles.userFooter}>
+          <div className={styles.userInfo}>
+            <UserRound size={18} />
+            <span className={styles.userName}>{user.identifier}</span>
+          </div>
+          <button
+            className={styles.logoutButton}
+            onClick={onLogout}
+            type="button"
+            aria-label="Выйти"
+            title="Выйти"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </aside>
     </>
   );

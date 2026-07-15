@@ -8,6 +8,9 @@ import ChatComposer from "./components/ChatComposer/ChatComposer";
 import ChatHeader from "./components/ChatHeader/ChatHeader";
 import MessageList from "./components/MessageList/MessageList";
 import Sidebar from "./components/Sidebar/Sidebar";
+import LoginScreen from "./components/LoginScreen/LoginScreen";
+import { useAuth } from "./auth/useAuth";
+import type { AuthUser } from "./auth/authClient";
 import { chatProvider } from "./providers";
 import type { Chat, Message } from "./types/chat";
 import styles from "./App.module.css";
@@ -55,7 +58,7 @@ const writePersistedState = (state: PersistedChatState) => {
   }
 };
 
-function AppContent() {
+function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [messagesByChat, setMessagesByChat] = useState<Record<string, Message[]>>({});
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -367,6 +370,8 @@ function AppContent() {
           chats={chats}
           activeChatId={activeChatId}
           isMobileOpen={isMobileSidebarOpen}
+          user={user}
+          onLogout={onLogout}
           onSelectChat={handleSelectChat}
           onRenameChat={handleRenameChat}
           onDeleteChat={handleDeleteChat}
@@ -481,10 +486,25 @@ function AppContent() {
 
 export default function App() {
   const runtime = useLocalRuntime(noopRuntimeAdapter);
+  const { state, login, logout } = useAuth();
+
+  if (state.status === "loading") {
+    return <div className={styles.authLoading}>Загрузка…</div>;
+  }
+
+  if (state.status === "anonymous") {
+    return (
+      <LoginScreen
+        onLogin={() => void login()}
+        isBusy={state.isBusy}
+        error={state.error}
+      />
+    );
+  }
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <AppContent />
+      <AppContent user={state.user} onLogout={() => void logout()} />
     </AssistantRuntimeProvider>
   );
 }

@@ -69,6 +69,49 @@
   background: #eef2f7;
 }
 
+.userFooter {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(214, 221, 229, 0.9);
+  color: #334155;
+}
+
+.userInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutButton {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(214, 221, 229, 0.9);
+  border-radius: 10px;
+  background: white;
+  color: #1f2937;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logoutButton:hover {
+  background: #eef2f7;
+}
+
 @media (max-width: 960px) {
   .sidebar {
     position: fixed;
