@@ -16,8 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
-from agent import build_agent
+from agents import PROFILE_TO_MODE, Mode, build_agent
 from auth import verify_ticket
+from toast.pg import PgToastStore
 
 # ---------------------------------------------------------------------------
 # Data layer – SQLAlchemyDataLayer subclass that forces NullPool.
@@ -51,6 +52,45 @@ def get_data_layer() -> _NullPoolSQLAlchemyDataLayer:
     return _NullPoolSQLAlchemyDataLayer(
         conninfo=os.environ["DATABASE_URL"],
     )
+
+
+_toast_store: Optional[PgToastStore] = None
+
+
+def get_toast_store() -> PgToastStore:
+    global _toast_store
+    if _toast_store is None:
+        _toast_store = PgToastStore(os.environ["TOAST_DATABASE_URL"])
+    return _toast_store
+
+
+@cl.set_chat_profiles
+async def chat_profiles() -> list[cl.ChatProfile]:
+    return [
+        cl.ChatProfile(
+            name="fast",
+            display_name="Быстрый",
+            markdown_description=(
+                "Фиксированный маршрут: поиск таблиц → один SQL → ответ. "
+                "Для типовых вопросов по документам."
+            ),
+            default=True,
+        ),
+        cl.ChatProfile(
+            name="deep",
+            display_name="Умный",
+            markdown_description=(
+                "deepagents: сам планирует discovery, inspect и SQL. "
+                "Для сложных вопросов и сравнений."
+            ),
+        ),
+    ]
+
+
+def _build_session_agent() -> CompiledStateGraph:
+    profile = cl.user_session.get("chat_profile")
+    mode = PROFILE_TO_MODE.get(profile or "", Mode.FAST)
+    return build_agent(mode, store=get_toast_store())
 
 
 @cl.header_auth_callback
@@ -96,13 +136,13 @@ if os.environ.get("OAUTH_GENERIC_CLIENT_ID"):
 
 @cl.on_chat_start
 async def on_chat_start() -> None:
-    cl.user_session.set("agent", build_agent())
+    cl.user_session.set("agent", _build_session_agent())
     cl.user_session.set("history", [])
 
 
 @cl.on_chat_resume
 async def on_chat_resume(thread: ThreadDict) -> None:
-    cl.user_session.set("agent", build_agent())
+    cl.user_session.set("agent", _build_session_agent())
     # Restore prior turns so the agent keeps context after a page reload/resume.
     # Chainlit persists each message as a step; rebuild the LangChain history
     # from the user/assistant message steps of the thread.
@@ -131,9 +171,14 @@ async def handle_message(
     state = {"messages": messages}
     config = RunnableConfig(callbacks=[cl.LangchainCallbackHandler()])
     streamed = ""
-    async for chunk, _meta in agent.astream(
-        state, stream_mode="messages", config=config
+    final_state: Optional[dict] = None
+    async for stream_mode, payload in agent.astream(
+        state, stream_mode=["messages", "values"], config=config
     ):
+        if stream_mode == "values":
+            final_state = payload
+            continue
+        chunk, _meta = payload
         # Only assistant text chunks carry a non-empty string content; tool-call
         # chunks have empty content and are skipped.
         if (
@@ -143,6 +188,14 @@ async def handle_message(
         ):
             streamed += chunk.content
             await out.stream_token(chunk.content)
+    # Ноды могут положить готовый AIMessage без LLM-вызова (например
+    # no-table-answer быстрого режима) — тогда токенов не было, берём текст
+    # из финального состояния.
+    if not streamed and final_state:
+        last = final_state.get("messages", [])
+        if last and isinstance(last[-1], AIMessage) and isinstance(last[-1].content, str):
+            streamed = last[-1].content
+            await out.stream_token(streamed)
     return streamed
 
 
