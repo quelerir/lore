@@ -57,10 +57,9 @@ docker compose up -d --build
 Все переменные имеют рабочие дефолты в `docker-compose.yml`; переопределяются
 через `.env` в корне (см. `.env.example`):
 
-- `CHAT_PROVIDER` — провайдер чата во фронтенде: `mock` (по умолчанию, демо
-  без бэкенда) или `chainlit`. Провайдер — build-time настройка Vite, после
-  смены пересобери фронтенд: `docker compose up -d --build frontend`.
-- `CHAINLIT_PUBLIC_URL` — адрес бэкенда, каким его видит браузер.
+- `CHAINLIT_PUBLIC_URL` — адрес бэкенда, каким его видит браузер
+  (build-time настройка Vite: после смены пересобери фронтенд —
+  `docker compose up -d --build frontend`).
 - `OLLAMA_BASE_URL`, `OLLAMA_MODEL` — где искать Ollama и какую модель брать.
 - `CHAINLIT_JWT_SECRET` / `AUDIENCE` / `ISSUER` — параметры проверки
   JWT-тикетов; должны совпадать со стороной, которая тикеты выдаёт.
@@ -89,11 +88,12 @@ CORS: разрешённые origin'ы фронтенда задаются в
 
 ## Состояние интеграции
 
-Инфраструктурно фронтенд и бэкенд связаны (общая сеть compose, CORS, env),
-SSO-логин через authentik работает end-to-end. Обмен сообщениями на уровне
-кода — пока через mock: `frontend/src/providers/chainlitChatProvider.ts`
-остаётся каркасом, реальное подключение к Chainlit API (socket.io, треды,
-стриминг) — следующий шаг.
+Полный цикл работает end-to-end: SSO-логин через authentik, чат с агентом
+по родному socket.io-протоколу Chainlit (`@chainlit/react-client` +
+runtime `@assistant-ui/react`), стриминг ответов Ollama, серверные треды
+(история в Postgres, возобновление после перезагрузки, переименование и
+удаление). Для ответов агента нужна запущенная на хосте Ollama с моделью
+`OLLAMA_MODEL` (по умолчанию `gemma3`).
 
 ## Разработка без Docker
 

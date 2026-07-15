@@ -3,8 +3,6 @@ services:
     build:
       context: ./frontend
       args:
-        # "mock" — демо-провайдер без бэкенда; "chainlit" — реальный бэкенд.
-        VITE_CHAT_PROVIDER: ${CHAT_PROVIDER:-mock}
         # URL Chainlit, каким его видит браузер пользователя.
         VITE_CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}
     ports:
