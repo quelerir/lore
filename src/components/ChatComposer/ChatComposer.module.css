@@ -1,0 +1,91 @@
+.wrapper {
+  padding: 0 28px 34px;
+}
+
+.form {
+  width: min(666px, 100%);
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(214, 223, 232, 0.95);
+  border-radius: 30px;
+  box-shadow: 0 26px 64px rgba(199, 210, 223, 0.28);
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 116px;
+  max-height: 240px;
+  border: none;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: #263244;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.textarea::placeholder {
+  color: #93a0b3;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.iconButton {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(220, 227, 235, 0.95);
+  background: rgba(251, 252, 253, 0.94);
+  color: #5e6b7c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.sendButton {
+  margin-left: auto;
+  border: none;
+  background: #1f2430;
+  color: white;
+}
+
+.sendButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.fileInput {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .wrapper {
+    padding: 0 14px calc(14px + env(safe-area-inset-bottom));
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(246, 248, 251, 0) 0%, #f6f8fb 24%);
+  }
+
+  .form {
+    width: 100%;
+    border-radius: 24px;
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .textarea {
+    min-height: 82px;
+    font-size: 16px;
+  }
+}

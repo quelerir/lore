@@ -1,0 +1,99 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+  z-index: 20;
+}
+
+.overlayVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar {
+  width: 356px;
+  min-width: 356px;
+  background: rgba(255, 255, 255, 0.92);
+  border-right: 1px solid rgba(214, 221, 229, 0.9);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 18px 16px;
+  gap: 16px;
+  position: relative;
+  z-index: 30;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.closeButton {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(214, 221, 229, 0.9);
+  border-radius: 12px;
+  background: white;
+  color: #1f2937;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #a0acbc;
+  padding: 0 4px;
+}
+
+.newChatButton {
+  margin-top: auto;
+  height: 52px;
+  border: none;
+  border-radius: 16px;
+  background: #9cf122;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 14px 34px rgba(156, 241, 34, 0.2);
+}
+
+@media (max-width: 960px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    transition: transform 220ms ease;
+    max-width: min(88vw, 356px);
+    min-width: min(88vw, 356px);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .closeButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

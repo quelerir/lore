@@ -1,0 +1,62 @@
+.shell {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at top left, rgba(227, 252, 192, 0.5), transparent 26%),
+    linear-gradient(180deg, #fbfcfd 0%, #f5f7fb 100%);
+  padding: 6px;
+}
+
+.frame {
+  min-height: calc(100dvh - 12px);
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(232, 236, 240, 0.9);
+  border-radius: 34px;
+  overflow: hidden;
+  display: flex;
+  box-shadow: 0 24px 80px rgba(205, 214, 224, 0.32);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyState {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+}
+
+.emptyCard {
+  width: min(520px, 100%);
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(228, 233, 239, 0.95);
+  box-shadow: 0 18px 48px rgba(205, 214, 224, 0.2);
+}
+
+.emptyCard h3 {
+  margin: 0 0 10px;
+  font-size: 24px;
+}
+
+.emptyCard p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+@media (max-width: 960px) {
+  .shell {
+    padding: 0;
+  }
+
+  .frame {
+    min-height: 100dvh;
+    border-radius: 0;
+  }
+}

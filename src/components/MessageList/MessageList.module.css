@@ -1,0 +1,37 @@
+.viewport {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 22px 28px 0;
+}
+
+.inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 28px;
+}
+
+.viewport::-webkit-scrollbar {
+  width: 10px;
+}
+
+.viewport::-webkit-scrollbar-thumb {
+  background: rgba(191, 199, 210, 0.95);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+@media (max-width: 960px) {
+  .viewport {
+    padding: 16px 14px 0;
+  }
+
+  .inner {
+    gap: 14px;
+    padding-bottom: 18px;
+  }
+}
