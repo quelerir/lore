@@ -100,5 +100,5 @@ DATABASE_URL=postgresql+asyncpg://chainlit:chainlit@localhost:5432/chainlit \
 
 ```bash
 docker run --rm -v "$PWD/backend:/app" -w /app lore-backend \
-  sh -c "pip install -q pytest && pytest -q"
+  sh -c "uv pip install -q pytest && pytest -q"
 ```

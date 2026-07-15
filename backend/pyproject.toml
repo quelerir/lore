@@ -17,6 +17,9 @@ py-modules = ["app", "agent", "auth"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# uv sync не устанавливает сам проект (нет [build-system], root — virtual),
+# поэтому модули app/agent/auth импортируются из корня проекта.
+pythonpath = ["."]
 
 [dependency-groups]
 dev = [

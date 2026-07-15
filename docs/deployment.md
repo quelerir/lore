@@ -127,7 +127,7 @@ docker compose down                        # остановить всё (дан
 
 ```bash
 docker run --rm -v "$PWD/backend:/app" -w /app lore-backend \
-  sh -c "pip install -q pytest && pytest -q"
+  sh -c "uv pip install -q pytest && pytest -q"
 ```
 
 ## Развертывание вне localhost

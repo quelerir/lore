@@ -9,8 +9,10 @@ services:
         VITE_CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
+    restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   backend:
     build: ./backend
@@ -39,11 +41,19 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    restart: unless-stopped
     depends_on:
       chainlit-db:
         condition: service_healthy
       authentik-server:
         condition: service_healthy
+    healthcheck:
+      # curl'а в python-slim нет — проверяем стандартной библиотекой.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   chainlit-db:
     image: postgres:16
@@ -51,6 +61,7 @@ services:
       POSTGRES_USER: chainlit
       POSTGRES_PASSWORD: chainlit
       POSTGRES_DB: chainlit
+    restart: unless-stopped
     volumes:
       - ./backend/init/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
       - chainlit-db-data:/var/lib/postgresql/data
@@ -68,6 +79,7 @@ services:
       POSTGRES_USER: authentik
       POSTGRES_PASSWORD: authentik
       POSTGRES_DB: authentik
+    restart: unless-stopped
     volumes:
       - authentik-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -78,6 +90,7 @@ services:
 
   authentik-redis:
     image: redis:7-alpine
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       interval: 5s
@@ -98,6 +111,7 @@ services:
       AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-admin}
       AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-dev-only-bootstrap-api-token-change-me}
       AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+    restart: unless-stopped
     ports:
       - "${AUTHENTIK_PORT:-9100}:9000"
     depends_on:
@@ -116,6 +130,7 @@ services:
     image: ghcr.io/goauthentik/server:2026.2
     command: worker
     environment: *authentik-env
+    restart: unless-stopped
     depends_on:
       authentik-db:
         condition: service_healthy
