@@ -1,4 +1,4 @@
-import { MessageSquarePlus, X } from "lucide-react";
+import { PenSquare, X } from "lucide-react";
 import type { Chat } from "../../types/chat";
 import ChatList from "../ChatList/ChatList";
 import styles from "./Sidebar.module.css";
@@ -8,6 +8,8 @@ interface SidebarProps {
   activeChatId: string | null;
   isMobileOpen: boolean;
   onSelectChat: (chatId: string) => void;
+  onRenameChat: (chatId: string) => void;
+  onDeleteChat: (chatId: string) => void;
   onCreateChat: () => void;
   onCloseMobileMenu: () => void;
 }
@@ -17,6 +19,8 @@ export default function Sidebar({
   activeChatId,
   isMobileOpen,
   onSelectChat,
+  onRenameChat,
+  onDeleteChat,
   onCreateChat,
   onCloseMobileMenu,
 }: SidebarProps) {
@@ -38,14 +42,19 @@ export default function Sidebar({
             <X size={18} />
           </button>
         </div>
-        <div className={styles.sectionLabel}>Темы</div>
-
-        <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={onSelectChat} />
 
         <button className={styles.newChatButton} onClick={onCreateChat} type="button">
-          <MessageSquarePlus size={18} />
+          <PenSquare size={18} />
           <span>Новый чат</span>
         </button>
+
+        <ChatList
+          chats={chats}
+          activeChatId={activeChatId}
+          onSelectChat={onSelectChat}
+          onRenameChat={onRenameChat}
+          onDeleteChat={onDeleteChat}
+        />
       </aside>
     </>
   );

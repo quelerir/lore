@@ -6,7 +6,7 @@ import styles from "./MessageList.module.css";
 
 interface MessageListProps {
   messages: Message[];
-  onCopy: (messageId: string, content: string) => Promise<void> | void;
+  onCopy: (messageId: string, content: string) => Promise<boolean> | boolean;
   onRegenerate: (messageId: string) => void;
 }
 

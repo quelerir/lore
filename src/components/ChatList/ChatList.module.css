@@ -3,8 +3,29 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding-right: 4px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groupLabel {
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #a0acbc;
+}
+
+.groupItems {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .list::-webkit-scrollbar {

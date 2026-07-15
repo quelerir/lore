@@ -1,68 +1,84 @@
 .wrapper {
-  padding: 0 28px 34px;
+  padding: 0 18px 18px;
 }
 
 .form {
-  width: min(666px, 100%);
+  width: min(680px, 100%);
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(214, 223, 232, 0.95);
-  border-radius: 30px;
-  box-shadow: 0 26px 64px rgba(199, 210, 223, 0.28);
-  padding: 18px 18px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 26px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+  padding: 12px 12px 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  column-gap: 10px;
 }
 
 .textarea {
   width: 100%;
-  min-height: 116px;
-  max-height: 240px;
+  min-height: 34px;
+  max-height: 180px;
   border: none;
   resize: none;
+  overflow-y: hidden;
   outline: none;
   background: transparent;
   color: #263244;
   font: inherit;
-  font-size: 18px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 6px 0 5px;
+  grid-column: 2;
+  align-self: end;
 }
 
 .textarea::placeholder {
-  color: #93a0b3;
-}
-
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  color: #94a3b8;
 }
 
 .iconButton {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  border: 1px solid rgba(220, 227, 235, 0.95);
-  background: rgba(251, 252, 253, 0.94);
-  color: #5e6b7c;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #ffffff;
+  color: #64748b;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.iconButton:hover {
+  background: #eef2f7;
+  border-color: rgba(190, 200, 214, 0.95);
+}
+
+.iconButton:first-of-type {
+  border: none;
 }
 
 .sendButton {
   margin-left: auto;
   border: none;
-  background: #1f2430;
+  background: #2b3443;
   color: white;
+}
+
+.sendButton:hover:not(:disabled) {
+  background: #111827;
 }
 
 .sendButton:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+  background: #2b3443;
 }
 
 .fileInput {
@@ -79,13 +95,12 @@
 
   .form {
     width: 100%;
-    border-radius: 24px;
+    border-radius: 22px;
     padding: 14px;
-    gap: 14px;
+    column-gap: 10px;
   }
 
   .textarea {
-    min-height: 82px;
-    font-size: 16px;
+    font-size: 15px;
   }
 }

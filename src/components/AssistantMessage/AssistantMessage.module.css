@@ -1,30 +1,15 @@
 .row {
   display: flex;
   align-items: flex-start;
-  gap: 18px;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(231, 236, 242, 1);
-  color: #111827;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
 }
 
 .content {
-  max-width: min(720px, 100%);
+  max-width: min(560px, 100%);
 }
 
 .bubble {
-  font-size: 18px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.55;
   color: #2b3443;
 }
 
@@ -36,17 +21,18 @@
 .actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 4px;
+  margin-top: 6px;
 }
 
 .actions button {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: #6b7280;
+  outline: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -56,8 +42,22 @@
   background: rgba(241, 245, 249, 0.95);
 }
 
+.actions button:first-child {
+  color: #5f6f52;
+}
+
 .actions button:disabled {
   opacity: 0.45;
+}
+
+.activePositive {
+  background: rgba(226, 232, 240, 0.95) !important;
+  color: #6b7280 !important;
+}
+
+.activeNegative {
+  background: rgba(226, 232, 240, 0.95) !important;
+  color: #6b7280 !important;
 }
 
 @media (max-width: 960px) {
@@ -66,6 +66,6 @@
   }
 
   .bubble {
-    font-size: 16px;
+    font-size: 15px;
   }
 }

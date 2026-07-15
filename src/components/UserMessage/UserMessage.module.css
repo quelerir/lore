@@ -4,18 +4,17 @@
 }
 
 .bubble {
-  max-width: min(560px, 100%);
-  background: #f4fde7;
-  border: 1px solid #dff0b6;
-  border-radius: 18px;
-  padding: 16px 20px;
+  max-width: min(430px, 100%);
+  background: #f3f5f7;
+  border-radius: 13px;
+  padding: 11px 14px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .bubble p {
   margin: 0;
-  font-size: 17px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.45;
   color: #2b3443;
   white-space: pre-wrap;
 }

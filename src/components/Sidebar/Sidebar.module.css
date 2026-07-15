@@ -14,14 +14,14 @@
 }
 
 .sidebar {
-  width: 356px;
-  min-width: 356px;
+  width: 268px;
+  min-width: 268px;
   background: rgba(255, 255, 255, 0.92);
   border-right: 1px solid rgba(214, 221, 229, 0.9);
   display: flex;
   flex-direction: column;
-  padding: 22px 18px 16px;
-  gap: 16px;
+  padding: 14px 12px 12px;
+  gap: 10px;
   position: relative;
   z-index: 30;
 }
@@ -35,7 +35,7 @@
 
 .title {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.04em;
 }
@@ -50,29 +50,23 @@
   color: #1f2937;
 }
 
-.sectionLabel {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: #a0acbc;
-  padding: 0 4px;
-}
-
 .newChatButton {
-  margin-top: auto;
-  height: 52px;
-  border: none;
-  border-radius: 16px;
-  background: #9cf122;
-  color: #111827;
-  font-size: 16px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #334155;
+  font-size: 13px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  box-shadow: 0 14px 34px rgba(156, 241, 34, 0.2);
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0 12px;
+}
+
+.newChatButton:hover {
+  background: #eef2f7;
 }
 
 @media (max-width: 960px) {
@@ -83,8 +77,8 @@
     bottom: 0;
     transform: translateX(-100%);
     transition: transform 220ms ease;
-    max-width: min(88vw, 356px);
-    min-width: min(88vw, 356px);
+    max-width: min(88vw, 268px);
+    min-width: min(88vw, 268px);
   }
 
   .sidebarOpen {

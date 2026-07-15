@@ -1,18 +1,18 @@
 .header {
-  min-height: 78px;
+  min-height: 56px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 0 22px;
+  gap: 10px;
+  padding: 0 14px;
   border-bottom: 1px solid rgba(228, 233, 239, 0.95);
   background: rgba(255, 255, 255, 0.86);
 }
 
 .menuButton {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border: 1px solid rgba(228, 233, 239, 0.95);
-  border-radius: 14px;
+  border-radius: 10px;
   background: rgba(248, 250, 252, 0.92);
   color: #64748b;
   display: inline-flex;
@@ -27,7 +27,7 @@
 
 .title {
   margin: 0;
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 700;
   color: #1f2937;
   letter-spacing: -0.03em;
