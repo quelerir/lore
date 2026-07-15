@@ -613,6 +613,7 @@ dependencies = [
     { name = "chainlit" },
     { name = "deepagents" },
     { name = "langchain-ollama" },
+    { name = "langgraph" },
     { name = "pyjwt" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
@@ -630,6 +631,7 @@ requires-dist = [
     { name = "chainlit", specifier = ">=2.0" },
     { name = "deepagents" },
     { name = "langchain-ollama" },
+    { name = "langgraph" },
     { name = "pyjwt", specifier = ">=2.8" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0" },
 ]
