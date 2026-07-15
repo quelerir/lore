@@ -110,6 +110,25 @@ services:
       authentik-redis:
         condition: service_healthy
 
+  authentik-init:
+    image: python:3.13-slim
+    command: ["python3", "/setup/authentik-bootstrap.py"]
+    environment:
+      AUTHENTIK_INTERNAL_URL: http://authentik-server:9000
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-dev-only-bootstrap-api-token-change-me}
+      AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-lore-chainlit}
+      AUTHENTIK_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET:-dev-only-oauth-client-secret-change-me}
+      AUTHENTIK_APP_SLUG: lore
+      AUTHENTIK_APP_NAME: Lore Chat
+      AUTHENTIK_REDIRECT_URI: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}/auth/oauth/generic/callback
+      LORE_FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
+    volumes:
+      - ./infra/authentik-bootstrap.py:/setup/authentik-bootstrap.py:ro
+    depends_on:
+      authentik-server:
+        condition: service_healthy
+    restart: "no"
+
 # Ollama намеренно не входит в compose — она запускается на хосте
 # (см. README), а контейнер бэкенда ходит к ней по OLLAMA_BASE_URL.
 
