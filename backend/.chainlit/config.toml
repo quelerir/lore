@@ -1,0 +1,12 @@
+[project]
+enable_telemetry = false
+allow_origins = ["http://localhost:3000", "http://localhost:9000", "http://localhost:8088"]
+
+[features]
+unsafe_allow_html = false
+
+[UI]
+name = "datacraft"
+
+[meta]
+generated_by = "2.11.1"

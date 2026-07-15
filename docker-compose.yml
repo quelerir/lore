@@ -1,0 +1,55 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # "mock" — демо-провайдер без бэкенда; "chainlit" — реальный бэкенд.
+        VITE_CHAT_PROVIDER: ${CHAT_PROVIDER:-mock}
+        # URL Chainlit, каким его видит браузер пользователя.
+        VITE_CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://chainlit:chainlit@chainlit-db:5432/chainlit
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3}
+      # Секрет собственных сессий Chainlit (обязателен при включённой auth).
+      CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET:-dev-only-auth-secret-change-me-32b!}
+      # Проверка JWT-тикетов, выдаваемых внешней стороной (datacraft).
+      CHAINLIT_JWT_SECRET: ${CHAINLIT_JWT_SECRET:-dev-only-secret-change-me-32-bytes!}
+      CHAINLIT_JWT_AUDIENCE: ${CHAINLIT_JWT_AUDIENCE:-chainlit}
+      CHAINLIT_JWT_ISSUER: ${CHAINLIT_JWT_ISSUER:-datacraft}
+    extra_hosts:
+      # Доступ из контейнера к Ollama, запущенной на хосте (Linux).
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      chainlit-db:
+        condition: service_healthy
+
+  chainlit-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: chainlit
+      POSTGRES_PASSWORD: chainlit
+      POSTGRES_DB: chainlit
+    volumes:
+      - ./backend/init/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - chainlit-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chainlit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+# Ollama намеренно не входит в compose — она запускается на хосте
+# (см. README), а контейнер бэкенда ходит к ней по OLLAMA_BASE_URL.
+
+volumes:
+  chainlit-db-data:
