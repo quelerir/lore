@@ -48,5 +48,13 @@ export function useAuth() {
     setState({ status: "anonymous", isBusy: false, error: null });
   }, []);
 
-  return { state, login, logout };
+  const invalidate = useCallback(() => {
+    setState({
+      status: "anonymous",
+      isBusy: false,
+      error: "Сессия истекла, войдите снова.",
+    });
+  }, []);
+
+  return { state, login, logout, invalidate };
 }

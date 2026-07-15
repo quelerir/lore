@@ -37,3 +37,17 @@ input {
 button {
   cursor: pointer;
 }
+
+.wsReconnectBanner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-size: 13px;
+  z-index: 100;
+}
