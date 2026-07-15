@@ -34,6 +34,7 @@
   align-items: flex-start;
   gap: 8px;
   margin-bottom: 5px;
+  padding-right: 44px;
 }
 
 .topRight {
@@ -52,10 +53,16 @@
 }
 
 .title {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.15;
   color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .time {

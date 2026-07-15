@@ -1,6 +1,6 @@
 import { ComposerPrimitive } from "@assistant-ui/react";
-import { ArrowUp, Plus, Square } from "lucide-react";
-import { KeyboardEvent, useEffect, useId, useRef } from "react";
+import { ArrowUp, Square } from "lucide-react";
+import { KeyboardEvent, useEffect, useRef } from "react";
 import styles from "./ChatComposer.module.css";
 
 interface ChatComposerProps {
@@ -18,7 +18,6 @@ export default function ChatComposer({
   onStop,
   isStreaming,
 }: ChatComposerProps) {
-  const fileInputId = useId();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -41,11 +40,6 @@ export default function ChatComposer({
   return (
     <div className={styles.wrapper}>
       <ComposerPrimitive.Root className={styles.form}>
-        <label className={styles.iconButton} htmlFor={fileInputId}>
-          <Plus size={18} />
-        </label>
-        <input id={fileInputId} className={styles.fileInput} type="file" />
-
         <textarea
           ref={textareaRef}
           className={styles.textarea}

@@ -11,7 +11,7 @@
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
   padding: 12px 12px 10px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   column-gap: 10px;
 }
@@ -29,8 +29,7 @@
   font: inherit;
   font-size: 15px;
   line-height: 1.45;
-  padding: 6px 0 5px;
-  grid-column: 2;
+  padding: 6px 4px 5px 2px;
   align-self: end;
 }
 
@@ -60,10 +59,6 @@
   border-color: rgba(190, 200, 214, 0.95);
 }
 
-.iconButton:first-of-type {
-  border: none;
-}
-
 .sendButton {
   margin-left: auto;
   border: none;
@@ -79,10 +74,6 @@
   cursor: not-allowed;
   opacity: 0.45;
   background: #2b3443;
-}
-
-.fileInput {
-  display: none;
 }
 
 @media (max-width: 960px) {
