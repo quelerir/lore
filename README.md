@@ -40,6 +40,7 @@ docker compose up -d --build
 |-------------|------------------------|
 | Фронтенд    | http://localhost:3000  |
 | Chainlit    | http://localhost:8000  |
+| authentik   | http://localhost:9100  |
 | Postgres    | внутренний (chainlit-db:5432) |
 
 ## Настройка
@@ -60,12 +61,30 @@ CORS: разрешённые origin'ы фронтенда задаются в
 `backend/.chainlit/config.toml` (`allow_origins`) — `http://localhost:3000`
 уже добавлен.
 
+## Аутентификация (authentik SSO)
+
+Вход в приложение — через authentik (поднимается в этом же compose,
+`http://localhost:9100`). При первом старте init-контейнер `authentik-init`
+автоматически создаёт OAuth2-провайдера и приложение `lore`; Chainlit
+подключён к нему как confidential-клиент (generic OAuth).
+
+- Пользователь по умолчанию: `akadmin`, пароль — `AUTHENTIK_BOOTSTRAP_PASSWORD`
+  (по умолчанию `admin`). Админка: http://localhost:9100/if/admin/.
+- Логин из SPA открывается popup-окном; после входа popup закрывается сам.
+- Переменные: `AUTHENTIK_PORT`, `AUTHENTIK_PUBLIC_URL`, `AUTHENTIK_SECRET_KEY`,
+  `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTHENTIK_BOOTSTRAP_TOKEN`,
+  `AUTHENTIK_CLIENT_ID`, `AUTHENTIK_CLIENT_SECRET` (см. `.env.example`).
+  Секреты с dev-дефолтами годятся только для локальной разработки.
+- Header-auth по JWT-тикетам (контракт datacraft) продолжает работать
+  параллельно; `CHAINLIT_JWT_*` нужны только для него.
+
 ## Состояние интеграции
 
-Инфраструктурно фронтенд и бэкенд связаны (общая сеть compose, CORS, env).
-На уровне кода `frontend/src/providers/chainlitChatProvider.ts` — пока
-каркас: точки подключения к Chainlit API помечены комментариями, реальный
-обмен сообщениями ещё не реализован (поэтому дефолт — `mock`).
+Инфраструктурно фронтенд и бэкенд связаны (общая сеть compose, CORS, env),
+SSO-логин через authentik работает end-to-end. Обмен сообщениями на уровне
+кода — пока через mock: `frontend/src/providers/chainlitChatProvider.ts`
+остаётся каркасом, реальное подключение к Chainlit API (socket.io, треды,
+стриминг) — следующий шаг.
 
 ## Разработка без Docker
 
