@@ -69,6 +69,31 @@ def header_auth_callback(headers: dict[str, str]) -> Optional[cl.User]:
     )
 
 
+async def oauth_user(
+    provider_id: str,
+    token: str,
+    raw_user_data: dict[str, Any],
+    default_user: cl.User,
+) -> Optional[cl.User]:
+    """Map authentik userinfo to a Chainlit user (identifier = username)."""
+    identifier = raw_user_data.get("preferred_username") or default_user.identifier
+    return cl.User(
+        identifier=str(identifier),
+        metadata={
+            "provider": "authentik",
+            "email": raw_user_data.get("email"),
+            "name": raw_user_data.get("name"),
+        },
+    )
+
+
+# cl.oauth_callback raises at import time when no oauth provider is configured,
+# so register only when the generic provider env is present. Without it the
+# service still runs in ticket-only (header auth) mode.
+if os.environ.get("OAUTH_GENERIC_CLIENT_ID"):
+    cl.oauth_callback(oauth_user)
+
+
 @cl.on_chat_start
 async def on_chat_start() -> None:
     cl.user_session.set("agent", build_agent())
