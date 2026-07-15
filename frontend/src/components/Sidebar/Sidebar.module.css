@@ -69,6 +69,13 @@
   background: #eef2f7;
 }
 
+.errorText {
+  margin: 0;
+  padding: 6px 12px;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
 .userFooter {
   margin-top: auto;
   display: flex;

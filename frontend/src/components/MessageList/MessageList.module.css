@@ -35,3 +35,24 @@
     padding-bottom: 18px;
   }
 }
+
+.empty {
+  margin: auto;
+  max-width: 420px;
+  text-align: center;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(214, 221, 229, 0.9);
+  border-radius: 16px;
+  padding: 24px 28px;
+}
+
+.empty h3 {
+  margin: 0 0 6px;
+  color: #111827;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 14px;
+}

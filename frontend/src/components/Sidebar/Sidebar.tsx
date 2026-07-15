@@ -9,6 +9,7 @@ interface SidebarProps {
   activeChatId: string | null;
   isMobileOpen: boolean;
   user: AuthUser;
+  errorText?: string | null;
   onSelectChat: (chatId: string) => void;
   onRenameChat: (chatId: string) => void;
   onDeleteChat: (chatId: string) => void;
@@ -22,6 +23,7 @@ export default function Sidebar({
   activeChatId,
   isMobileOpen,
   user,
+  errorText,
   onSelectChat,
   onRenameChat,
   onDeleteChat,
@@ -52,6 +54,8 @@ export default function Sidebar({
           <PenSquare size={18} />
           <span>Новый чат</span>
         </button>
+
+        {errorText ? <p className={styles.errorText}>{errorText}</p> : null}
 
         <ChatList
           chats={chats}
