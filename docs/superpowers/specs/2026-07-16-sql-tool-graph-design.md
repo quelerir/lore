@@ -72,13 +72,13 @@ scope → generate → execute(∥) → judge ──sufficient | budget──→
 
 ### Узлы
 
-- **scope** (детерминированный, БД):
-  1. Фетч реальных колонок таблицы из `information_schema.columns` (дёшево,
-     закрывает риск переименованных колонок `header-as-data`).
-  2. Построение предиката-фильтра строк по `chunk_id`. Механизм (диапазон
-     `_splitter_source_row` / ссылки `payload_refs` / иное) пиним по реальной
-     БД — открытый пункт, резолвится в плане.
-  Кладёт в состояние `columns` и `row_filter`.
+- **scope** (детерминированный, БД): фетч реальных колонок таблицы из
+  `information_schema.columns`. Обязателен: физические имена колонок часто
+  переименованы (`senior_legal_manager`, `j_suvorova_adventum_ru`,
+  `col_1999_11_04_00_00_00`, `column_18`…) и НЕ совпадают с человеческими
+  заголовками в `display_text` — без реальных имён SQL не построить. Кладёт в
+  состояние `columns`. Фильтра строк по чанку НЕТ (см. ниже): чанк = целая
+  таблица.
 
 - **generate** (LLM `sql_model`): системный промпт с фиксированной схемой
   toast-таблиц; пользовательский промпт с вопросом, именем, обоими описаниями,
@@ -88,10 +88,9 @@ scope → generate → execute(∥) → judge ──sufficient | budget──→
 
 - **execute** (параллельно): каждый кандидат — через read-only исполнитель
   одной таблицы. Guardrails: только `SELECT`, ссылка **ровно** на переданную
-  таблицу, JOIN к другим таблицам запрещён. `row_filter` применяется
-  детерминированно в коде (не полагаемся на то, что LLM впишет WHERE).
-  `statement_timeout`, лимит строк. Результат каждого — `{sql, ok, error, rows,
-  row_count, truncated}`, копится в `attempts`, `executed_count += len(batch)`.
+  таблицу, JOIN к другим таблицам запрещён. `statement_timeout`, лимит строк.
+  Результат каждого — `{sql, ok, error, rows, row_count, truncated}`, копится в
+  `attempts`, `executed_count += len(batch)`.
 
 - **judge** (LLM): вопрос + накопленные строки (обрезанные до K для контекста)
   → структурный вердикт `sufficient | need_more`. Ловит «строки есть, но не по
@@ -108,7 +107,7 @@ scope → generate → execute(∥) → judge ──sufficient | budget──→
 ```
 {
   question, chunk_id, table, desc_vector, desc_full,
-  columns: list[str], row_filter: str | None,
+  columns: list[str],
   round: int, executed_count: int,
   attempts: list[{sql, ok, error, rows, row_count, truncated}],
   verdict: "sufficient" | "need_more" | None,
@@ -167,16 +166,34 @@ scope → generate → execute(∥) → judge ──sufficient | budget──→
 
 ## Открытые пункты (резолвятся в плане по реальной БД)
 
-1. **chunk → строки:** конкретный предикат `row_filter` (диапазон
-   `_splitter_source_row`, `payload_refs` или иное). На этапе плана будут даны
-   запросы для выгрузки связи `lore_core.chunks ↔ splitter_toast`.
-   Тем же запросом выгружаем `display_text` для нескольких таблиц из отчёта —
-   он станет `table_description_full` в тестовых фикстурах.
-2. **Фиксированная схема в промпте:** точная формулировка (ключ
-   `_splitter_source_row`, `column_N`, переименованные колонки) сверяется с БД
-   и `#schema`-секцией отчёта.
-3. **Дефолт `sql_model`:** конкретный slug «умной» модели OpenRouter выбирается
+1. **Дефолт `sql_model`:** конкретный slug «умной» модели OpenRouter выбирается
    при реализации.
+
+## Что подтверждено выгрузкой из loreagent_test (папка sqls/)
+
+- **Фиксированная схема toast-таблицы:** первые 3 служебные колонки —
+  `_splitter_row_number` (int), `_splitter_source_row` (int),
+  `_splitter_source_range` (text); дальше колонки данных (`column_N` или
+  переименованные, типы text/numeric/date). Зашивается в системный промпт
+  generate.
+- **chunk = целая таблица:** 99 из 114 payload имеют ровно 1 чанк; где несколько
+  — это разные представления одной таблицы, НЕ разбиение по строкам.
+  Под-диапазона строк на чанк нет → `row_filter` не нужен, `chunk_id` = провенанс
+  и идентичность таблицы (1:1). `payload_refs` = `[{kind:table, payload_id, …}]`.
+- **Переименованные колонки:** физические имена (`senior_legal_manager`,
+  `j_suvorova_adventum_ru`, `col_…`) не совпадают с человеческими заголовками в
+  `display_text`. → фетч колонок из `information_schema` в scope обязателен.
+- **Фикстуры описаний:** `display_text` вида «Table payload: <sheet> <a1_range>\n
+  Columns: …\nRows: N» → `table_description_full`; `table_description_vector` =
+  первая строка выжимки. Реальные примеры — в `sqls/second_sql.csv`.
+
+## Известное ограничение (вне scope этой итерации)
+
+**header-as-data:** у части таблиц первая строка стала именами колонок
+(например у юр-таблицы Суворова закодирована в именах колонок/`display_text`, а
+в строках есть только Каневский). Без header-recovery (вырезан) инструмент по
+такой таблице вернёт неполный набор. Принимаем как ограничение; восстановление
+заголовков — отдельная задача позже.
 
 ## Вне scope (YAGNI)
 

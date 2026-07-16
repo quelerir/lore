@@ -1,0 +1,650 @@
+"payload_id","kind","coordinates","chunk_id","display_text","payload_refs"
+"toast_tbl_64ed996fe67c4c26be58","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""A1:B205"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head"", ""sheet_index"": 1, ""workbook_checksum"": ""acc638d01867a3c25176f2ac91d97cb39ffc5580eba1b5a68881a5715167f379""}}","1e456c12bc4a3d8b93dfe64680072627","Table payload: Junior-Group head A1:B205
+Columns: Грейд, Грейд_2
+Rows: 204
+[payload:toast_tbl_64ed996fe67c4c26be58:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_64ed996fe67c4c26be58"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_d4c9b0191fc914120422","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""D1:F205"", ""max_column"": 6, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head"", ""sheet_index"": 1, ""workbook_checksum"": ""acc638d01867a3c25176f2ac91d97cb39ffc5580eba1b5a68881a5715167f379""}}","951bde0110139e74d638ea5b36b08c37","Table payload: Junior-Group head D1:F205
+Columns: Middle Strategy Manager, Middle Strategy Manager_2, Middle Strategy Manager_3
+Rows: 204
+[payload:toast_tbl_d4c9b0191fc914120422:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_d4c9b0191fc914120422"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_6fd0943446328fe1221c","table","{""xlsx"": {""range"": {""max_row"": 231, ""min_row"": 1, ""a1_range"": ""A1:B231"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Грейды"", ""sheet_index"": 1, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","be4e2f446b278d28f68c34533547b6de","Table payload: Грейды A1:B231
+Columns: Грейд, Грейд_2
+Rows: 230
+[payload:toast_tbl_6fd0943446328fe1221c:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_6fd0943446328fe1221c"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_09760a03d2c7800f9ebe","table","{""xlsx"": {""range"": {""max_row"": 231, ""min_row"": 1, ""a1_range"": ""D1:F231"", ""max_column"": 6, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""Грейды"", ""sheet_index"": 1, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","68af36d5a9c672e912459ab5336dcdf7","Table payload: Грейды D1:F231
+Columns: Paid Social & Programmatic Assistant, Paid Social & Programmatic Assistant_2, Paid Social & Programmatic Assistant_3
+Rows: 230
+[payload:toast_tbl_09760a03d2c7800f9ebe:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_09760a03d2c7800f9ebe"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_629aedbd8f5c95f8ed76","table","{""xlsx"": {""range"": {""max_row"": 256, ""min_row"": 1, ""a1_range"": ""A1:D256"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","da43925bfef1564f7fad27a8361bc77e","Table payload: Junior A1:D256
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 255
+[payload:toast_tbl_629aedbd8f5c95f8ed76:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_629aedbd8f5c95f8ed76"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_629aedbd8f5c95f8ed76","table","{""xlsx"": {""range"": {""max_row"": 256, ""min_row"": 1, ""a1_range"": ""A1:D256"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","50e9308c194fb27127d4dcdf619c49ec","Table payload: Middle A1:D256
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 255
+[payload:toast_tbl_629aedbd8f5c95f8ed76:table:1]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_629aedbd8f5c95f8ed76"", ""occurrence_ordinal"": 1}]"
+"toast_tbl_629aedbd8f5c95f8ed76","table","{""xlsx"": {""range"": {""max_row"": 256, ""min_row"": 1, ""a1_range"": ""A1:D256"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","914ad4b0da6ec8435f70016bc8b21c8f","Table payload: Senior A1:D256
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 255
+[payload:toast_tbl_629aedbd8f5c95f8ed76:table:2]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_629aedbd8f5c95f8ed76"", ""occurrence_ordinal"": 2}]"
+"toast_tbl_629aedbd8f5c95f8ed76","table","{""xlsx"": {""range"": {""max_row"": 256, ""min_row"": 1, ""a1_range"": ""A1:D256"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","fd908a530fd498ba246d1eb098b4e194","Table payload: Junior A1:D256
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 255
+[payload:toast_tbl_629aedbd8f5c95f8ed76:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_629aedbd8f5c95f8ed76"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_629aedbd8f5c95f8ed76","table","{""xlsx"": {""range"": {""max_row"": 256, ""min_row"": 1, ""a1_range"": ""A1:D256"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","0765bc66b29d9fbee4a28acc6208948e","Table payload: Middle A1:D256
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 255
+[payload:toast_tbl_629aedbd8f5c95f8ed76:table:1]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_629aedbd8f5c95f8ed76"", ""occurrence_ordinal"": 1}]"
+"toast_tbl_629aedbd8f5c95f8ed76","table","{""xlsx"": {""range"": {""max_row"": 256, ""min_row"": 1, ""a1_range"": ""A1:D256"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","523ac81ee2dae5278f8271a528c034f8","Table payload: Senior A1:D256
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 255
+[payload:toast_tbl_629aedbd8f5c95f8ed76:table:2]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_629aedbd8f5c95f8ed76"", ""occurrence_ordinal"": 2}]"
+"toast_tbl_9c2b2be8934c0cd218d6","table","{""xlsx"": {""range"": {""max_row"": 19, ""min_row"": 1, ""a1_range"": ""A1:D19"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Group head"", ""sheet_index"": 5, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","51c548bf9d0ee2ffb5f140b85b3d77a3","Table payload: Group head A1:D19
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 18
+[payload:toast_tbl_9c2b2be8934c0cd218d6:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_9c2b2be8934c0cd218d6"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_9c2b2be8934c0cd218d6","table","{""xlsx"": {""range"": {""max_row"": 19, ""min_row"": 1, ""a1_range"": ""A1:D19"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Group head"", ""sheet_index"": 5, ""workbook_checksum"": ""2fc39d0a1be67764585fc109702983c670a0fd6d28cf9c9d5797760c6a4efeca""}}","c0695096f67437bfcd747930cea225ec","Table payload: Group head A1:D19
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 18
+[payload:toast_tbl_9c2b2be8934c0cd218d6:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_9c2b2be8934c0cd218d6"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_21871f0ed79ba7f03360","table","{""markdown"": {""line_end"": 59, ""line_start"": 38, ""table_index"": 38}}","21ed618041254d0a5cfefc9286659224","table columns: Услуга, Формат подключения, Стоимость (с НДС), Примечания; rows: 20; location: lines 38-59
+[payload:toast_tbl_21871f0ed79ba7f03360:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_21871f0ed79ba7f03360"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_21871f0ed79ba7f03360","table","{""markdown"": {""line_end"": 59, ""line_start"": 38, ""table_index"": 38}}","9c39c1930e0a49063b5fb10de9d34633","[payload:toast_tbl_21871f0ed79ba7f03360:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_21871f0ed79ba7f03360"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_859a96155f8ede566c51","table","{""markdown"": {""line_end"": 49, ""line_start"": 27, ""table_index"": 27}}","a7ec7c90a9dcf9283b57854290e1821f","# **Блок 1 (изучить)**
+
+## **Старт работы**
+
+### Разграничение зон ответственности на проекте
+
+#### **1.1. Зона ответственности группхеда клиентского сервиса**
+
+table columns: 1. Маржинальность группы,которая планируется и отслеживается в разрезе каждого клиента и на уровне группы, в целом, на ежемесячной основе.; rows: 21; location: lines 27-49
+[payload:toast_tbl_859a96155f8ede566c51:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_859a96155f8ede566c51"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_859a96155f8ede566c51","table","{""markdown"": {""line_end"": 49, ""line_start"": 27, ""table_index"": 27}}","2b6d3df48853bd79a1db735f91ad40e2","[payload:toast_tbl_859a96155f8ede566c51:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_859a96155f8ede566c51"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_43079fbb95c8d0f2331d","table","{""markdown"": {""line_end"": 77, ""line_start"": 55, ""table_index"": 55}}","e076875b664086bc1a8668935e6d2ce9","# **Блок 1 (изучить)**
+
+## **Старт работы**
+
+### Разграничение зон ответственности на проекте
+
+#### **1.2. Зона ответственности проджекта клиентского сервиса**
+
+table columns: 1. Сотрудник знает, как устроен бизнес клиента изнутри, что из себя представляет продукт, какие его особенности, кто целевая аудитория. Кто и за что отвечает на стороне клиента. Как формируется рекламный бюджет на стороне кл","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_43079fbb95c8d0f2331d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_43079fbb95c8d0f2331d","table","{""markdown"": {""line_end"": 77, ""line_start"": 55, ""table_index"": 55}}","716713b18b5c9bbf0954aa6d866e58ed","[payload:toast_tbl_43079fbb95c8d0f2331d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_43079fbb95c8d0f2331d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_450ee7d99a2d3e7ca7ed","table","{""markdown"": {""line_end"": 1473, ""line_start"": 1464, ""table_index"": 1464}}","291af796341f58869141657fae39a5d1","# **Ведение клиента**
+
+## Погружение в бизнес клиента
+
+### 6. Работа с документами и закрытие
+
+#### 6.1. Этапы работы с документами (закрытие)
+
+table columns: **Этап**, **Комментарий**, **Срок**, **Задача PL**; rows: 8; location: lines 1464-1473
+[payload:toast_tbl_450ee7d99a2d3e7ca7ed:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_450ee7d99a2d3e7ca7ed"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_450ee7d99a2d3e7ca7ed","table","{""markdown"": {""line_end"": 1473, ""line_start"": 1464, ""table_index"": 1464}}","9fe4d2cbd30b7fb89e02421b5ed956db","[payload:toast_tbl_450ee7d99a2d3e7ca7ed:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_450ee7d99a2d3e7ca7ed"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_d47c761f13d7b9171c21","table","{""markdown"": {""line_end"": 177, ""line_start"": 5, ""table_index"": 5}}","927db68ef3eeaed7bc13c83e0e94ec21","table columns: , , , , , ; rows: 171; location: lines 5-177
+[payload:toast_tbl_d47c761f13d7b9171c21:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_d47c761f13d7b9171c21"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_d47c761f13d7b9171c21","table","{""markdown"": {""line_end"": 177, ""line_start"": 5, ""table_index"": 5}}","1a5d2db31835dfc8fa404d51261faf7f","[payload:toast_tbl_d47c761f13d7b9171c21:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_d47c761f13d7b9171c21"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_9c6dcab0dfdd486cfddf","table","{""xlsx"": {""range"": {""max_row"": 102, ""min_row"": 1, ""a1_range"": ""A1:BD102"", ""max_column"": 56, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""График отпусков 2026"", ""sheet_index"": 1, ""workbook_checksum"": ""92e61c2f7513912d62cadb02292dd2c8c245752f2c29f2deb568fb8b29a33d93""}}","9be2594c662cfbb12d05fda1c1251c38","Table payload: График отпусков 2026 A1:BD102
+Columns: ФИО, Место в структуре предприятия, Всего дней на 2026 год, Распределено дней, НЕ распределено дней, январь, январь_2, январь_3, февраль, февраль_2, февраль_3, февраль_4, март, март_2, март_3, март_4, апрель, апрель_2, апрель_3, апрель_4, апрель_5, май, май_2, май_3, май_4, июнь, июнь_2, июнь_3, июнь_4, июль, июль_2, июль_3, июль_4, июль_5, авг","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_9c6dcab0dfdd486cfddf"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_bc1b5ae2d85f01393f7c","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""A1:D205"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Assistant"", ""sheet_index"": 1, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","5f9dbf1f01114db16a08c68e275800e6","Table payload: Assistant A1:D205
+Columns: Column_1, Column_2, Asisstant LVL 1, Asisstant LVL 1_2
+Rows: 204
+[payload:toast_tbl_bc1b5ae2d85f01393f7c:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_bc1b5ae2d85f01393f7c"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_bc1b5ae2d85f01393f7c","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""A1:D205"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Assistant"", ""sheet_index"": 1, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","3a2fbeeff994cc56d6ab9ac2cff1d665","Table payload: Общая A1:D205
+Columns: Column_1, Column_2, Asisstant LVL 1, Asisstant LVL 1_2
+Rows: 204
+[payload:toast_tbl_bc1b5ae2d85f01393f7c:table:1]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_bc1b5ae2d85f01393f7c"", ""occurrence_ordinal"": 1}]"
+"toast_tbl_4244f3d279e8b5b6fdf1","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""A1:D205"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","64e6bb3a3de432876d8da2409fd12eb8","Table payload: Junior A1:D205
+Columns: Column_1, Column_2, Junior LVL 1, Junior LVL 1_2
+Rows: 204
+[payload:toast_tbl_4244f3d279e8b5b6fdf1:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_4244f3d279e8b5b6fdf1"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_464153d244b085987bdd","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""A1:D205"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Middle"", ""sheet_index"": 3, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","f85541f6d24b5734f606d5f4a9b06af9","Table payload: Middle A1:D205
+Columns: Column_1, Column_2, Middle LVL 1, Middle LVL 1_2
+Rows: 204
+[payload:toast_tbl_464153d244b085987bdd:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_464153d244b085987bdd"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_622a7f9c94c788f715b0","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""F1:G205"", ""max_column"": 7, ""min_column"": 6}, ""header_row"": 1, ""sheet_name"": ""Middle"", ""sheet_index"": 3, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","3806b7a53645d2642150bd08b219efb8","Table payload: Middle F1:G205
+Columns: Middle LVL 2, Middle LVL 2_2
+Rows: 204
+[payload:toast_tbl_622a7f9c94c788f715b0:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_622a7f9c94c788f715b0"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_78ac52c8301815dde937","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""A1:D205"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Senior"", ""sheet_index"": 4, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","a8f8d09000ec2c823533ccafde393c84","Table payload: Senior A1:D205
+Columns: Column_1, Column_2, Senior LVL 1, Senior LVL 1_2
+Rows: 204
+[payload:toast_tbl_78ac52c8301815dde937:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_78ac52c8301815dde937"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_9b10a4c985d5b4afe4bb","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""F1:G205"", ""max_column"": 7, ""min_column"": 6}, ""header_row"": 1, ""sheet_name"": ""Общая"", ""sheet_index"": 6, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","527564cc1200e87921df1fd588850a5b","Table payload: Общая F1:G205
+Columns: Junior LVL 1, Junior LVL 1_2
+Rows: 204
+[payload:toast_tbl_9b10a4c985d5b4afe4bb:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_9b10a4c985d5b4afe4bb"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_bd98d532b6ecd0b3799a","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""I1:J205"", ""max_column"": 10, ""min_column"": 9}, ""header_row"": 1, ""sheet_name"": ""Общая"", ""sheet_index"": 6, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","1d5045a0f557adef8b82a9832aa171ab","Table payload: Общая I1:J205
+Columns: Middle LVL 1, Middle LVL 1_2
+Rows: 204
+[payload:toast_tbl_bd98d532b6ecd0b3799a:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_bd98d532b6ecd0b3799a"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_fe35872002ee5b439cf3","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""L1:M205"", ""max_column"": 13, ""min_column"": 12}, ""header_row"": 1, ""sheet_name"": ""Общая"", ""sheet_index"": 6, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","2bdf7fab99dc0ba27e22c1ce06b284c2","Table payload: Общая L1:M205
+Columns: Middle LVL 2, Middle LVL 2_2
+Rows: 204
+[payload:toast_tbl_fe35872002ee5b439cf3:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_fe35872002ee5b439cf3"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_0f2bdcbf9ce03cc09e5f","table","{""xlsx"": {""range"": {""max_row"": 205, ""min_row"": 1, ""a1_range"": ""O1:P205"", ""max_column"": 16, ""min_column"": 15}, ""header_row"": 1, ""sheet_name"": ""Общая"", ""sheet_index"": 6, ""workbook_checksum"": ""3c130aa5d0dff11533e7adcc0cdba8b2000d17e3b003fe79ea6876caa0ba1187""}}","266bafb265c6b636051f7ae075debe28","Table payload: Общая O1:P205
+Columns: Senior LVL 1, Senior LVL 1_2
+Rows: 204
+[payload:toast_tbl_0f2bdcbf9ce03cc09e5f:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_0f2bdcbf9ce03cc09e5f"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_72db49c4339aaaeda73b","table","{""xlsx"": {""range"": {""max_row"": 33, ""min_row"": 3, ""a1_range"": ""A3:J33"", ""max_column"": 10, ""min_column"": 1}, ""header_row"": 3, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""4fee402ce6c501e179cb7150b90e9fe4201943d2e81648b34546f52cd88ae0a0""}}","a13ce22baa574ec0f21c570282458132","Table payload: Лист1 A3:J33
+Columns: (Дела и сроки) Исполнение и ответственность, Приём задачи, Принимай задачу только когда понял, Уточни: «Что именно нужно сделать? К какому сроку? Как проверим качество?». Перескажи своими словами., «Я понял, что нужно подготовить отчёт по клиенту Х за март. Срок — пятница, 18:00. Верно?»., «Ок, сделаю» — а через неделю выясняется, что задача понята неверно., По","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_72db49c4339aaaeda73b"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_b65cd4bf9b837545c2d1","table","{""xlsx"": {""range"": {""max_row"": 48, ""min_row"": 35, ""a1_range"": ""A35:J48"", ""max_column"": 10, ""min_column"": 1}, ""header_row"": 35, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""4fee402ce6c501e179cb7150b90e9fe4201943d2e81648b34546f52cd88ae0a0""}}","7e75c11d04948b2920d2f86571fe8029","Table payload: Лист1 A35:J48
+Columns: Конструктивная обратная связь, Своевременность, Давай обратную связь близко к моменту события, Скажи сразу или в течение дня. Не откладывай., Сразу после встречи: «Можно тебе обратную связь? Когда ты перебиваешь, я теряю мысль»., Копил обиду полгода, потом вывалил всё на встрече. Человек в шоке, деталей никто не помнит., Обратная связь с опозданием теряет смыс","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_b65cd4bf9b837545c2d1"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_05a7037305f747174dc8","table","{""xlsx"": {""range"": {""max_row"": 6, ""min_row"": 4, ""a1_range"": ""A4:N6"", ""max_column"": 14, ""min_column"": 1}, ""header_row"": 4, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""3b97d823379fccb6c3a8c056021094b5219f917800feaff58c6b06aa529c3dca""}}","7845d5bee152750f51bf4f7822304bbe","Table payload: Лист1 A4:N6
+Columns: Column_1, Column_2, Q1, Q1_2, Q1_3, Q2, Q2_2, Q2_3, Q3, Q3_2, Q3_3, Q4, Q4_2, Q4_3
+Rows: 2
+[payload:toast_tbl_05a7037305f747174dc8:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_05a7037305f747174dc8"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_9731b29da603d74e30ea","table","{""xlsx"": {""range"": {""max_row"": 37, ""min_row"": 1, ""a1_range"": ""A1:B37"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Структура"", ""sheet_index"": 1, ""workbook_checksum"": ""719010a3f50080343864cb76a6ddc8945d9a3f2d0289891c4640427988909555""}}","442ba8669b3345ab5537a918f52cd5cc","Table payload: Структура A1:B37
+Columns: Блоки собоседования с вопросами, Что нужно узнать в блоке
+Rows: 36
+[payload:toast_tbl_9731b29da603d74e30ea:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_9731b29da603d74e30ea"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_a22aa16be5a0ed937a4f","table","{""xlsx"": {""range"": {""max_row"": 2, ""min_row"": 1, ""a1_range"": ""A1:R2"", ""max_column"": 18, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","511396b5a7267e304ef2ba720334a564","Table payload: Лист1 A1:R2
+Columns: ФИО, Должность, Должность на английском, Формат работы, Город, E-mail, Telegram, Телефон, Пол, Дата рождения, День рождения, Месяц рождения, Года рождения, Дата приема на работу, День приема, Месяц приема, Год приема, Компьютер
+Rows: 1
+[payload:toast_tbl_a22aa16be5a0ed937a4f:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_a22aa16be5a0ed937a4f"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_d8e0e98e9b33e3264f9a","table","{""xlsx"": {""range"": {""max_row"": 7, ""min_row"": 5, ""a1_range"": ""A5:R7"", ""max_column"": 18, ""min_column"": 1}, ""header_row"": 6, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","2cb6b9827509adb647d4fca0acd4a185","Table payload: Лист1 A5:R7
+Columns: Корчагина Маргарита Валерьевна, Маркетолог, Marketing Manager, Удаленный, Ульяновск, m.korchagina@adventum.ru, @KorchaginaMargarita, 79969530506, Ж, 1997-06-05 00:00:00, 5, 6, 1997, 2025-10-29 00:00:00, 29, 10, 2025, Корпоративный
+Rows: 2
+[payload:toast_tbl_d8e0e98e9b33e3264f9a:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_d8e0e98e9b33e3264f9a"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_b639cfdb964befffd28e","table","{""xlsx"": {""range"": {""max_row"": 12, ""min_row"": 10, ""a1_range"": ""A10:S12"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 10, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","aa217c097050900bc812c77a806f4074","Table payload: Лист1 A10:S12
+Columns: Младова Вероника Михайловна, Руководитель группы по СММ, SMM Group Head, Гибрид, Москва, v.mladova@adventum.ru, @youverono, 79012717484, Ж, 2002-10-17 00:00:00, 17, 10, 2002, 2025-07-28 00:00:00, 28, 7, 2025, Свой, Column_19
+Rows: 2
+[payload:toast_tbl_b639cfdb964befffd28e:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_b639cfdb964befffd28e"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_ec48a6d52d16ab405f95","table","{""xlsx"": {""range"": {""max_row"": 16, ""min_row"": 15, ""a1_range"": ""A15:R16"", ""max_column"": 18, ""min_column"": 1}, ""header_row"": 15, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","e6d9b7ff6df20d08b9c1c543760530ce","Table payload: Лист1 A15:R16
+Columns: Суворова Юлия Александровна, Ведущий юристконсульт, Senior Legal Manager, Гибрид, Москва, j.suvorova@adventum.ru, @jusvrv, 79154064800, Ж, 1999-11-04 00:00:00, 4, 11, 1999, 2023-08-28 00:00:00, 28, 8, 2023, Корпоративный
+Rows: 1
+[payload:toast_tbl_ec48a6d52d16ab405f95:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_ec48a6d52d16ab405f95"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_93259ee62c923a18c70f","table","{""xlsx"": {""range"": {""max_row"": 24, ""min_row"": 19, ""a1_range"": ""A19:S24"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 19, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","115716919f5b28b628d718009b40df80","Table payload: Лист1 A19:S24
+Columns: Таничева Елизавета Вячеславовна, Руководитель креативного отдела, Head of Design, Удаленный, Москва, l.tanicheva@adventum.ru, @tanicheva, 79250055975, Ж, 1985-05-06 00:00:00, 6, 5, 1985, 2017-04-26 00:00:00, 26, 4, 2017, Свой, Column_19
+Rows: 5
+[payload:toast_tbl_93259ee62c923a18c70f:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_93259ee62c923a18c70f"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_26c6c551f3e572873c34","table","{""xlsx"": {""range"": {""max_row"": 31, ""min_row"": 26, ""a1_range"": ""A26:S31"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 26, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","dfabbf7ebef346dad18914ed5ae390e5","Table payload: Лист1 A26:S31
+Columns: Буртник Валерий Витальевич, Руководитель отдела по работе с персоналом, HRD, Гибрид, Москва, v.burtnik@adventum.ru, @HR_Valery, 79652046007, М, 1991-12-08 00:00:00, 8, 12, 1991, 2017-05-15 00:00:00, 15, 5, 2017, Корпоративный, Есть
+Rows: 5
+[payload:toast_tbl_26c6c551f3e572873c34:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_26c6c551f3e572873c34"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_1e5514ee596ae7723b4b","table","{""xlsx"": {""range"": {""max_row"": 40, ""min_row"": 35, ""a1_range"": ""A35:S40"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 35, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","51267a6bbdeb0172ba2ba50e6bcba2f6","Table payload: Лист1 A35:S40
+Columns: Алексеева Любовь Николаевна, Главный бухгалтер, Chief Accountant, Гибрид, Москва, l.alekseeva@adventum.ru, @AlekseevaLN, 79166980836, Ж, 1989-07-16 00:00:00, 16, 7, 1989, 2025-09-25 00:00:00, 25, 9, 2025, Корпоративный, Column_19
+Rows: 5
+[payload:toast_tbl_1e5514ee596ae7723b4b:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_1e5514ee596ae7723b4b"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_ca91477b3d86e890cf10","table","{""xlsx"": {""range"": {""max_row"": 49, ""min_row"": 43, ""a1_range"": ""A43:S49"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 43, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","0619e298b59198da57988f64c4191db8","Table payload: Лист1 A43:S49
+Columns: Мезенцев Александр Владимирович, Производственный директор, Production Director, Гибрид, Москва, a.mezentsev@adventum.ru, @amezentsev, 79168349275, М, 1990-07-31 00:00:00, 31, 7, 1990, 2020-11-03 00:00:00, 3, 11, 2020, Свой, Column_19
+Rows: 6
+[payload:toast_tbl_ca91477b3d86e890cf10:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_ca91477b3d86e890cf10"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_ab0f3bf14f598f8dd56d","table","{""xlsx"": {""range"": {""max_row"": 56, ""min_row"": 51, ""a1_range"": ""A51:R56"", ""max_column"": 18, ""min_column"": 1}, ""header_row"": 51, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","0dfaebe83e4e87100f5f3120ea77cc83","Table payload: Лист1 A51:R56
+Columns: Голованова Василиса Константиновна, Руководитель направления таргетированной и програматик рекламы, Head of Paid Social & Programmatic, Гибрид, Москва, v.golovanova@adventum.ru, @JestW, 79652762285, Ж, 1992-05-14 00:00:00, 14, 5, 1992, 2021-08-09 00:00:00, 9, 8, 2021, Корпоративный
+Rows: 5
+[payload:toast_tbl_ab0f3bf14f598f8dd56d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_ab0f3bf14f598f8dd56d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_f54ef6e3ff9ce9409363","table","{""xlsx"": {""range"": {""max_row"": 74, ""min_row"": 58, ""a1_range"": ""A58:S74"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 58, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","06e8e366fc1bc4dcffc0d91a92259eed","Table payload: Лист1 A58:S74
+Columns: Сенченко Алена Сергеевна, Руководитель группы медийной рекламы, Media Group Head, Гибрид, Москва, a.senchenko@adventum.ru, @AlenaSenchenko, 79266711141, Ж, 1986-02-01 00:00:00, 1, 2, 1986, 2018-03-01 00:00:00, 1_2, 3, 2018, Корпоративный, Есть
+Rows: 16
+[payload:toast_tbl_f54ef6e3ff9ce9409363:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_f54ef6e3ff9ce9409363"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_e4c26669e809bebe19f5","table","{""xlsx"": {""range"": {""max_row"": 89, ""min_row"": 77, ""a1_range"": ""A77:S89"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 77, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","835e0f06d0c308341f16b97dc77d53f8","Table payload: Лист1 A77:S89
+Columns: Ханова Татьяна Александровна, Аккаунт директор, Account Director, Декрет, Москва, t.khanova@adventum.ru, @khanova_t, 79852045622, Ж, 1995-07-04 00:00:00, 4, 7, 1995, 2023-06-26 00:00:00, 26, 6, 2023, Корпоративный, Column_19
+Rows: 12
+[payload:toast_tbl_e4c26669e809bebe19f5:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_e4c26669e809bebe19f5"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_33161037de12a6a8d973","table","{""xlsx"": {""range"": {""max_row"": 96, ""min_row"": 92, ""a1_range"": ""A92:R96"", ""max_column"": 18, ""min_column"": 1}, ""header_row"": 92, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","c56efa305831dad21fc2be925d7400f0","Table payload: Лист1 A92:R96
+Columns: Южанинова Юлия Арутюновна, Руководитель группы по стратегическому планированию, Strategic Group Head, Удаленный, Сочи, j.yuzhaninova@adventum.ru, @YuliyaYuzhaninova, 79062460666, Ж, 1998-07-02 00:00:00, 2, 7, 1998, 2024-09-23 00:00:00, 23, 9, 2024, Свой
+Rows: 4
+[payload:toast_tbl_33161037de12a6a8d973:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_33161037de12a6a8d973"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_c7dd85ec1da5d6b68a3d","table","{""xlsx"": {""range"": {""max_row"": 101, ""min_row"": 98, ""a1_range"": ""A98:S101"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 98, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","24f471b33320511261c14219f1dfaeeb","Table payload: Лист1 A98:S101
+Columns: Плисов Дмитрий Александрович, Директор по продажам, Sales Director, Гибрид, Москва, d.plisov@adventum.ru, @plisik11, 79661194455, М, 1989-02-16 00:00:00, 16, 2, 1989, 2024-10-01 00:00:00, 1, 10, 2024, Корпоративный, Есть
+Rows: 3
+[payload:toast_tbl_c7dd85ec1da5d6b68a3d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_c7dd85ec1da5d6b68a3d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_e2a8401d9d6745b7e33b","table","{""xlsx"": {""range"": {""max_row"": 107, ""min_row"": 104, ""a1_range"": ""A104:R107"", ""max_column"": 18, ""min_column"": 1}, ""header_row"": 104, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","9ec5c214522454eb828f8c25354ebd72","Table payload: Лист1 A104:R107
+Columns: Шестаков Вадим Николаевич, Руководитель отдела аналитики, Head of Analytics, Гибрид, Москва, v.shestakov@adventum.ru, @Greenleaf, 79161090537, М, 1993-04-28 00:00:00, 28, 4, 1993, 2014-07-03 00:00:00, 3, 7, 2014, Свой
+Rows: 3
+[payload:toast_tbl_e2a8401d9d6745b7e33b:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_e2a8401d9d6745b7e33b"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_a0c769554908c6eb11d4","table","{""xlsx"": {""range"": {""max_row"": 116, ""min_row"": 109, ""a1_range"": ""A109:R116"", ""max_column"": 18, ""min_column"": 1}, ""header_row"": 109, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","a839eb0ec0eaab355b0a0ef78c2b3fd5","Table payload: Лист1 A109:R116
+Columns: Сысоев Иван Витальевич, Руководитель группы аналитиков, Analytics Group Head, Гибрид, Москва, i.sysoev@adventum.ru, @SIVVIT, 79997258241, М, 1996-06-11 00:00:00, 11, 6, 1996, 2018-02-01 00:00:00, 1, 2, 2018, Свой
+Rows: 7
+[payload:toast_tbl_a0c769554908c6eb11d4:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_a0c769554908c6eb11d4"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_7fc4098de0aad092931b","table","{""xlsx"": {""range"": {""max_row"": 130, ""min_row"": 118, ""a1_range"": ""A118:S130"", ""max_column"": 19, ""min_column"": 1}, ""header_row"": 118, ""sheet_name"": ""Лист1"", ""sheet_index"": 1, ""workbook_checksum"": ""e3346e05bbcf1b9346943a1bd12a565b1b689ba93f7abee2ac359dbb0b24604b""}}","49efc71054a0a421131c61eb3f60322e","Table payload: Лист1 A118:S130
+Columns: Сущенко Николай Анатольевич, Технический директор, Technical Director, Гибрид, Москва, n.sushchenko@adventum.ru, @kolyaback2, 79647784729, М, 1989-02-20 00:00:00, 20, 2, 1989, 2015-10-05 00:00:00, 5, 10, 2015, Корпоративный, Column_19
+Rows: 12
+[payload:toast_tbl_7fc4098de0aad092931b:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_7fc4098de0aad092931b"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_22d19d78c4c9f0de13a6","table","{""markdown"": {""line_end"": 63, ""line_start"": 55, ""table_index"": 55}}","0c2d75a989847a25e810fd8a0b0ceafc","# [Цели сбора обратной связи и методы оценки результатов опросов](#_owmprbfv5oak)
+
+## Ответственные за проведение опроса
+
+table columns: **Ответственный**, **Задача**; rows: 7; location: lines 55-63
+[payload:toast_tbl_22d19d78c4c9f0de13a6:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_22d19d78c4c9f0de13a6"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_22d19d78c4c9f0de13a6","table","{""markdown"": {""line_end"": 63, ""line_start"": 55, ""table_index"": 55}}","5abb907c7ec9ccdcfc3727ce626570ae","[payload:toast_tbl_22d19d78c4c9f0de13a6:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_22d19d78c4c9f0de13a6"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_53e162422857acb8ed0b","table","{""xlsx"": {""range"": {""max_row"": 29, ""min_row"": 22, ""a1_range"": ""A22:I29"", ""max_column"": 9, ""min_column"": 1}, ""header_row"": 22, ""sheet_name"": ""MQLSQL"", ""sheet_index"": 1, ""workbook_checksum"": ""03f134c58366fc32502783c66f6e3a172e162a9c76e8a6aa0748747907924a5b""}}","ae151e45a118b6e313f2d9b559cdb143","Table payload: MQLSQL A22:I29
+Columns: Column_1, Бюджет, Связь, Интерес, Битрикс, Добавление в рассылки Marketing, Работа КО, MQL, SQL
+Rows: 7
+[payload:toast_tbl_53e162422857acb8ed0b:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_53e162422857acb8ed0b"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_e12a9666f0e35540df17","table","{""xlsx"": {""range"": {""max_row"": 46, ""min_row"": 1, ""a1_range"": ""A1:C46"", ""max_column"": 3, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""сегментация рынка"", ""sheet_index"": 3, ""workbook_checksum"": ""03f134c58366fc32502783c66f6e3a172e162a9c76e8a6aa0748747907924a5b""}}","afbbeaf5fc75c29730ffe4319a306bad","Table payload: сегментация рынка A1:C46
+Columns: Сегменты рынка, Направления, Уточнение
+Rows: 45
+[payload:toast_tbl_e12a9666f0e35540df17:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_e12a9666f0e35540df17"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_a4e58deacf13698499f8","table","{""xlsx"": {""range"": {""max_row"": 52, ""min_row"": 1, ""a1_range"": ""B1:C52"", ""max_column"": 3, ""min_column"": 2}, ""header_row"": 1, ""sheet_name"": ""Этапы подготовки вебинара"", ""sheet_index"": 1, ""workbook_checksum"": ""82531ece6468cf99a0c83b51f2f75e95dd577ed46d09238836f0b4e83996063b""}}","d2e7e960e2e23bb70e578f20d4834225","Table payload: Этапы подготовки вебинара B1:C52
+Columns: Подготовка к вебинару, %Название вебинара%
+Rows: 51
+[payload:toast_tbl_a4e58deacf13698499f8:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_a4e58deacf13698499f8"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_b7702417893830ada3a0","table","{""xlsx"": {""range"": {""max_row"": 60, ""min_row"": 1, ""a1_range"": ""B1:F60"", ""max_column"": 6, ""min_column"": 2}, ""header_row"": 1, ""sheet_name"": ""Чек-лист"", ""sheet_index"": 2, ""workbook_checksum"": ""82531ece6468cf99a0c83b51f2f75e95dd577ed46d09238836f0b4e83996063b""}}","3aa421a100eb6bf8fb4823c1c811aa75","Table payload: Чек-лист B1:F60
+Columns: Чек-лист вебинара, %Название вебинара%, %Название вебинара%_2, %Название вебинара%_3, %Название вебинара%_4
+Rows: 59
+[payload:toast_tbl_b7702417893830ada3a0:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_b7702417893830ada3a0"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_589c9a7c0dbe4e944d61","table","{""xlsx"": {""range"": {""max_row"": 53, ""min_row"": 1, ""a1_range"": ""A1:B53"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head"", ""sheet_index"": 1, ""workbook_checksum"": ""b70d5d0bb63bdf9d5f06964b2e5e18128f4530ba3a36ed98a536d9fbbb13604d""}}","957e829fbed925cf5d10daccf6b591c6","Table payload: Junior-Group head A1:B53
+Columns: Грейд, Грейд_2
+Rows: 52
+[payload:toast_tbl_589c9a7c0dbe4e944d61:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_589c9a7c0dbe4e944d61"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_e4a5c4af3199b3835919","table","{""xlsx"": {""range"": {""max_row"": 53, ""min_row"": 1, ""a1_range"": ""D1:F53"", ""max_column"": 6, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head"", ""sheet_index"": 1, ""workbook_checksum"": ""b70d5d0bb63bdf9d5f06964b2e5e18128f4530ba3a36ed98a536d9fbbb13604d""}}","93f56c0101aa36deac9c41e5697b54f0","Table payload: Junior-Group head D1:F53
+Columns: Middle lvl 1 Paid Search Manager, Middle lvl 1 Paid Search Manager_2, Middle lvl 1 Paid Search Manager_3
+Rows: 52
+[payload:toast_tbl_e4a5c4af3199b3835919:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_e4a5c4af3199b3835919"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_488d8fa19e5c7c80b4cb","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""D1:F220"", ""max_column"": 6, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 1, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","8611f784bb26991aa915f694397501cc","Table payload: Junior D1:F220
+Columns: Middle lvl 2 Media Manager, Middle lvl 2 Media Manager_2, Middle lvl 2 Media Manager_3
+Rows: 219
+[payload:toast_tbl_488d8fa19e5c7c80b4cb:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_488d8fa19e5c7c80b4cb"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_30b21977dccc2c6f2718","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 2, ""a1_range"": ""A2:B220"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 2, ""sheet_name"": ""Junior"", ""sheet_index"": 1, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","3f708fb3b456d817836b09c4e0a5d006","Table payload: Junior A2:B220
+Columns: Компетенция, Поведенченский индикатор
+Rows: 218
+[payload:toast_tbl_30b21977dccc2c6f2718:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_30b21977dccc2c6f2718"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_3a86d379d29b48b3402f","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""A1:D220"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Middle"", ""sheet_index"": 2, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","032228100da320b18194dfb1904243c8","Table payload: Middle A1:D220
+Columns: Column_1, Column_2, Middle 1, Middle 1_2
+Rows: 219
+[payload:toast_tbl_3a86d379d29b48b3402f:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_3a86d379d29b48b3402f"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_3a86d379d29b48b3402f","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""A1:D220"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Middle"", ""sheet_index"": 2, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","e72defc1bd293442b8978eadfec3f38e","Table payload: Middle A1:D220
+Columns: Column_1, Column_2, Middle 1, Middle 1_2
+Rows: 219
+[payload:toast_tbl_3a86d379d29b48b3402f:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_3a86d379d29b48b3402f"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_3f2c59d5444684400722","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""F1:G220"", ""max_column"": 7, ""min_column"": 6}, ""header_row"": 1, ""sheet_name"": ""Middle"", ""sheet_index"": 2, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","cda5e249679a0733d059700443d79253","Table payload: Middle F1:G220
+Columns: Middle 2, Middle 2_2
+Rows: 219
+[payload:toast_tbl_3f2c59d5444684400722:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_3f2c59d5444684400722"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_3f2c59d5444684400722","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""F1:G220"", ""max_column"": 7, ""min_column"": 6}, ""header_row"": 1, ""sheet_name"": ""Middle"", ""sheet_index"": 2, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","5483be71d876e57da277433148433370","Table payload: Middle F1:G220
+Columns: Middle 2, Middle 2_2
+Rows: 219
+[payload:toast_tbl_3f2c59d5444684400722:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_3f2c59d5444684400722"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_69684c18a64205d2badc","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""A1:D220"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Senior"", ""sheet_index"": 3, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","4959cd3b28dd56c4abfe357d5c865e9c","Table payload: Senior A1:D220
+Columns: Column_1, Column_2, Senior, Senior_2
+Rows: 219
+[payload:toast_tbl_69684c18a64205d2badc:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_69684c18a64205d2badc"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_69684c18a64205d2badc","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""A1:D220"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Senior"", ""sheet_index"": 3, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","c77ed829c31204b9d07c4f147f12f97d","Table payload: Senior A1:D220
+Columns: Column_1, Column_2, Senior, Senior_2
+Rows: 219
+[payload:toast_tbl_69684c18a64205d2badc:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_69684c18a64205d2badc"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_accf2d6c3280154012e9","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""F1:G220"", ""max_column"": 7, ""min_column"": 6}, ""header_row"": 1, ""sheet_name"": ""Senior"", ""sheet_index"": 3, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","de2a8e0b3acb907d754328e2903c7fd2","Table payload: Senior F1:G220
+Columns: Expert, Expert_2
+Rows: 219
+[payload:toast_tbl_accf2d6c3280154012e9:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_accf2d6c3280154012e9"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_accf2d6c3280154012e9","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""F1:G220"", ""max_column"": 7, ""min_column"": 6}, ""header_row"": 1, ""sheet_name"": ""Senior"", ""sheet_index"": 3, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","23d64f4b6cee563f356ab61f6d4524da","Table payload: Senior F1:G220
+Columns: Expert, Expert_2
+Rows: 219
+[payload:toast_tbl_accf2d6c3280154012e9:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_accf2d6c3280154012e9"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_5334810d3395411dfcac","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""A1:D220"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Group head"", ""sheet_index"": 4, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","0b80f21dee5a54afabcb6689c76a5603","Table payload: Group head A1:D220
+Columns: Column_1, Column_2, GH, GH_2
+Rows: 219
+[payload:toast_tbl_5334810d3395411dfcac:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_5334810d3395411dfcac"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_5334810d3395411dfcac","table","{""xlsx"": {""range"": {""max_row"": 220, ""min_row"": 1, ""a1_range"": ""A1:D220"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Group head"", ""sheet_index"": 4, ""workbook_checksum"": ""e691a94852afddda076a94876aa5b639dffd60cb0ad513fb4819e6c2baf44c29""}}","3488c4e517960ce1effb75a79cc778de","Table payload: Group head A1:D220
+Columns: Column_1, Column_2, GH, GH_2
+Rows: 219
+[payload:toast_tbl_5334810d3395411dfcac:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_5334810d3395411dfcac"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_bb5b769b499c4f99c472","table","{""xlsx"": {""range"": {""max_row"": 260, ""min_row"": 1, ""a1_range"": ""A1:D260"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Assistant"", ""sheet_index"": 1, ""workbook_checksum"": ""b8646ead50f08afd49ed4b22ba20479e39553077d6b0ac09768958d6ae9eef22""}}","e958f91e8900310f3394f82470dde24f","Table payload: Assistant A1:D260
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 259
+[payload:toast_tbl_bb5b769b499c4f99c472:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_bb5b769b499c4f99c472"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_bb5b769b499c4f99c472","table","{""xlsx"": {""range"": {""max_row"": 260, ""min_row"": 1, ""a1_range"": ""A1:D260"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Assistant"", ""sheet_index"": 1, ""workbook_checksum"": ""b8646ead50f08afd49ed4b22ba20479e39553077d6b0ac09768958d6ae9eef22""}}","c7514de0f939d7d029007af8284e74d9","Table payload: Assistant A1:D260
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 259
+[payload:toast_tbl_bb5b769b499c4f99c472:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_bb5b769b499c4f99c472"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_b5119a8bec3449b68a48","table","{""xlsx"": {""range"": {""max_row"": 261, ""min_row"": 1, ""a1_range"": ""D1:F261"", ""max_column"": 6, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""b8646ead50f08afd49ed4b22ba20479e39553077d6b0ac09768958d6ae9eef22""}}","6cc2a1ceda94f6f97ff258c85b9ee7db","Table payload: Junior D1:F261
+Columns: Middle Mobile Manager, Middle Mobile Manager_2, Middle Mobile Manager_3
+Rows: 260
+[payload:toast_tbl_b5119a8bec3449b68a48:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_b5119a8bec3449b68a48"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_4579125c778de708190b","table","{""xlsx"": {""range"": {""max_row"": 261, ""min_row"": 2, ""a1_range"": ""A2:B261"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 2, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""b8646ead50f08afd49ed4b22ba20479e39553077d6b0ac09768958d6ae9eef22""}}","436cc89f4d8838856616f39418bf47c4","Table payload: Junior A2:B261
+Columns: Компетенция, Поведенченский индикатор
+Rows: 259
+[payload:toast_tbl_4579125c778de708190b:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_4579125c778de708190b"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_fbd18e8b903b98b24595","table","{""xlsx"": {""range"": {""max_row"": 260, ""min_row"": 1, ""a1_range"": ""A1:D260"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Middle"", ""sheet_index"": 3, ""workbook_checksum"": ""b8646ead50f08afd49ed4b22ba20479e39553077d6b0ac09768958d6ae9eef22""}}","48c6ef37c283540667a517b940b3e8ba","Table payload: Middle A1:D260
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 259
+[payload:toast_tbl_fbd18e8b903b98b24595:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_fbd18e8b903b98b24595"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_7daf100fe3cb62eae2f9","table","{""xlsx"": {""range"": {""max_row"": 260, ""min_row"": 1, ""a1_range"": ""A1:D260"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Senior"", ""sheet_index"": 4, ""workbook_checksum"": ""b8646ead50f08afd49ed4b22ba20479e39553077d6b0ac09768958d6ae9eef22""}}","bc39d752e3f934da0d88d513cbfd0972","Table payload: Senior A1:D260
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 259
+[payload:toast_tbl_7daf100fe3cb62eae2f9:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_7daf100fe3cb62eae2f9"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_6b5b347b8ad769934545","table","{""xlsx"": {""range"": {""max_row"": 13, ""min_row"": 1, ""a1_range"": ""A1:F13"", ""max_column"": 6, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior 1"", ""sheet_index"": 1, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","f43c89df9274148b1e27b8472ffb9ecc","Table payload: Junior 1 A1:F13
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость), Материалы для изучения, Уровень владения компетенция (качество/скорость)_2
+Rows: 12
+[payload:toast_tbl_6b5b347b8ad769934545:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_6b5b347b8ad769934545"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_ea3f06e7c96435393bdf","table","{""xlsx"": {""range"": {""max_row"": 22, ""min_row"": 1, ""a1_range"": ""A1:D22"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","1a7f074468cd1a773641eac49a3e2085","Table payload: Junior A1:D22
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 21
+[payload:toast_tbl_ea3f06e7c96435393bdf:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_ea3f06e7c96435393bdf"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_baa97423e1a80ddec62d","table","{""xlsx"": {""range"": {""max_row"": 45, ""min_row"": 1, ""a1_range"": ""A1:E45"", ""max_column"": 5, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Middle 1"", ""sheet_index"": 3, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","7dba8a56f491288858bbd403b7cfc9dd","Table payload: Middle 1 A1:E45
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость), Уровень владения компетенция (качество/скорость)_2
+Rows: 44
+[payload:toast_tbl_baa97423e1a80ddec62d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_baa97423e1a80ddec62d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_e93c89958de3dd7b5312","table","{""xlsx"": {""range"": {""max_row"": 36, ""min_row"": 1, ""a1_range"": ""A1:E36"", ""max_column"": 5, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Middle 2"", ""sheet_index"": 4, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","4d17eb106361fb8299b36c3aabc702e1","Table payload: Middle 2 A1:E36
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость), Уровень владения компетенция (качество/скорость)_2
+Rows: 35
+[payload:toast_tbl_e93c89958de3dd7b5312:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_e93c89958de3dd7b5312"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_7f17ad52d467e97f5590","table","{""xlsx"": {""range"": {""max_row"": 47, ""min_row"": 38, ""a1_range"": ""A38:D47"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 38, ""sheet_name"": ""Middle 2"", ""sheet_index"": 4, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","1741595d53eb5a1e3171b334a7ad9bb5","Table payload: Middle 2 A38:D47
+Columns: Развитие клиента, Генерит гипотезы для выполнения KPI клиента, 4 уровень - Принимает решение сам, информирует о результатах «Буду действовать самостоятельно, спрашивая совет по надобности», 3 Стандартный уровень развития компетенции
+Rows: 9
+[payload:toast_tbl_7f17ad52d467e97f5590:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_7f17ad52d467e97f5590"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_9d370660eedbb0ffc9ee","table","{""xlsx"": {""range"": {""max_row"": 17, ""min_row"": 1, ""a1_range"": ""A1:E17"", ""max_column"": 5, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Middle 3"", ""sheet_index"": 5, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","7b15eb89abad795d52b4d93e5e285826","Table payload: Middle 3 A1:E17
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость), Уровень владения компетенция (качество/скорость)_2
+Rows: 16
+[payload:toast_tbl_9d370660eedbb0ffc9ee:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_9d370660eedbb0ffc9ee"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_b24e57b4ddeb09088e3b","table","{""xlsx"": {""range"": {""max_row"": 60, ""min_row"": 20, ""a1_range"": ""A20:D60"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 20, ""sheet_name"": ""Middle 3"", ""sheet_index"": 5, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","053fe0d9d20d6282d83e6c6e0671e82c","Table payload: Middle 3 A20:D60
+Columns: Погружение в бизнес клиента (воронка, процессы, продукт, ца), Знает, как устроен бизнес клиента изнутри, что из себя представляет продукт, какие его особенности, кто целевая аудитория. Кто за что отвечает на стороне клиента. Что является основными и вторичными KPI. Каковы планы бизнеса. Знает свежие новости о компании и ее конкурентах., 4 уровень - Принимае","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_b24e57b4ddeb09088e3b"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_14b6cb2e303d9b8a1712","table","{""xlsx"": {""range"": {""max_row"": 17, ""min_row"": 1, ""a1_range"": ""A1:D17"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Senior 1"", ""sheet_index"": 6, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","39455bb8213648373f1adf56ae14ad75","Table payload: Senior 1 A1:D17
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 16
+[payload:toast_tbl_14b6cb2e303d9b8a1712:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_14b6cb2e303d9b8a1712"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_d1e292b9c477aa14a8c2","table","{""xlsx"": {""range"": {""max_row"": 53, ""min_row"": 19, ""a1_range"": ""A19:D53"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 19, ""sheet_name"": ""Senior 1"", ""sheet_index"": 6, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","d677776aa5355508ada3ba7f569ccdd9","Table payload: Senior 1 A19:D53
+Columns: Погружение в бизнес клиента (воронка, процессы, продукт, ца), Знает, как устроен бизнес клиента изнутри, что из себя представляет продукт, какие его особенности, кто целевая аудитория. Кто за что отвечает на стороне клиента. Как строится система мотивации сотрудников на стороне клиента. Как формируется рекламный бюджет на стороне клиента. Что является основ","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_d1e292b9c477aa14a8c2"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_86e162cda72504c70336","table","{""xlsx"": {""range"": {""max_row"": 21, ""min_row"": 1, ""a1_range"": ""A1:E21"", ""max_column"": 5, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Senior 2"", ""sheet_index"": 7, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","8b9634f5177bc834250d6d58934fadf8","Table payload: Senior 2 A1:E21
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость), Уровень владения компетенция (качество/скорость)_2
+Rows: 20
+[payload:toast_tbl_86e162cda72504c70336:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_86e162cda72504c70336"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_7b87d7cb4ce026ae9d6a","table","{""xlsx"": {""range"": {""max_row"": 60, ""min_row"": 23, ""a1_range"": ""A23:D60"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 23, ""sheet_name"": ""Senior 2"", ""sheet_index"": 7, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","638df094aeb2480621a3b4995b9964bc","Table payload: Senior 2 A23:D60
+Columns: Погружение в бизнес клиента (воронка, процессы, продукт, ца), Знает, как устроен бизнес клиента изнутри, что из себя представляет продукт, какие его особенности, кто целевая аудитория. Кто за что отвечает на стороне клиента. Как строится система мотивации сотрудников на стороне клиента. Как формируется рекламный бюджет на стороне клиента. Что является основ","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_7b87d7cb4ce026ae9d6a"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_eca5c9ca84751bd1c21e","table","{""xlsx"": {""range"": {""max_row"": 21, ""min_row"": 1, ""a1_range"": ""A1:F21"", ""max_column"": 6, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Senior 3"", ""sheet_index"": 8, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","dc297a3d3faa1f12d3e8bd614f4e84ad","Table payload: Senior 3 A1:F21
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость), Материалы для изучения, Уровень владения компетенция (качество/скорость)_2
+Rows: 20
+[payload:toast_tbl_eca5c9ca84751bd1c21e:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_eca5c9ca84751bd1c21e"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_18b1a4983fc7fa341bca","table","{""xlsx"": {""range"": {""max_row"": 62, ""min_row"": 23, ""a1_range"": ""A23:D62"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 23, ""sheet_name"": ""Senior 3"", ""sheet_index"": 8, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","23109cfbd0d78350430e27b3444c1f18","Table payload: Senior 3 A23:D62
+Columns: Погружение в бизнес клиента (воронка, процессы, продукт, ца), Знает, как устроен бизнес клиента изнутри, что из себя представляет продукт, какие его особенности, кто целевая аудитория. Кто за что отвечает на стороне клиента. Как строится система мотивации сотрудников на стороне клиента. Как формируется рекламный бюджет на стороне клиента. Что является основ","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_18b1a4983fc7fa341bca"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_f4392f5d11398ea1ba2e","table","{""xlsx"": {""range"": {""max_row"": 34, ""min_row"": 1, ""a1_range"": ""A1:D34"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Group head"", ""sheet_index"": 9, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","f1d1ad3cf67da446072050ba60b33eaa","Table payload: Group head A1:D34
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 33
+[payload:toast_tbl_f4392f5d11398ea1ba2e:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_f4392f5d11398ea1ba2e"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_0d8e76d7608cf36baa6c","table","{""xlsx"": {""range"": {""max_row"": 36, ""min_row"": 1, ""a1_range"": ""A1:D36"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Group head 2"", ""sheet_index"": 10, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","e4225eb12d95f591c37e168164115de8","Table payload: Group head 2 A1:D36
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 35
+[payload:toast_tbl_0d8e76d7608cf36baa6c:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_0d8e76d7608cf36baa6c"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_958ef665c6a18bbf42c1","table","{""xlsx"": {""range"": {""max_row"": 32, ""min_row"": 1, ""a1_range"": ""A1:D32"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Account director"", ""sheet_index"": 11, ""workbook_checksum"": ""e829558cbb06062f87c1e954fd608b228bec416fd570642d87d5b85df7709368""}}","3cca814b501ed9d6130601f311eadb10","Table payload: Account director A1:D32
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 31
+[payload:toast_tbl_958ef665c6a18bbf42c1:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_958ef665c6a18bbf42c1"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_c082fef96e7a87c78f6d","table","{""xlsx"": {""range"": {""max_row"": 138, ""min_row"": 1, ""a1_range"": ""D1:E138"", ""max_column"": 5, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head (old)"", ""sheet_index"": 1, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","2b8af4f5244b1b2bad49d7111178e30e","Table payload: Junior-Group head (old) D1:E138
+Columns: Junior, Junior_2
+Rows: 137
+[payload:toast_tbl_c082fef96e7a87c78f6d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_c082fef96e7a87c78f6d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_3741e0c912f0a806295f","table","{""xlsx"": {""range"": {""max_row"": 138, ""min_row"": 1, ""a1_range"": ""G1:H138"", ""max_column"": 8, ""min_column"": 7}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head (old)"", ""sheet_index"": 1, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","5f96669cb5a902286f1f829d905ebee4","Table payload: Junior-Group head (old) G1:H138
+Columns: Middle lvl 1, Middle lvl 1_2
+Rows: 137
+[payload:toast_tbl_3741e0c912f0a806295f:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_3741e0c912f0a806295f"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_4fcd69732b0e7656eccf","table","{""xlsx"": {""range"": {""max_row"": 138, ""min_row"": 1, ""a1_range"": ""J1:K138"", ""max_column"": 11, ""min_column"": 10}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head (old)"", ""sheet_index"": 1, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","be966decda81b10dfba76c72cdad45ba","Table payload: Junior-Group head (old) J1:K138
+Columns: Middle lvl 2, Middle lvl 2_2
+Rows: 137
+[payload:toast_tbl_4fcd69732b0e7656eccf:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_4fcd69732b0e7656eccf"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_f3253a3582c81515c6f9","table","{""xlsx"": {""range"": {""max_row"": 138, ""min_row"": 1, ""a1_range"": ""M1:N138"", ""max_column"": 14, ""min_column"": 13}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head (old)"", ""sheet_index"": 1, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","5260c4365ca2956f2474edaf5bfe0446","Table payload: Junior-Group head (old) M1:N138
+Columns: Senior, Senior_2
+Rows: 137
+[payload:toast_tbl_f3253a3582c81515c6f9:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_f3253a3582c81515c6f9"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_f3a2b9aa143624a39645","table","{""xlsx"": {""range"": {""max_row"": 138, ""min_row"": 1, ""a1_range"": ""P1:Q138"", ""max_column"": 17, ""min_column"": 16}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head (old)"", ""sheet_index"": 1, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","2fe5eef0fb82c8648ed41be053cd3738","Table payload: Junior-Group head (old) P1:Q138
+Columns: Expert, Expert_2
+Rows: 137
+[payload:toast_tbl_f3a2b9aa143624a39645:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_f3a2b9aa143624a39645"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_819492d7d426faf29e49","table","{""xlsx"": {""range"": {""max_row"": 138, ""min_row"": 1, ""a1_range"": ""S1:T138"", ""max_column"": 20, ""min_column"": 19}, ""header_row"": 1, ""sheet_name"": ""Junior-Group head (old)"", ""sheet_index"": 1, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","c8ce635da8ef0e6d8b7dc586d6e180ba","Table payload: Junior-Group head (old) S1:T138
+Columns: Group Head, Group Head_2
+Rows: 137
+[payload:toast_tbl_819492d7d426faf29e49:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_819492d7d426faf29e49"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_7373e8c3b56c2d69308d","table","{""xlsx"": {""range"": {""max_row"": 141, ""min_row"": 2, ""a1_range"": ""A2:B141"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 2, ""sheet_name"": ""Junior-Group head (old)"", ""sheet_index"": 1, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","78cd7e2cbf72c68be128c28c4e209a5f","Table payload: Junior-Group head (old) A2:B141
+Columns: Компетенция, Поведенченский индикатор
+Rows: 139
+[payload:toast_tbl_7373e8c3b56c2d69308d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_7373e8c3b56c2d69308d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_4292728ae48c0849d0e2","table","{""xlsx"": {""range"": {""max_row"": 107, ""min_row"": 1, ""a1_range"": ""D1:E107"", ""max_column"": 5, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""(new1 - old) оптимизированная м"", ""sheet_index"": 2, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","e7423fea644b32e2d48946ba069f9e6a","Table payload: (new1 - old) оптимизированная м D1:E107
+Columns: Junior, Junior_2
+Rows: 106
+[payload:toast_tbl_4292728ae48c0849d0e2:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_4292728ae48c0849d0e2"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_d5784a2eff10357e3c82","table","{""xlsx"": {""range"": {""max_row"": 107, ""min_row"": 1, ""a1_range"": ""G1:H107"", ""max_column"": 8, ""min_column"": 7}, ""header_row"": 1, ""sheet_name"": ""(new1 - old) оптимизированная м"", ""sheet_index"": 2, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","8049e2fbe97827a387b03f9391511e69","Table payload: (new1 - old) оптимизированная м G1:H107
+Columns: Middle lvl 1, Middle lvl 1_2
+Rows: 106
+[payload:toast_tbl_d5784a2eff10357e3c82:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_d5784a2eff10357e3c82"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_79d67502e76d2a8dd735","table","{""xlsx"": {""range"": {""max_row"": 107, ""min_row"": 1, ""a1_range"": ""J1:K107"", ""max_column"": 11, ""min_column"": 10}, ""header_row"": 1, ""sheet_name"": ""(new1 - old) оптимизированная м"", ""sheet_index"": 2, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","889b3b935d35637841d65467e4d5d2f6","Table payload: (new1 - old) оптимизированная м J1:K107
+Columns: Middle lvl 2, Middle lvl 2_2
+Rows: 106
+[payload:toast_tbl_79d67502e76d2a8dd735:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_79d67502e76d2a8dd735"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_6396ea82dedfc691f7ee","table","{""xlsx"": {""range"": {""max_row"": 107, ""min_row"": 1, ""a1_range"": ""M1:N107"", ""max_column"": 14, ""min_column"": 13}, ""header_row"": 1, ""sheet_name"": ""(new1 - old) оптимизированная м"", ""sheet_index"": 2, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","749219872149265e8d1448b4c2b8cb6a","Table payload: (new1 - old) оптимизированная м M1:N107
+Columns: Senior, Senior_2
+Rows: 106
+[payload:toast_tbl_6396ea82dedfc691f7ee:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_6396ea82dedfc691f7ee"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_92907bf2dc0255b47e97","table","{""xlsx"": {""range"": {""max_row"": 107, ""min_row"": 1, ""a1_range"": ""P1:Q107"", ""max_column"": 17, ""min_column"": 16}, ""header_row"": 1, ""sheet_name"": ""(new1 - old) оптимизированная м"", ""sheet_index"": 2, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","d099ef19ef5c9c63aa04e96bc53bd2c0","Table payload: (new1 - old) оптимизированная м P1:Q107
+Columns: Expert, Expert_2
+Rows: 106
+[payload:toast_tbl_92907bf2dc0255b47e97:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_92907bf2dc0255b47e97"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_606b04ea92f240a54cab","table","{""xlsx"": {""range"": {""max_row"": 107, ""min_row"": 1, ""a1_range"": ""S1:T107"", ""max_column"": 20, ""min_column"": 19}, ""header_row"": 1, ""sheet_name"": ""(new1 - old) оптимизированная м"", ""sheet_index"": 2, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","f93e4f36d524e8eaa30b478d0e73e089","Table payload: (new1 - old) оптимизированная м S1:T107
+Columns: Group Head, Group Head_2
+Rows: 106
+[payload:toast_tbl_606b04ea92f240a54cab:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_606b04ea92f240a54cab"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_3fffde38394c55b1b126","table","{""xlsx"": {""range"": {""max_row"": 110, ""min_row"": 2, ""a1_range"": ""A2:B110"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 2, ""sheet_name"": ""(new1 - old) оптимизированная м"", ""sheet_index"": 2, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","ed1fb9dd3974af26fee572198d5b2fa4","Table payload: (new1 - old) оптимизированная м A2:B110
+Columns: Компетенция, Поведенченский индикатор
+Rows: 108
+[payload:toast_tbl_3fffde38394c55b1b126:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_3fffde38394c55b1b126"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_e01e750385598e5c656a","table","{""xlsx"": {""range"": {""max_row"": 50, ""min_row"": 1, ""a1_range"": ""D1:E50"", ""max_column"": 5, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""(new2) Junior-Group head"", ""sheet_index"": 3, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","acfbb1ce8611e58bd96482ca573f7520","Table payload: (new2) Junior-Group head D1:E50
+Columns: Junior, Junior_2
+Rows: 49
+[payload:toast_tbl_e01e750385598e5c656a:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_e01e750385598e5c656a"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_e765505051472ed91b81","table","{""xlsx"": {""range"": {""max_row"": 50, ""min_row"": 1, ""a1_range"": ""G1:H50"", ""max_column"": 8, ""min_column"": 7}, ""header_row"": 1, ""sheet_name"": ""(new2) Junior-Group head"", ""sheet_index"": 3, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","a819b4f30d4168ac3317fe11f65e0a9c","Table payload: (new2) Junior-Group head G1:H50
+Columns: Middle lvl 1, Middle lvl 1_2
+Rows: 49
+[payload:toast_tbl_e765505051472ed91b81:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_e765505051472ed91b81"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_2f1457a240f0ab7edb1d","table","{""xlsx"": {""range"": {""max_row"": 50, ""min_row"": 1, ""a1_range"": ""J1:K50"", ""max_column"": 11, ""min_column"": 10}, ""header_row"": 1, ""sheet_name"": ""(new2) Junior-Group head"", ""sheet_index"": 3, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","8b461900cbd4c05f0ba59ea8032ed6a5","Table payload: (new2) Junior-Group head J1:K50
+Columns: Middle lvl 2, Middle lvl 2_2
+Rows: 49
+[payload:toast_tbl_2f1457a240f0ab7edb1d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_2f1457a240f0ab7edb1d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_5799e652aa0dd6408aa7","table","{""xlsx"": {""range"": {""max_row"": 50, ""min_row"": 1, ""a1_range"": ""M1:N50"", ""max_column"": 14, ""min_column"": 13}, ""header_row"": 1, ""sheet_name"": ""(new2) Junior-Group head"", ""sheet_index"": 3, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","96f9619b8f01960d6f8cb8681a75ede8","Table payload: (new2) Junior-Group head M1:N50
+Columns: Senior, Senior_2
+Rows: 49
+[payload:toast_tbl_5799e652aa0dd6408aa7:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_5799e652aa0dd6408aa7"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_a8f30fea43bce9502b64","table","{""xlsx"": {""range"": {""max_row"": 50, ""min_row"": 1, ""a1_range"": ""P1:Q50"", ""max_column"": 17, ""min_column"": 16}, ""header_row"": 1, ""sheet_name"": ""(new2) Junior-Group head"", ""sheet_index"": 3, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","e2125b1107ef0419afc79fe0218fdc54","Table payload: (new2) Junior-Group head P1:Q50
+Columns: Expert, Expert_2
+Rows: 49
+[payload:toast_tbl_a8f30fea43bce9502b64:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_a8f30fea43bce9502b64"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_e04534bd1cd4501a7e85","table","{""xlsx"": {""range"": {""max_row"": 50, ""min_row"": 1, ""a1_range"": ""S1:T50"", ""max_column"": 20, ""min_column"": 19}, ""header_row"": 1, ""sheet_name"": ""(new2) Junior-Group head"", ""sheet_index"": 3, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","ffe6406b63ade3bbee1bc285067ab28c","Table payload: (new2) Junior-Group head S1:T50
+Columns: Group Head, Group Head_2
+Rows: 49
+[payload:toast_tbl_e04534bd1cd4501a7e85:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_e04534bd1cd4501a7e85"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_17a7241d0a976f287103","table","{""xlsx"": {""range"": {""max_row"": 53, ""min_row"": 2, ""a1_range"": ""A2:B53"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 2, ""sheet_name"": ""(new2) Junior-Group head"", ""sheet_index"": 3, ""workbook_checksum"": ""c2b96e374beceb2f021da5408dd435efca03b2746d767b8e83f11944254b5621""}}","36947c5350f743339e890e9c4bd140b6","Table payload: (new2) Junior-Group head A2:B53
+Columns: Компетенция, Поведенченский индикатор
+Rows: 51
+[payload:toast_tbl_17a7241d0a976f287103:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_17a7241d0a976f287103"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_b9d1f919eeb1a5a41031","table","{""xlsx"": {""range"": {""max_row"": 35, ""min_row"": 1, ""a1_range"": ""A1:D35"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""1b98fb31aff7264753a88c93df78cb382476fe7f301b173db3f3e31070f05a49""}}","bf6a5d41f08d780b243d655f0705afb4","Table payload: Junior A1:D35
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 34
+[payload:toast_tbl_b9d1f919eeb1a5a41031:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_b9d1f919eeb1a5a41031"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_f1fe3f0445570b705714","table","{""xlsx"": {""range"": {""max_row"": 51, ""min_row"": 37, ""a1_range"": ""A37:D51"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 37, ""sheet_name"": ""Junior"", ""sheet_index"": 2, ""workbook_checksum"": ""1b98fb31aff7264753a88c93df78cb382476fe7f301b173db3f3e31070f05a49""}}","ae6c112271e032f43f58616c8b93c964","Table payload: Junior A37:D51
+Columns: 1С-ДО, - Знание процессе документообоорота по клиенту и площадкам
+- Понимание специфики иностранных юридических лиц.
+- Ежедневных контроль статуса по документам и реагирования
+- Отсутвия просроченных документов, 2 уровень, 2 уровень_2
+Rows: 14
+[payload:toast_tbl_f1fe3f0445570b705714:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_f1fe3f0445570b705714"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_8882c581927851db8965","table","{""xlsx"": {""range"": {""max_row"": 35, ""min_row"": 1, ""a1_range"": ""A1:D35"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Middle"", ""sheet_index"": 3, ""workbook_checksum"": ""1b98fb31aff7264753a88c93df78cb382476fe7f301b173db3f3e31070f05a49""}}","c8904778bc8548879c36c0a1292e7c59","Table payload: Middle A1:D35
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 34
+[payload:toast_tbl_8882c581927851db8965:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_8882c581927851db8965"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_0f8b40a0f8cd33a3df90","table","{""xlsx"": {""range"": {""max_row"": 51, ""min_row"": 37, ""a1_range"": ""A37:D51"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 37, ""sheet_name"": ""Middle"", ""sheet_index"": 3, ""workbook_checksum"": ""1b98fb31aff7264753a88c93df78cb382476fe7f301b173db3f3e31070f05a49""}}","669afcba03912cee4b2ce8a7572a076a","Table payload: Middle A37:D51
+Columns: 1С-ДО, - Знание процессе документообоорота по клиенту и площадкам
+- Понимание специфики иностранных юридических лиц.
+- Ежедневных контроль статуса по документам и реагирования
+- Отсутвия просроченных документов, 3 уровень, 3 уровень_2
+Rows: 14
+[payload:toast_tbl_0f8b40a0f8cd33a3df90:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_0f8b40a0f8cd33a3df90"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_1353c78030605edc73e5","table","{""xlsx"": {""range"": {""max_row"": 35, ""min_row"": 1, ""a1_range"": ""A1:B35"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Senior"", ""sheet_index"": 4, ""workbook_checksum"": ""1b98fb31aff7264753a88c93df78cb382476fe7f301b173db3f3e31070f05a49""}}","622e24053fd4b04050e59e22150cf811","Table payload: Senior A1:B35
+Columns: Компетенция, Поведенченский индикатор
+Rows: 34
+[payload:toast_tbl_1353c78030605edc73e5:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_1353c78030605edc73e5"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_f17d2d268dfb63eee69c","table","{""xlsx"": {""range"": {""max_row"": 51, ""min_row"": 37, ""a1_range"": ""A37:B51"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 37, ""sheet_name"": ""Senior"", ""sheet_index"": 4, ""workbook_checksum"": ""1b98fb31aff7264753a88c93df78cb382476fe7f301b173db3f3e31070f05a49""}}","0efac72b81b5a1d96d91178ed330e03e","Table payload: Senior A37:B51
+Columns: 1С-ДО, - Знание процессе документообоорота по клиенту и площадкам
+- Понимание специфики иностранных юридических лиц.
+- Ежедневных контроль статуса по документам и реагирования
+- Отсутвия просроченных документов
+Rows: 14
+[payload:toast_tbl_f17d2d268dfb63eee69c:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_f17d2d268dfb63eee69c"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_708ac39d12a0d963f004","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 1, ""a1_range"": ""D1:E131"", ""max_column"": 5, ""min_column"": 4}, ""header_row"": 1, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","f0bd9302fd85c9a8fd17e1c958aaa976","Table payload: Грейды_NEW D1:E131
+Columns: Assistant, Assistant_2
+Rows: 130
+[payload:toast_tbl_708ac39d12a0d963f004:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_708ac39d12a0d963f004"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_bd5ed69ff91da436c838","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 1, ""a1_range"": ""G1:H131"", ""max_column"": 8, ""min_column"": 7}, ""header_row"": 1, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","b9533443ce4038a83d6b089fd34b7ac2","Table payload: Грейды_NEW G1:H131
+Columns: Junior 1, Junior 1_2
+Rows: 130
+[payload:toast_tbl_bd5ed69ff91da436c838:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_bd5ed69ff91da436c838"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_8c499e84f7967513d625","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 1, ""a1_range"": ""J1:K131"", ""max_column"": 11, ""min_column"": 10}, ""header_row"": 1, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","67c616b10e6efb57000671f31c7508e3","Table payload: Грейды_NEW J1:K131
+Columns: Junior 2, Junior 2_2
+Rows: 130
+[payload:toast_tbl_8c499e84f7967513d625:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_8c499e84f7967513d625"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_37c52d73b70e7b68d70d","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 1, ""a1_range"": ""M1:N131"", ""max_column"": 14, ""min_column"": 13}, ""header_row"": 1, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","bdccb80fc3722de36f88fd3539b828c6","Table payload: Грейды_NEW M1:N131
+Columns: Middle 1, Middle 1_2
+Rows: 130
+[payload:toast_tbl_37c52d73b70e7b68d70d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_37c52d73b70e7b68d70d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_f8be94417cc22d70de2c","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 1, ""a1_range"": ""P1:Q131"", ""max_column"": 17, ""min_column"": 16}, ""header_row"": 1, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","87f52a360585116bdcf21a17f6f00c61","Table payload: Грейды_NEW P1:Q131
+Columns: Middle 2, Middle 2_2
+Rows: 130
+[payload:toast_tbl_f8be94417cc22d70de2c:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_f8be94417cc22d70de2c"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_7817c6b913c0eec9835d","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 1, ""a1_range"": ""S1:T131"", ""max_column"": 20, ""min_column"": 19}, ""header_row"": 1, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","fcc5146742f9fce51b784b7f7c359bed","Table payload: Грейды_NEW S1:T131
+Columns: Senior 1, Senior 1_2
+Rows: 130
+[payload:toast_tbl_7817c6b913c0eec9835d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_7817c6b913c0eec9835d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_6aa497a7722320742b4c","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 1, ""a1_range"": ""V1:W131"", ""max_column"": 23, ""min_column"": 22}, ""header_row"": 1, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","78209abdb33e0600c07f10ae18d5026e","Table payload: Грейды_NEW V1:W131
+Columns: Senior 2, Senior 2_2
+Rows: 130
+[payload:toast_tbl_6aa497a7722320742b4c:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_6aa497a7722320742b4c"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_44b9ae0803ec8b754e9d","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 1, ""a1_range"": ""Y1:Z131"", ""max_column"": 26, ""min_column"": 25}, ""header_row"": 1, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","97735fb7451ec74b4c8ef5c588cd6a83","Table payload: Грейды_NEW Y1:Z131
+Columns: Group head, Group head_2
+Rows: 130
+[payload:toast_tbl_44b9ae0803ec8b754e9d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_44b9ae0803ec8b754e9d"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_fe33bbbb7b94e278b770","table","{""xlsx"": {""range"": {""max_row"": 131, ""min_row"": 2, ""a1_range"": ""A2:B131"", ""max_column"": 2, ""min_column"": 1}, ""header_row"": 2, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","4a4663d59c3bb1e451dedfc6beca73ad","Table payload: Грейды_NEW A2:B131
+Columns: Компетенция, Поведенченский индикатор
+Rows: 129
+[payload:toast_tbl_fe33bbbb7b94e278b770:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_fe33bbbb7b94e278b770"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_09cf7958d52368ee40b9","table","{""xlsx"": {""range"": {""max_row"": 53, ""min_row"": 2, ""a1_range"": ""AG2:AI53"", ""max_column"": 35, ""min_column"": 33}, ""header_row"": 2, ""sheet_name"": ""Грейды_NEW"", ""sheet_index"": 1, ""workbook_checksum"": ""cab7e9bd3574071c24c7d3f0116769ddeef263ce5aa5e611dbad88ac87b75504""}}","ba2554afc4a653253f5e81c1f6488531","Table payload: Грейды_NEW AG2:AI53
+Columns: Уровень владения компетенция (качество/скорость), Column_2, Уровень самостоятельности выполнения задачи
+Rows: 51
+[payload:toast_tbl_09cf7958d52368ee40b9:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_09cf7958d52368ee40b9"", ""occurrence_ordinal"": 0}]"
+"toast_tbl_30ae12b796c6304ac56d","table","{""xlsx"": {""range"": {""max_row"": 219, ""min_row"": 1, ""a1_range"": ""A1:D219"", ""max_column"": 4, ""min_column"": 1}, ""header_row"": 1, ""sheet_name"": ""Junior"", ""sheet_index"": 1, ""workbook_checksum"": ""12f31250dfbb1f69fd4bc3e50c66b89d82743aaba63174f0f08622758fee5267""}}","a66396fee329da90b23910373e3dcdee","Table payload: Junior A1:D219
+Columns: Компетенция, Поведенченский индикатор, Уровень самостоятельности выполнения задач, Уровень владения компетенция (качество/скорость)
+Rows: 218
+[payload:toast_tbl_30ae12b796c6304ac56d:table:0]
+","[{""kind"": ""table"", ""payload_id"": ""toast_tbl_30ae12b796c6304ac56d"", ""occurrence_ordinal"": 0}]"
