@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RecoilRoot } from "recoil";
 import { chainlitApi } from "./chainlitClient";
 import { collectChatMessages, convertMessage } from "./convertMessage";
+import { collectToolStepsByMessage } from "./executionSteps";
 import { SessionUiContext } from "./sessionUi";
 
 export type ChatMode = "fast" | "deep";
@@ -125,7 +126,25 @@ function SessionBridge({
     },
   });
 
-  const sessionUi = useMemo(() => ({ switching }), [switching]);
+  const toolStepsByMessage = useMemo(
+    () => collectToolStepsByMessage(messages),
+    [messages],
+  );
+
+  // Пока идёт задача — последний ассистентский ответ считается активным:
+  // на нём показываем лоадер и держим блок шагов раскрытым.
+  const activeMessageId = useMemo(() => {
+    if (!loading) return null;
+    for (let i = chatMessages.length - 1; i >= 0; i--) {
+      if (chatMessages[i].type === "assistant_message") return chatMessages[i].id;
+    }
+    return null;
+  }, [loading, chatMessages]);
+
+  const sessionUi = useMemo(
+    () => ({ switching, toolStepsByMessage, activeMessageId }),
+    [switching, toolStepsByMessage, activeMessageId],
+  );
 
   return (
     <SessionUiContext.Provider value={sessionUi}>
