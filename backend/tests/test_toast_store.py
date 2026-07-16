@@ -28,6 +28,20 @@ def test_discover_finds_grades_file():
     assert len(tables) == 3  # база + middle + group head
 
 
+def test_discover_handles_russian_inflection():
+    # «юристов» (вопрос) vs «юристы» (display_text) — ловится стем-волной
+    store = _store()
+
+    async def run():
+        try:
+            return await store.discover("Какие ФИО у юристов агентства?")
+        finally:
+            await store.close()
+
+    tables = asyncio.run(run())
+    assert any(t["table_id"] == "toast_tbl_d1b2c3d4e5f6a7b8c9d0" for t in tables)
+
+
 def test_discover_empty_for_unknown():
     store = _store()
 

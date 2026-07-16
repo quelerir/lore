@@ -25,7 +25,10 @@ import socketio  # python-socketio[client]
 CHAINLIT = "http://localhost:8000"
 USERNAME = "akadmin"
 PASSWORD = "admin"
-PROMPT = "Ответь одним словом: столица Франции?"
+# Вопрос по демо-данным TOAST-слоя: гоняет полный маршрут fast-режима
+# (discover -> plan_sql -> execute -> answer через Ollama).
+PROMPT = "Какие ФИО у юристов агентства?"
+PROFILE = sys.argv[1] if len(sys.argv) > 1 else "fast"
 
 
 # --- 1. SSO-логин (повторяет проверенный OAuth-флоу) -----------------------
@@ -131,7 +134,7 @@ sio.connect(
         "threadId": None,
         "userEnv": "{}",
         "clientType": "webapp",
-        "chatProfile": None,
+        "chatProfile": PROFILE,
     },
     wait_timeout=15,
 )

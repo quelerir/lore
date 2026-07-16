@@ -15,6 +15,16 @@ _RELATION = re.compile(
 )
 
 
+_BARE_TOAST = re.compile(
+    r"(?i)\b(from|join)\s+(toast_tbl_[0-9a-f]{20})\b"
+)
+
+
+def qualify_toast_tables(sql: str) -> str:
+    """Модели часто пишут toast_tbl_x без схемы — дописываем splitter_toast."""
+    return _BARE_TOAST.sub(r"\1 splitter_toast.\2", sql)
+
+
 def validate_select(sql: str) -> str | None:
     """None — можно выполнять; иначе текст отказа для LLM."""
     stripped = sql.strip().rstrip(";").strip()

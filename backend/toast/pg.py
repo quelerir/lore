@@ -9,7 +9,7 @@ from typing import Any
 
 import asyncpg
 
-from toast.guardrails import TOAST_TABLE_RE, validate_select
+from toast.guardrails import TOAST_TABLE_RE, qualify_toast_tables, validate_select
 from toast.policy import check_policy
 from toast.port import DiscoveredTable, SelectResult, TableInfo
 
@@ -53,22 +53,28 @@ class PgToastStore:
 
     async def discover(self, document_hint: str) -> list[DiscoveredTable]:
         pool = await self._acquire_pool()
-        # Discovery по нескольким словам подсказки: пробуем целиком, затем по словам.
-        hints = [document_hint, *[w for w in document_hint.split() if len(w) >= 4]]
+        # Три волны поиска: фраза целиком → слова → стемы (первые 5 символов,
+        # грубая защита от русских окончаний: «юристов» должно находить
+        # «юристы»). Останавливаемся на первой волне с результатами.
+        words = [w.strip(".,?!;:()«»\"'") for w in document_hint.split()]
+        words = [w for w in words if len(w) >= 4]
+        stems = sorted({w[:5] for w in words if len(w) > 5})
+        waves = [[document_hint], words, stems]
         seen: dict[str, DiscoveredTable] = {}
         async with pool.acquire() as conn:
-            for hint in hints:
-                rows = await conn.fetch(_DISCOVERY_SQL, hint)
-                for r in rows:
-                    seen.setdefault(
-                        r["table_id"],
-                        DiscoveredTable(
-                            source_path=r["source_path"],
-                            table_id=r["table_id"],
-                            coordinates=r["coordinates"],
-                            summary=r["summary"],
-                        ),
-                    )
+            for wave in waves:
+                for hint in wave:
+                    rows = await conn.fetch(_DISCOVERY_SQL, hint)
+                    for r in rows:
+                        seen.setdefault(
+                            r["table_id"],
+                            DiscoveredTable(
+                                source_path=r["source_path"],
+                                table_id=r["table_id"],
+                                coordinates=r["coordinates"],
+                                summary=r["summary"],
+                            ),
+                        )
                 if seen:
                     break
         return list(seen.values())
@@ -101,6 +107,7 @@ class PgToastStore:
         )
 
     async def run_select(self, sql: str) -> SelectResult | str:
+        sql = qualify_toast_tables(sql)
         if refusal := validate_select(sql):
             return refusal
         if refusal := check_policy(sql):

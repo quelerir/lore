@@ -45,8 +45,11 @@ def build_fast_agent(model: BaseChatModel, store: ToastStorePort) -> CompiledSta
         )
         if state.get("sql_error"):
             prompt += f"\n\nПредыдущий SQL не выполнился: {state['sql_error']}\nИсправь запрос."
+        # Тег internal: handle_message не выводит эти токены пользователю
+        # (langgraph stream_mode="messages" отдаёт токены и из ainvoke).
         reply = await model.ainvoke(
-            [SystemMessage(FAST_PLAN_PROMPT), HumanMessage(prompt)]
+            [SystemMessage(FAST_PLAN_PROMPT), HumanMessage(prompt)],
+            config={"tags": ["internal"]},
         )
         sql = str(reply.content).strip().strip("`")
         if sql.lower().startswith("sql"):

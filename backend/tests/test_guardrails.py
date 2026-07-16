@@ -39,6 +39,19 @@ def test_bad_table_id_rejected():
     assert validate_select("SELECT * FROM splitter_toast.toast_tbl_zzzz") is not None
 
 
+def test_bare_toast_tables_qualified():
+    from toast.guardrails import qualify_toast_tables
+
+    sql = ("SELECT t.column_1 FROM toast_tbl_d1b2c3d4e5f6a7b8c9d0 t "
+           "JOIN toast_tbl_a1b2c3d4e5f6a7b8c9d0 b USING (_splitter_source_row)")
+    fixed = qualify_toast_tables(sql)
+    assert "FROM splitter_toast.toast_tbl_d1b2c3d4e5f6a7b8c9d0" in fixed
+    assert "JOIN splitter_toast.toast_tbl_a1b2c3d4e5f6a7b8c9d0" in fixed
+    # уже квалифицированные не трогаем
+    ok = "SELECT 1 FROM splitter_toast.toast_tbl_a1b2c3d4e5f6a7b8c9d0"
+    assert qualify_toast_tables(ok) == ok
+
+
 def test_pii_table_gated():
     sql = "SELECT vacation_start FROM splitter_toast.toast_tbl_e1b2c3d4e5f6a7b8c9d0"
     assert check_policy(sql) is not None

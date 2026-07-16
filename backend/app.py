@@ -179,6 +179,10 @@ async def handle_message(
             final_state = payload
             continue
         chunk, _meta = payload
+        # Служебные LLM-вызовы (планирование SQL) помечены тегом internal —
+        # их токены пользователю не показываем.
+        if "internal" in (_meta.get("tags") or []):
+            continue
         # Only assistant text chunks carry a non-empty string content; tool-call
         # chunks have empty content and are skipped.
         if (
