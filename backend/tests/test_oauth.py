@@ -4,16 +4,12 @@ import importlib
 import chainlit as cl
 
 
-def _app(monkeypatch):
-    monkeypatch.setenv("CHAINLIT_JWT_SECRET", "x")
-    monkeypatch.setenv("CHAINLIT_JWT_ISSUER", "datacraft")
-    monkeypatch.setenv("CHAINLIT_JWT_AUDIENCE", "chainlit")
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://u:p@localhost:5432/db")
+def _app():
     return importlib.import_module("app")
 
 
-def test_oauth_user_maps_authentik_userinfo(monkeypatch):
-    app = _app(monkeypatch)
+def test_oauth_user_maps_authentik_userinfo():
+    app = _app()
     default = cl.User(identifier="alice")
     raw = {
         "sub": "alice",
@@ -29,8 +25,8 @@ def test_oauth_user_maps_authentik_userinfo(monkeypatch):
     assert user.metadata["name"] == "Alice Doe"
 
 
-def test_oauth_user_falls_back_to_default_identifier(monkeypatch):
-    app = _app(monkeypatch)
+def test_oauth_user_falls_back_to_default_identifier():
+    app = _app()
     default = cl.User(identifier="fallback-id")
     user = asyncio.run(app.oauth_user("generic", "token", {}, default))
     assert user is not None

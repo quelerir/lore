@@ -1,4 +1,3 @@
-import os
 from typing import Any, Optional
 
 import chainlit as cl
@@ -18,6 +17,7 @@ from sqlalchemy.pool import NullPool
 
 from agents import PROFILE_TO_MODE, Mode, build_agent
 from auth import verify_ticket
+from config import get_settings
 from toast.pg import PgToastStore
 
 # ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ class _NullPoolSQLAlchemyDataLayer(SQLAlchemyDataLayer):
 @cl.data_layer
 def get_data_layer() -> _NullPoolSQLAlchemyDataLayer:
     return _NullPoolSQLAlchemyDataLayer(
-        conninfo=os.environ["DATABASE_URL"],
+        conninfo=get_settings().database_url,
     )
 
 
@@ -63,7 +63,7 @@ def get_toast_store() -> Optional[PgToastStore]:
     Без TOAST_DATABASE_URL сервис работает как раньше (только calculator).
     """
     global _toast_store
-    dsn = os.environ.get("TOAST_DATABASE_URL")
+    dsn = get_settings().toast_database_url
     if not dsn:
         return None
     if _toast_store is None:
@@ -139,7 +139,7 @@ async def oauth_user(
 # cl.oauth_callback raises at import time when no oauth provider is configured,
 # so register only when the generic provider env is present. Without it the
 # service still runs in ticket-only (header auth) mode.
-if os.environ.get("OAUTH_GENERIC_CLIENT_ID"):
+if get_settings().oauth_generic_client_id:
     cl.oauth_callback(oauth_user)
 
 
