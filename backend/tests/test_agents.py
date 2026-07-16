@@ -122,3 +122,29 @@ def test_build_model_openrouter_requires_key(monkeypatch):
     get_settings.cache_clear()
     with pytest.raises(RuntimeError):
         build_model()
+
+
+def test_build_sql_model_openrouter(monkeypatch):
+    from langchain_openai import ChatOpenAI
+
+    from agents.base import build_sql_model
+    from config import get_settings
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    monkeypatch.setenv("SQL_MODEL", "anthropic/claude-sonnet-4.6")
+    get_settings.cache_clear()
+    m = build_sql_model()
+    assert isinstance(m, ChatOpenAI)
+    assert "openrouter.ai" in str(m.openai_api_base)
+
+
+def test_build_sql_model_requires_key(monkeypatch):
+    import pytest
+
+    from agents.base import build_sql_model
+    from config import get_settings
+
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    get_settings.cache_clear()
+    with pytest.raises(RuntimeError):
+        build_sql_model()

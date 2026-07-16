@@ -55,7 +55,16 @@ class Settings(BaseSettings):
         default="http://ollama:11434", validation_alias="OLLAMA_BASE_URL"
     )
 
-    # --- TOAST-таблицы (читает app.py; фича-флаг) ---
+    # --- SQL-инструмент (отдельная «умная» модель через OpenRouter) ---
+    sql_model: str = Field(
+        default="anthropic/claude-sonnet-4.6", validation_alias="SQL_MODEL"
+    )
+    sql_max_queries: int = Field(default=3, validation_alias="SQL_MAX_QUERIES")
+    sql_candidates_per_round: int = Field(
+        default=2, validation_alias="SQL_CANDIDATES_PER_ROUND"
+    )
+
+    # --- TOAST-таблицы (DSN для SQL-инструмента; фича-флаг) ---
     toast_database_url: str | None = Field(
         default=None, validation_alias="TOAST_DATABASE_URL"
     )

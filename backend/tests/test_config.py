@@ -58,3 +58,12 @@ def test_validation_alias_maps_env(monkeypatch):
     s = Settings(_env_file=None)
     assert s.model_provider is ModelProvider.OLLAMA
     assert s.openrouter_api_key == "key-123"
+
+
+def test_sql_settings_defaults(monkeypatch):
+    for k, v in BASE.items():
+        monkeypatch.setenv(k, v)
+    s = Settings(_env_file=None)
+    assert s.sql_max_queries == 3
+    assert s.sql_candidates_per_round == 2
+    assert s.sql_model  # непустой дефолт

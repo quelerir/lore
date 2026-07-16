@@ -31,6 +31,20 @@ def build_model() -> BaseChatModel:
     )
 
 
+def build_sql_model(temperature: float = 0.0) -> BaseChatModel:
+    """Модель SQL-инструмента (OpenRouter). Temperature варьируется для
+    разнообразия кандидатов при генерации."""
+    s = get_settings()
+    if not s.openrouter_api_key:
+        raise RuntimeError("OPENROUTER_API_KEY обязателен для sql_model")
+    return ChatOpenAI(
+        model=s.sql_model,
+        base_url=s.openrouter_base_url,
+        api_key=s.openrouter_api_key,
+        temperature=temperature,
+    )
+
+
 SYSTEM_PROMPT = (
     "Ты — ассистент datacraft. Отвечай на вопросы пользователя ясно и "
     "кратко, по-русски. Для любых вычислений используй инструмент "
