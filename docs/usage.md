@@ -22,8 +22,8 @@
 ## Работа с чатом
 
 Чат работает с реальным бэкендом: сообщения уходят в Chainlit по
-socket.io, ответы агента (Ollama) стримятся токен за токеном, история
-хранится в Postgres.
+socket.io, ответы агента (модель из OpenRouter по умолчанию) стримятся
+токен за токеном, история хранится в Postgres.
 
 - **Новый чат** — кнопка в сайдбаре; тред создаётся на сервере с первым
   сообщением. Активный чат выбирается кликом — история подгружается из
@@ -35,9 +35,11 @@ socket.io, ответы агента (Ollama) стримятся токен за
 - Перезагрузка страницы и вход с другого устройства сохраняют все чаты —
   они привязаны к пользователю authentik.
 
-Для ответов агента на хосте должна работать Ollama с моделью из
-`OLLAMA_MODEL` (по умолчанию `gemma3`): если модель не скачана —
-`ollama pull gemma3`, либо укажите свою в `.env`.
+Для ответов агента при провайдере по умолчанию нужен `OPENROUTER_API_KEY`
+в `.env` (модель — `OPENROUTER_MODEL`, по умолчанию
+`anthropic/claude-haiku-4.5`). При `MODEL_PROVIDER=ollama` вместо этого на
+хосте должна работать Ollama с моделью из `OLLAMA_MODEL` (по умолчанию
+`gemma3`): если модель не скачана — `ollama pull gemma3`.
 
 ## Режимы ассистента
 
@@ -52,10 +54,12 @@ socket.io, ответы агента (Ollama) стримятся токен за
 
 Обоим режимам доступен калькулятор — попросите что-нибудь посчитать:
 «Сколько будет (17 + 3) * 4 / 2?» — и модель вызовет инструмент вместо
-счёта в уме.
+счёта в уме. Если задан `TOAST_DATABASE_URL`, доступен и
+`query_document_tables` — вопросы про сотрудников, грейды и документы.
 
 Прогон eval-набора: `python3 infra/eval-agents.py`
-(нужны запущенный стек и Ollama).
+(нужен запущенный стек и доступ к модели — `OPENROUTER_API_KEY` либо
+Ollama при `MODEL_PROVIDER=ollama`).
 
 ## Управление пользователями (authentik)
 
@@ -110,13 +114,18 @@ npm test             # юнит-тесты (vitest)
 Чтобы dev-сервер ходил в бэкенд, добавьте origin `http://localhost:5173`
 в `allow_origins` (`backend/.chainlit/config.toml`) и перезапустите backend.
 
-Бэкенд без docker (Python ≥ 3.13; нужны Postgres, authentik и Ollama —
-проще оставить их в compose):
+Бэкенд без docker (Python ≥ 3.13; Postgres и authentik проще оставить в
+compose). Модель — OpenRouter по ключу, либо Ollama при
+`MODEL_PROVIDER=ollama`. Обязательные для config переменные, которых нет в
+дефолтах, задайте в окружении или `.env`/`.env.local`:
 
 ```bash
 cd backend
 pip install -e ".[dev]"
 DATABASE_URL=postgresql+asyncpg://chainlit:chainlit@localhost:5432/chainlit \
+CHAINLIT_JWT_SECRET=dev-only-secret-change-me-32-bytes! \
+CHAINLIT_JWT_AUDIENCE=chainlit CHAINLIT_JWT_ISSUER=datacraft \
+OPENROUTER_API_KEY=sk-or-... \
   chainlit run app.py --port 8000
 ```
 

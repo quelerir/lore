@@ -1,7 +1,8 @@
 # lore — ИИ-чат (React + Chainlit)
 
 Полноценный docker-compose проект: React-фронтенд чата и Chainlit-бэкенд
-(deepagents + Ollama) с JWT-аутентификацией и хранением истории в Postgres.
+(langgraph/deepagents поверх OpenRouter, с Ollama-фолбэком) с
+JWT/SSO-аутентификацией и хранением истории в Postgres.
 
 ## Структура
 
@@ -16,7 +17,9 @@
 └── backend/              # Chainlit-сервис
     ├── Dockerfile
     ├── app.py            # обработчики Chainlit (auth, data layer, on_message)
-    ├── agent.py          # build_agent() — deepagent поверх Ollama
+    ├── config.py         # единый реестр переменных окружения (pydantic-settings)
+    ├── agents/           # build_agent() — fast/deep режимы, выбор модели, инструменты
+    ├── toast/            # доступ к TOAST-таблицам (query_document_tables)
     ├── auth.py           # verify_ticket() — проверка JWT (HS256)
     └── init/schema.sql   # схема Postgres data layer
 ```
@@ -32,11 +35,12 @@
 
 ## Быстрый старт
 
-Ollama не входит в compose — запусти её на хосте:
+По умолчанию модель берётся из OpenRouter — нужен только API-ключ.
+Скопируй шаблон и впиши ключ:
 
 ```bash
-ollama serve        # если ещё не запущена
-ollama pull gemma3
+cp .env.example .env
+# в .env: OPENROUTER_API_KEY=sk-or-...
 ```
 
 Затем весь проект:
@@ -44,6 +48,10 @@ ollama pull gemma3
 ```bash
 docker compose up -d --build
 ```
+
+Ollama нужна, только если переключиться на локальный фолбэк
+(`MODEL_PROVIDER=ollama`) — тогда запусти её на хосте (`ollama serve`,
+`ollama pull gemma3`); в compose она не входит.
 
 | Сервис      | Адрес                  |
 |-------------|------------------------|
@@ -54,13 +62,23 @@ docker compose up -d --build
 
 ## Настройка
 
-Все переменные имеют рабочие дефолты в `docker-compose.yml`; переопределяются
-через `.env` в корне (см. `.env.example`):
+Все переменные имеют рабочие дефолты в `docker-compose.yml` (кроме
+`OPENROUTER_API_KEY` — он пустой); переопределяются через `.env` в корне
+(см. `.env.example`):
 
+- `OPENROUTER_API_KEY` — **единственное обязательное** для ответов агента
+  при провайдере по умолчанию (`MODEL_PROVIDER=openrouter`). Без ключа
+  бэкенд поднимется, но первый же запрос упадёт с ошибкой.
+- `MODEL_PROVIDER` — `openrouter` (по умолчанию) или `ollama` (локальный
+  фолбэк). `OPENROUTER_MODEL` / `OPENROUTER_BASE_URL` и `OLLAMA_MODEL` /
+  `OLLAMA_BASE_URL` — модель и адрес соответствующего провайдера.
+- `TOAST_DATABASE_URL` — read-only DSN к внешним TOAST-таблицам
+  (`loreagent_test`). Пусто — агенту доступен только калькулятор; задан —
+  добавляется инструмент `query_document_tables` (таблицы сотрудников,
+  грейдов, документов). Compose эту БД не поднимает.
 - `CHAINLIT_PUBLIC_URL` — адрес бэкенда, каким его видит браузер
   (build-time настройка Vite: после смены пересобери фронтенд —
   `docker compose up -d --build frontend`).
-- `OLLAMA_BASE_URL`, `OLLAMA_MODEL` — где искать Ollama и какую модель брать.
 - `CHAINLIT_JWT_SECRET` / `AUDIENCE` / `ISSUER` — параметры проверки
   JWT-тикетов; должны совпадать со стороной, которая тикеты выдаёт.
   Дефолтный секрет годится только для локальной разработки.
@@ -97,22 +115,22 @@ CORS: разрешённые origin'ы фронтенда задаются в
 - **Умный** (`deep`) — deepagents: сам планирует шаги и вызовы
   инструментов. Для сложных задач (медленнее).
 
-Оба режима используют общий набор простых инструментов
-(`backend/agents/tools.py`): сейчас это калькулятор (безопасная
-арифметика через AST). Подключение реального хранилища документов
-(TOAST-слой) — следующий этап; его прототип сохранён в истории git
-(см. `docs/superpowers/specs/2026-07-15-campaign-agents-design.md`).
-Прогон eval-кейсов: `python3 infra/eval-agents.py`.
+Оба режима используют общий набор инструментов
+(`backend/agents/tools.py`): калькулятор (безопасная арифметика через
+AST) и — когда задан `TOAST_DATABASE_URL` — `query_document_tables`,
+read-only доступ к TOAST-таблицам (`loreagent_test`: сотрудники, грейды,
+документы) через `backend/toast/`. Без `TOAST_DATABASE_URL` доступен
+только калькулятор. Прогон eval-кейсов: `python3 infra/eval-agents.py`.
 
 ## Состояние интеграции
 
 Полный цикл работает end-to-end: SSO-логин через authentik, чат с агентом
 по родному socket.io-протоколу Chainlit (`@chainlit/react-client` +
-runtime `@assistant-ui/react`), стриминг ответов Ollama, серверные треды
-(история в Postgres, возобновление после перезагрузки, переименование и
-удаление), два режима агента над TOAST-слоем. Для ответов агента нужна
-запущенная на хосте Ollama с моделью `OLLAMA_MODEL` (по умолчанию
-`gemma3`).
+runtime `@assistant-ui/react`), стриминг ответов выбранной модели,
+серверные треды (история в Postgres, возобновление после перезагрузки,
+переименование и удаление), два режима агента над TOAST-слоем. Для ответов
+агента нужен `OPENROUTER_API_KEY` (провайдер по умолчанию) либо
+запущенная на хосте Ollama при `MODEL_PROVIDER=ollama`.
 
 ## Разработка без Docker
 
@@ -124,7 +142,9 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Бэкенд (Python ≥ 3.13, нужны Postgres и Ollama):
+Бэкенд (Python ≥ 3.13; нужны Postgres и `OPENROUTER_API_KEY`, либо Ollama
+при `MODEL_PROVIDER=ollama`). Без compose обязательны ещё `DATABASE_URL` и
+`CHAINLIT_JWT_*` — задай их в `.env`/`.env.local` или в окружении:
 
 ```bash
 cd backend

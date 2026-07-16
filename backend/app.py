@@ -18,7 +18,6 @@ from sqlalchemy.pool import NullPool
 from agents import PROFILE_TO_MODE, Mode, build_agent
 from auth import verify_ticket
 from config import get_settings
-from toast.pg import PgToastStore
 
 # ---------------------------------------------------------------------------
 # Data layer – SQLAlchemyDataLayer subclass that forces NullPool.
@@ -54,23 +53,6 @@ def get_data_layer() -> _NullPoolSQLAlchemyDataLayer:
     )
 
 
-_toast_store: Optional[PgToastStore] = None
-
-
-def get_toast_store() -> Optional[PgToastStore]:
-    """Ленивый синглтон подключения к TOAST-таблицам loreagent_test.
-
-    Без TOAST_DATABASE_URL сервис работает как раньше (только calculator).
-    """
-    global _toast_store
-    dsn = get_settings().toast_database_url
-    if not dsn:
-        return None
-    if _toast_store is None:
-        _toast_store = PgToastStore(dsn)
-    return _toast_store
-
-
 @cl.set_chat_profiles
 async def chat_profiles() -> list[cl.ChatProfile]:
     return [
@@ -79,8 +61,7 @@ async def chat_profiles() -> list[cl.ChatProfile]:
             display_name="Быстрый",
             markdown_description=(
                 "Фиксированный langgraph-маршрут с одним циклом "
-                "инструментов (калькулятор, таблицы документов). "
-                "Предсказуем и быстр."
+                "инструментов (калькулятор). Предсказуем и быстр."
             ),
             default=True,
         ),
@@ -89,8 +70,7 @@ async def chat_profiles() -> list[cl.ChatProfile]:
             display_name="Умный",
             markdown_description=(
                 "deepagents: сам планирует шаги и вызовы инструментов "
-                "(калькулятор, таблицы документов). Для сложных задач "
-                "(медленнее)."
+                "(калькулятор). Для сложных задач (медленнее)."
             ),
         ),
     ]
@@ -99,7 +79,7 @@ async def chat_profiles() -> list[cl.ChatProfile]:
 def _build_session_agent() -> CompiledStateGraph:
     profile = cl.user_session.get("chat_profile")
     mode = PROFILE_TO_MODE.get(profile or "", Mode.FAST)
-    return build_agent(mode, store=get_toast_store())
+    return build_agent(mode)
 
 
 @cl.header_auth_callback

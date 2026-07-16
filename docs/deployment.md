@@ -11,7 +11,8 @@
    ├────:8000──▶ backend (Chainlit + deepagents)
    │                 ├──▶ chainlit-db (Postgres 16, история чатов)
    │                 ├──▶ authentik-server:9000 (обмен code→token, userinfo)
-   │                 └──▶ Ollama на хосте :11434 (LLM)
+   │                 ├──▶ OpenRouter API (LLM по умолчанию) / Ollama :11434 (фолбэк)
+   │                 └──▶ TOAST-БД loreagent_test (опц., query_document_tables)
    │
    └────:9100──▶ authentik-server (IdP, SSO)
                      ├──▶ authentik-db (Postgres 16)
@@ -33,7 +34,11 @@ authentik-init — one-shot контейнер: создаёт OAuth2-прова
 
 - Docker с Compose v2 (проверено на Docker 29 / Compose v5).
 - ~4 ГБ свободной RAM для стека (authentik — самый тяжёлый).
-- [Ollama](https://ollama.com) на хосте — **не входит в compose**:
+- **Ключ OpenRouter** (`OPENROUTER_API_KEY`) — провайдер модели по
+  умолчанию. Запиши его в `.env` перед стартом (без него бэкенд
+  поднимется, но запросы к агенту будут падать).
+- [Ollama](https://ollama.com) на хосте нужна, **только** если выбран
+  локальный фолбэк `MODEL_PROVIDER=ollama` (в compose не входит):
 
 ```bash
 ollama serve        # если ещё не запущена
@@ -60,8 +65,10 @@ docker compose logs authentik-init     # "authentik setup complete!"
 
 ## Конфигурация
 
-Все переменные имеют рабочие dev-дефолты в `docker-compose.yml`.
-Переопределение — через `.env` в корне (`cp .env.example .env`).
+Почти все переменные имеют рабочие dev-дефолты в `docker-compose.yml` —
+исключение `OPENROUTER_API_KEY` (пустой, задать обязательно при провайдере
+по умолчанию). Переопределение — через `.env` в корне
+(`cp .env.example .env`).
 
 | Переменная | Дефолт | Смысл |
 |---|---|---|
@@ -71,8 +78,13 @@ docker compose logs authentik-init     # "authentik setup complete!"
 | `CHAINLIT_PUBLIC_URL` | `http://localhost:8000` | URL бэкенда, каким его видит браузер; из него же строится OAuth redirect_uri |
 | `AUTHENTIK_PUBLIC_URL` | `http://localhost:9100` | browser-facing URL authentik (согласован с `AUTHENTIK_PORT`) |
 | `CHAT_PROVIDER` | `mock` | провайдер чата SPA: `mock` \| `chainlit` (build-time: пересобрать frontend) |
-| `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | адрес Ollama из контейнера |
+| `OPENROUTER_API_KEY` | — (пусто) | ключ OpenRouter; **обязателен** при `MODEL_PROVIDER=openrouter` |
+| `MODEL_PROVIDER` | `openrouter` | провайдер модели: `openrouter` (по умолчанию) \| `ollama` (фолбэк) |
+| `OPENROUTER_MODEL` | `anthropic/claude-haiku-4.5` | модель OpenRouter |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | эндпоинт OpenRouter |
+| `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | адрес Ollama из контейнера (только при `MODEL_PROVIDER=ollama`) |
 | `OLLAMA_MODEL` | `gemma3` | модель Ollama |
+| `TOAST_DATABASE_URL` | — (пусто) | read-only DSN к TOAST-таблицам `loreagent_test`; пусто — только калькулятор, задан — инструмент `query_document_tables` |
 | `AUTHENTIK_SECRET_KEY` | dev-значение | секрет authentik (сессии, подписи) |
 | `AUTHENTIK_BOOTSTRAP_PASSWORD` | `admin` | пароль `akadmin`; применяется только при первой инициализации БД authentik |
 | `AUTHENTIK_BOOTSTRAP_TOKEN` | dev-значение | admin API-токен для bootstrap-скрипта; тоже сеется однократно |
@@ -164,6 +176,7 @@ Dev-дефолты рассчитаны на локальную машину. Ч
 | `authentik-init` упал с 403 | bootstrap-токен не принят: том `authentik-db-data` был создан со старым `AUTHENTIK_BOOTSTRAP_TOKEN`; либо вернуть старое значение, либо выдать токен в админке, либо `down -v` |
 | Popup логина: `redirect_uri mismatch` | `CHAINLIT_PUBLIC_URL` не совпадает с redirect URI в authentik — поправить в админке (Providers) |
 | После логина SPA не «отлипает» (401 на `/user`) | cookie не дошла: проверить, что фронтенд-origin есть в `allow_origins`, а при HTTPS/другом домене — `CHAINLIT_COOKIE_SAMESITE=none` |
-| Ответы чата не приходят (после включения `chainlit`-провайдера) | Ollama недоступна: `curl http://localhost:11434/api/tags` на хосте; проверить `OLLAMA_BASE_URL`, модель `ollama pull gemma3` |
+| Ответы чата не приходят (после включения `chainlit`-провайдера) | При `MODEL_PROVIDER=openrouter`: не задан/неверен `OPENROUTER_API_KEY` — смотреть `docker compose logs backend`. При `MODEL_PROVIDER=ollama`: Ollama недоступна — `curl http://localhost:11434/api/tags` на хосте, проверить `OLLAMA_BASE_URL`, `ollama pull gemma3` |
+| `query_document_tables` не работает / агент говорит, что таблиц нет | не задан `TOAST_DATABASE_URL` (тогда доступен только калькулятор) либо DSN недоступен из контейнера |
 | Порт 9100/3000/8000 занят | поменять `AUTHENTIK_PORT` (+ `AUTHENTIK_PUBLIC_URL`), `FRONTEND_PORT`, `BACKEND_PORT` (+ `CHAINLIT_PUBLIC_URL`) в `.env` |
 | `backend` перезапускается с `ValueError ... oauth provider` | заданы не все `OAUTH_GENERIC_*` (частичная конфигурация); задать все или убрать `OAUTH_GENERIC_CLIENT_ID` |

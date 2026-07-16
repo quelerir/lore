@@ -1,11 +1,11 @@
-"""Общие фейки для тестов агентов и субагента."""
+"""Общие фейки для тестов агентов и SQL-графа."""
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.outputs import ChatGeneration, ChatResult
 
 
 class ScriptedChatModel(BaseChatModel):
-    """Отдаёт заранее заданные AIMessage (с tool_calls) по одному на вызов.
+    """Отдаёт заранее заданные AIMessage по одному на вызов.
 
     Не реализует _stream: BaseChatModel.astream отдаст ответ одним чанком —
     именно так tool_calls доезжают до графа без потерь.
@@ -24,23 +24,3 @@ class ScriptedChatModel(BaseChatModel):
 
     def bind_tools(self, tools, **kwargs):
         return self  # tool_calls зашиты в responses
-
-
-class FakeToastStore:
-    """ToastStorePort на заранее заданных данных; пишет выполненные SQL."""
-
-    def __init__(self, tables=None, infos=None, select_results=None):
-        self.tables = tables or []
-        self.infos = infos or {}
-        self.select_results = list(select_results or [])
-        self.executed: list[str] = []
-
-    async def discover(self, document_hint):
-        return self.tables
-
-    async def inspect(self, table_id):
-        return self.infos[table_id]
-
-    async def run_select(self, sql):
-        self.executed.append(sql)
-        return self.select_results.pop(0)

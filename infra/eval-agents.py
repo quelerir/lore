@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Eval двух режимов агента (калькулятор + таблицы документов).
+"""Eval двух режимов агента (простые инструменты: калькулятор).
 
-Запуск при работающем стеке (нужны OPENROUTER_API_KEY и
-TOAST_DATABASE_URL в окружении backend):
+Запуск при работающем стеке:
 
     python3 infra/eval-agents.py
 
@@ -31,39 +30,6 @@ CASES = [
         "id": "chat-001",
         "question": "Столица Франции? Ответь одним словом.",
         "must_any": [["париж", "paris"]],
-        "must_not": [],
-    },
-    {
-        # toast-grade-001: multi-table JOIN по _splitter_source_row
-        "id": "toast-grade-001",
-        "question": (
-            "Какая разница между миддлом и ведущим менеджером (Group Head) "
-            "в отделе контекстной рекламы?"
-        ),
-        "must_any": [
-            ["5"],  # уровень Group Head почти по всему профилю
-            ["конкурентн", "менторств", "маркетплейс", "коллтрекинг", "google ads"],
-        ],
-        "must_not": ["матрицы нет", "нет формальной грейдовой"],
-    },
-    {
-        # toast-mobile-001: discovery файла + агрегация одной таблицы
-        "id": "toast-mobile-001",
-        "question": "Чем занимается отдел mobile marketing? Что в него входит?",
-        "must_any": [
-            ["appsflyer", "adjust", "appmetrica", "mmp"],
-            ["in-app", "источник", "закупк"],
-        ],
-        "must_not": ["нет данных об отделе", "документа с описанием отдела нет"],
-    },
-    {
-        # toast-abstain-001: no-table-answer, не выдумывать SQL
-        "id": "toast-abstain-001",
-        "question": (
-            "Сколько следов дают за активности и как получить "
-            "фирменную толстовку A.Store?"
-        ),
-        "must_any": [["нет", "не найд", "отсутств", "no-table"]],
         "must_not": [],
     },
 ]
@@ -101,7 +67,7 @@ def main() -> None:
             if not ok:
                 print(f"       проблемы: {problems}")
                 print(f"       ответ: {answer[:300]!r}")
-    print(f"\nEVAL: {passed}/{total} passed")  # 2 режима × 6 кейсов = 12
+    print(f"\nEVAL: {passed}/{total} passed")  # 2 режима × 3 кейса = 6
 
 
 if __name__ == "__main__":
