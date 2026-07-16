@@ -5,6 +5,8 @@ import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { copyText } from "../../chat/copyText";
+import { useSessionUi } from "../../chat/sessionUi";
+import ExecutionSteps from "../ExecutionSteps/ExecutionSteps";
 import styles from "./AssistantMessage.module.css";
 
 const REMARK_PLUGINS = [remarkGfm, remarkBreaks];
@@ -26,7 +28,10 @@ export default function AssistantMessage() {
       .map((part) => ("text" in part ? part.text : ""))
       .join("\n"),
   );
-  const isRunning = useMessage((m) => m.status?.type === "running");
+  const id = useMessage((m) => m.id);
+  const { toolStepsByMessage, activeMessageId } = useSessionUi();
+  const steps = toolStepsByMessage.get(id) ?? [];
+  const isActive = id === activeMessageId;
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -40,10 +45,11 @@ export default function AssistantMessage() {
   return (
     <div className={styles.row}>
       <div className={styles.content}>
+        <ExecutionSteps steps={steps} running={isActive} />
         <div className={styles.bubble}>
           {text ? (
             <Markdown remarkPlugins={REMARK_PLUGINS}>{text}</Markdown>
-          ) : isRunning ? (
+          ) : isActive ? (
             <TypingIndicator />
           ) : null}
         </div>
@@ -53,7 +59,7 @@ export default function AssistantMessage() {
             onClick={() => void handleCopy()}
             aria-label={isCopied ? "Скопировано" : "Копировать ответ"}
             title={isCopied ? "Скопировано" : "Копировать"}
-            disabled={isRunning}
+            disabled={isActive}
           >
             {isCopied ? <Check size={16} /> : <Copy size={16} />}
           </button>
