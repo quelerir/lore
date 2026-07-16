@@ -1,32 +1,10 @@
 import asyncio
 
 import pytest
-from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.outputs import ChatGeneration, ChatResult
 
-
-class ScriptedChatModel(BaseChatModel):
-    """Отдаёт заранее заданные AIMessage (с tool_calls) по одному на вызов.
-
-    Не реализует _stream: BaseChatModel.astream отдаст ответ одним чанком —
-    именно так tool_calls доезжают до графа без потерь.
-    """
-
-    responses: list
-
-    @property
-    def _llm_type(self) -> str:
-        return "scripted"
-
-    def _generate(self, messages, stop=None, run_manager=None, **kwargs):
-        return ChatResult(
-            generations=[ChatGeneration(message=self.responses.pop(0))]
-        )
-
-    def bind_tools(self, tools, **kwargs):
-        return self  # tool_calls зашиты в responses
+from fakes import ScriptedChatModel
 
 from agents import Mode, PROFILE_TO_MODE, build_agent
 from agents.fast import build_fast_agent
