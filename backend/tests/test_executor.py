@@ -3,8 +3,22 @@ import os
 
 import pytest
 
-DSN = os.environ.get("TOAST_DATABASE_URL")
-pytestmark = pytest.mark.skipif(not DSN, reason="TOAST_DATABASE_URL not set")
+
+def _dsn() -> str | None:
+    host = os.environ.get("TOAST_DB_HOST")
+    user = os.environ.get("TOAST_DB_USER")
+    password = os.environ.get("TOAST_DB_PASSWORD")
+    name = os.environ.get("TOAST_DB_NAME")
+    if not all([host, user, password, name]):
+        return None
+    from config import build_dsn
+
+    port = int(os.environ.get("TOAST_DB_PORT", "5432"))
+    return build_dsn("postgresql", user, password, host, port, name)
+
+
+DSN = _dsn()
+pytestmark = pytest.mark.skipif(not DSN, reason="TOAST_DB_* not set")
 
 LEGAL = "toast_tbl_ec48a6d52d16ab405f95"
 

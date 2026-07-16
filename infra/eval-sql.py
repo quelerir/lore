@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Eval SQL-инструмента на захардкоженных чанках/таблицах из отчёта.
 
-Нужны TOAST_DATABASE_URL и OPENROUTER_API_KEY в окружении. Диагностика,
-не CI-гейт: exit 0 всегда.
+Нужны TOAST_DB_* (host/port/user/password/name) и OPENROUTER_API_KEY в
+окружении. Диагностика, не CI-гейт: exit 0 всегда.
 
 Запуск: cd backend && uv run python ../infra/eval-sql.py
 """
@@ -14,9 +14,20 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
 from agents.base import build_sql_model  # noqa: E402
-from config import get_settings  # noqa: E402
+from config import build_dsn, get_settings  # noqa: E402
 from toast.executor import PgExecutor  # noqa: E402
 from toast.sql_tool import run_sql_tool  # noqa: E402
+
+
+def _toast_dsn() -> str | None:
+    host = os.environ.get("TOAST_DB_HOST")
+    user = os.environ.get("TOAST_DB_USER")
+    password = os.environ.get("TOAST_DB_PASSWORD")
+    name = os.environ.get("TOAST_DB_NAME")
+    if not all([host, user, password, name]):
+        return None
+    port = int(os.environ.get("TOAST_DB_PORT", "5432"))
+    return build_dsn("postgresql", user, password, host, port, name)
 
 # desc_full — реальный display_text из sqls/second_sql.csv (сокращённо).
 CASES = [
@@ -58,9 +69,9 @@ def check(answer: str, case: dict) -> tuple[bool, list[str]]:
 async def main() -> None:
     # Гейт по env ДО get_settings(): в голой оболочке нет обязательных полей
     # стека (DATABASE_URL/JWT), и Settings() упал бы раньше SKIP.
-    dsn = os.environ.get("TOAST_DATABASE_URL")
+    dsn = _toast_dsn()
     if not dsn or not os.environ.get("OPENROUTER_API_KEY"):
-        print("SKIP: нужны TOAST_DATABASE_URL и OPENROUTER_API_KEY")
+        print("SKIP: нужны TOAST_DB_* и OPENROUTER_API_KEY")
         return
     s = get_settings()
     exe = PgExecutor(dsn)
