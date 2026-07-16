@@ -15,7 +15,7 @@ services:
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://chainlit:chainlit@chainlit-db:5432/chainlit
+      DATABASE_URL: postgresql+asyncpg://${CHAINLIT_DB_USER:-chainlit}:${CHAINLIT_DB_PASSWORD:-chainlit}@chainlit-db:5432/${CHAINLIT_DB_NAME:-chainlit}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3}
       # Секрет собственных сессий Chainlit (обязателен при включённой auth).
@@ -32,8 +32,8 @@ services:
       OAUTH_GENERIC_AUTH_URL: ${AUTHENTIK_PUBLIC_URL:-http://localhost:9100}/application/o/authorize/
       OAUTH_GENERIC_TOKEN_URL: http://authentik-server:9000/application/o/token/
       OAUTH_GENERIC_USER_INFO_URL: http://authentik-server:9000/application/o/userinfo/
-      OAUTH_GENERIC_SCOPES: openid profile email
-      OAUTH_GENERIC_USER_IDENTIFIER: preferred_username
+      OAUTH_GENERIC_SCOPES: ${OAUTH_GENERIC_SCOPES:-openid profile email}
+      OAUTH_GENERIC_USER_IDENTIFIER: ${OAUTH_GENERIC_USER_IDENTIFIER:-preferred_username}
     extra_hosts:
       # Доступ из контейнера к Ollama, запущенной на хосте (Linux).
       - "host.docker.internal:host-gateway"
@@ -56,15 +56,15 @@ services:
   chainlit-db:
     image: postgres:16
     environment:
-      POSTGRES_USER: chainlit
-      POSTGRES_PASSWORD: chainlit
-      POSTGRES_DB: chainlit
+      POSTGRES_USER: ${CHAINLIT_DB_USER:-chainlit}
+      POSTGRES_PASSWORD: ${CHAINLIT_DB_PASSWORD:-chainlit}
+      POSTGRES_DB: ${CHAINLIT_DB_NAME:-chainlit}
     restart: unless-stopped
     volumes:
       - ./backend/init/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
       - chainlit-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chainlit"]
+      test: ["CMD-SHELL", "pg_isready -U ${CHAINLIT_DB_USER:-chainlit}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -74,14 +74,14 @@ services:
   authentik-db:
     image: postgres:16
     environment:
-      POSTGRES_USER: authentik
-      POSTGRES_PASSWORD: authentik
-      POSTGRES_DB: authentik
+      POSTGRES_USER: ${AUTHENTIK_DB_USER:-authentik}
+      POSTGRES_PASSWORD: ${AUTHENTIK_DB_PASSWORD:-authentik}
+      POSTGRES_DB: ${AUTHENTIK_DB_NAME:-authentik}
     restart: unless-stopped
     volumes:
       - authentik-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U authentik"]
+      test: ["CMD-SHELL", "pg_isready -U ${AUTHENTIK_DB_USER:-authentik}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -102,9 +102,9 @@ services:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-dev-only-authentik-secret-key-change-me}
       AUTHENTIK_REDIS__HOST: authentik-redis
       AUTHENTIK_POSTGRESQL__HOST: authentik-db
-      AUTHENTIK_POSTGRESQL__USER: authentik
-      AUTHENTIK_POSTGRESQL__PASSWORD: authentik
-      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_DB_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_DB_NAME:-authentik}
       # Сеются один раз при первой инициализации БД authentik.
       AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-admin}
       AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-dev-only-bootstrap-api-token-change-me}
@@ -143,8 +143,8 @@ services:
       AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-dev-only-bootstrap-api-token-change-me}
       AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-lore-chainlit}
       AUTHENTIK_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET:-dev-only-oauth-client-secret-change-me}
-      AUTHENTIK_APP_SLUG: lore
-      AUTHENTIK_APP_NAME: Lore Chat
+      AUTHENTIK_APP_SLUG: ${AUTHENTIK_APP_SLUG:-lore}
+      AUTHENTIK_APP_NAME: ${AUTHENTIK_APP_NAME:-Lore Chat}
       AUTHENTIK_REDIRECT_URI: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}/auth/oauth/generic/callback
       LORE_FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
     volumes:
