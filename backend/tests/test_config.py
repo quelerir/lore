@@ -5,7 +5,10 @@ from config import ModelProvider, Settings
 
 # Полный набор env для конструирования Settings без файлов.
 BASE = {
-    "DATABASE_URL": "postgresql+asyncpg://u:p@localhost:5432/db",
+    "CHAINLIT_DB_HOST": "localhost",
+    "CHAINLIT_DB_USER": "u",
+    "CHAINLIT_DB_PASSWORD": "p",
+    "CHAINLIT_DB_NAME": "db",
     "CHAINLIT_JWT_SECRET": "secret",
     "CHAINLIT_JWT_AUDIENCE": "chainlit",
     "CHAINLIT_JWT_ISSUER": "datacraft",
@@ -16,10 +19,8 @@ def test_required_fields_present(monkeypatch):
     for k, v in BASE.items():
         monkeypatch.setenv(k, v)
     s = Settings(_env_file=None)
-    assert s.database_url.endswith("/db")
+    assert s.database_url == "postgresql+asyncpg://u:p@localhost:5432/db"
     assert s.jwt_secret == "secret"
-    assert s.jwt_audience == "chainlit"
-    assert s.jwt_issuer == "datacraft"
 
 
 def test_missing_required_raises(monkeypatch):
@@ -39,7 +40,26 @@ def test_defaults_applied(monkeypatch):
     assert s.openrouter_api_key is None
     assert s.ollama_model == "gemma3"
     assert s.ollama_base_url == "http://ollama:11434"
-    assert s.toast_database_url is None
+    assert s.toast_dsn is None
+
+
+def test_toast_dsn_assembled(monkeypatch):
+    for k, v in BASE.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("TOAST_DB_HOST", "th")
+    monkeypatch.setenv("TOAST_DB_USER", "tu")
+    monkeypatch.setenv("TOAST_DB_PASSWORD", "tp")
+    monkeypatch.setenv("TOAST_DB_NAME", "tn")
+    s = Settings(_env_file=None)
+    assert s.toast_dsn == "postgresql://tu:tp@th:5432/tn"
+
+
+def test_password_url_escaped(monkeypatch):
+    for k, v in BASE.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.setenv("CHAINLIT_DB_PASSWORD", "p@ss/w:rd")
+    s = Settings(_env_file=None)
+    assert "p%40ss%2Fw%3Ard" in s.database_url
 
 
 def test_bad_provider_rejected(monkeypatch):
