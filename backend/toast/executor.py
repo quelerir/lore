@@ -12,6 +12,8 @@ STATEMENT_TIMEOUT_MS = 5000
 
 
 class SelectResult(TypedDict):
+    """Результат успешного SELECT (строки уже приведены к JSON-совместимым типам)."""
+
     columns: list[str]
     rows: list[dict[str, Any]]
     row_count: int
@@ -19,6 +21,12 @@ class SelectResult(TypedDict):
 
 
 class PgExecutor:
+    """Пул read-only соединений к БД toast-таблиц (asyncpg).
+
+    Юзер БД пишущий, поэтому read-only и statement_timeout навязываем сами на
+    уровне сессии пула. Пул ленивый — создаётся при первом обращении.
+    """
+
     def __init__(self, dsn: str) -> None:
         self._dsn = dsn
         self._pool: asyncpg.Pool | None = None
@@ -43,6 +51,11 @@ class PgExecutor:
             self._pool = None
 
     async def fetch_columns(self, table: str) -> list[str]:
+        """Реальные имена колонок таблицы (в порядке ordinal_position).
+
+        Обязательно для генерации SQL: физические имена часто переименованы из
+        заголовков и не совпадают с человеческим описанием таблицы.
+        """
         if not TOAST_TABLE_RE.match(table):
             raise ValueError(f"bad table id: {table!r}")
         pool = await self._acquire_pool()
@@ -56,6 +69,11 @@ class PgExecutor:
         return [r["column_name"] for r in rows]
 
     async def run_select(self, sql: str, table: str) -> SelectResult | str:
+        """Выполнить SELECT к `table` в read-only транзакции.
+
+        Возвращает SelectResult при успехе или строку-отказ (guardrails) /
+        текст ошибки БД. Результат усечён до MAX_ROWS (флаг truncated).
+        """
         sql = qualify_table(sql, table)
         if refusal := validate_select(sql, table):
             return refusal
