@@ -1,9 +1,14 @@
-"""Простые инструменты, общие для обоих режимов агента."""
+"""Инструменты, общие для обоих режимов агента: калькулятор и toast-субагент."""
 
 import ast
+import json
 import operator
 
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.tools import BaseTool, tool
+
+from toast.port import ToastStorePort
+from toast.subagent import run_toast_subagent
 
 _BIN_OPS = {
     ast.Add: operator.add,
@@ -56,5 +61,36 @@ def calculator(expression: str) -> str:
     return str(result)
 
 
-def make_tools() -> list[BaseTool]:
-    return [calculator]
+def _make_query_document_tables(
+    model: BaseChatModel, store: ToastStorePort
+) -> BaseTool:
+    @tool
+    async def query_document_tables(question: str) -> str:
+        """Найти ответ на вопрос в таблицах из внутренних документов.
+
+        Используй для вопросов о сотрудниках, отделах, грейдах,
+        компетенциях и содержимом рабочих файлов. Передавай вопрос
+        целиком. Возвращает JSON: status (ok|no_table|refused|error),
+        rows, sql, sources (файл и таблица — укажи их в ответе),
+        header_hints (записи, потерянные при извлечении — тоже источник
+        данных, не теряй их).
+        """
+        # Ошибки соединения с БД не PostgresError и не ловятся в store —
+        # спека требует status=error, а не исключение из инструмента.
+        try:
+            result = await run_toast_subagent(model, store, question)
+        except Exception as e:  # noqa: BLE001 — граница инструмента
+            result = {"status": "error", "message": f"техническая ошибка: {e}"}
+        return json.dumps(result, ensure_ascii=False, default=str)
+
+    return query_document_tables
+
+
+def make_tools(
+    model: BaseChatModel | None = None,
+    store: ToastStorePort | None = None,
+) -> list[BaseTool]:
+    tools: list[BaseTool] = [calculator]
+    if model is not None and store is not None:
+        tools.append(_make_query_document_tables(model, store))
+    return tools

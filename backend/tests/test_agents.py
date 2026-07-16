@@ -82,3 +82,44 @@ def test_fast_route_with_tool_call():
     ]
     assert tool_outputs == ["391"]
     assert out["messages"][-1].content == "Получилось 391."
+
+
+# --- toast-инструмент ---------------------------------------------------------
+
+
+def test_make_tools_without_store_is_calculator_only():
+    names = [t.name for t in make_tools()]
+    assert names == ["calculator"]
+
+
+def test_make_tools_with_store_adds_toast_tool():
+    from fakes import FakeToastStore
+
+    model = FakeListChatModel(responses=["x"])
+    names = [t.name for t in make_tools(model, FakeToastStore())]
+    assert names == ["calculator", "query_document_tables"]
+
+
+def test_query_document_tables_returns_no_table_json():
+    import json
+
+    from fakes import FakeToastStore
+
+    model = FakeListChatModel(responses=["x"])
+    tools = make_tools(model, FakeToastStore(tables=[]))
+    toast_tool = tools[1]
+    raw = asyncio.run(toast_tool.ainvoke({"question": "про клубы"}))
+    assert json.loads(raw)["status"] == "no_table"
+
+
+def test_query_document_tables_wraps_connection_errors():
+    import json
+
+    class BrokenStore:
+        async def discover(self, document_hint):
+            raise OSError("connection refused")
+
+    model = FakeListChatModel(responses=["x"])
+    tools = make_tools(model, BrokenStore())
+    raw = asyncio.run(tools[1].ainvoke({"question": "вопрос"}))
+    assert json.loads(raw)["status"] == "error"
