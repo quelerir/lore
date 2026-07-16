@@ -133,12 +133,26 @@ def test_build_model_provider_switch(monkeypatch):
     from langchain_openai import ChatOpenAI
 
     from agents.base import build_model
+    from config import get_settings
 
     monkeypatch.setenv("MODEL_PROVIDER", "openrouter")
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    get_settings.cache_clear()
     model = build_model()
     assert isinstance(model, ChatOpenAI)
     assert "openrouter.ai" in str(model.openai_api_base)
 
     monkeypatch.setenv("MODEL_PROVIDER", "ollama")
+    get_settings.cache_clear()
     assert isinstance(build_model(), ChatOllama)
+
+
+def test_build_model_openrouter_requires_key(monkeypatch):
+    from agents.base import build_model
+    from config import get_settings
+
+    monkeypatch.setenv("MODEL_PROVIDER", "openrouter")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    get_settings.cache_clear()
+    with pytest.raises(RuntimeError):
+        build_model()
