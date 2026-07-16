@@ -1,120 +1,61 @@
-"""Быстрый режим: фиксированный langgraph-маршрут, LLM не выбирает инструменты.
+"""Быстрый режим: чистый langgraph с фиксированным маршрутом и одним
+циклом инструментов.
 
-START → discover → plan_sql(LLM) → execute → answer(LLM) → END
-Одна повторная попытка plan_sql при ошибке SQL. NO_TABLE → честный отказ.
+START → model(+tools) ─┬─ tool_calls → tools → final(без tools) → END
+                       └─ нет вызова ────────────────────────────→ END
+
+Ровно один проход через инструменты — маршрут не может зациклиться,
+что важно для маленьких моделей.
 """
 
-import json
-from typing import Any, TypedDict
-
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langgraph.graph import END, START, StateGraph
+from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.tools import BaseTool
+from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.prebuilt import ToolNode
 
-from agents.base import FAST_ANSWER_PROMPT, FAST_PLAN_PROMPT
-from toast.policy import PII_TABLES, POLICY_REFUSAL
-from toast.port import ToastStorePort
-
-
-class FastState(TypedDict, total=False):
-    messages: list[Any]      # вход/выход в формате MessagesState
-    question: str
-    tables: list[dict]
-    sql: str
-    sql_error: str | None
-    result: str              # JSON результата или текст отказа
-    retried: bool
+from agents.base import SYSTEM_PROMPT
 
 
-def build_fast_agent(model: BaseChatModel, store: ToastStorePort) -> CompiledStateGraph:
-    async def discover(state: FastState) -> FastState:
-        question = state["messages"][-1].content
-        tables = await store.discover(question)
-        detailed = []
-        for t in tables[:5]:
-            info = await store.inspect(t["table_id"])
-            detailed.append({**t, "columns": info["columns"], "header_hint": info["header_hint"]})
-        return {"question": question, "tables": detailed}
+def build_fast_agent(
+    model: BaseChatModel, tools: list[BaseTool]
+) -> CompiledStateGraph:
+    try:
+        model_with_tools = model.bind_tools(tools)
+    except NotImplementedError:
+        # Фейковые модели в тестах не умеют bind_tools, но сами
+        # возвращают tool_calls в ответах.
+        model_with_tools = model
 
-    async def plan_sql(state: FastState) -> FastState:
-        if not state["tables"]:
-            return {"sql": "NO_TABLE"}
-        # Policy gate ДО SQL (детерминированно, не доверяем решению LLM):
-        # если все найденные таблицы — PII, SQL не планируем вовсе.
-        if all(t["table_id"] in PII_TABLES for t in state["tables"]):
-            return {"sql": "PII_GATE"}
-        prompt = (
-            f"Вопрос: {state['question']}\n\n"
-            f"Найденные таблицы:\n{json.dumps(state['tables'], ensure_ascii=False, default=str)}"
-        )
-        if state.get("sql_error"):
-            prompt += f"\n\nПредыдущий SQL не выполнился: {state['sql_error']}\nИсправь запрос."
-        # Тег internal: handle_message не выводит эти токены пользователю
-        # (langgraph stream_mode="messages" отдаёт токены и из ainvoke).
-        reply = await model.ainvoke(
-            [SystemMessage(FAST_PLAN_PROMPT), HumanMessage(prompt)],
-            config={"tags": ["internal"]},
-        )
-        sql = str(reply.content).strip().strip("`")
-        if sql.lower().startswith("sql"):
-            sql = sql[3:].strip()
-        return {"sql": sql, "sql_error": None}
+    async def call_model(state: MessagesState) -> MessagesState:
+        messages = [SystemMessage(SYSTEM_PROMPT), *state["messages"]]
+        # astream: если модель отвечает сразу (без инструмента), это финальный
+        # ответ и его токены должны дойти до UI через stream_mode="messages".
+        response: AIMessage | None = None
+        async for chunk in model_with_tools.astream(messages):
+            response = chunk if response is None else response + chunk
+        return {"messages": [response]}
 
-    async def execute(state: FastState) -> FastState:
-        if state["sql"] == "NO_TABLE":
-            return {"result": "NO_TABLE"}
-        if state["sql"] == "PII_GATE":
-            return {"result": POLICY_REFUSAL}
-        result = await store.run_select(state["sql"])
-        if isinstance(result, str):
-            if result.startswith("Ошибка SQL") and not state.get("retried"):
-                return {"sql_error": result, "retried": True, "result": ""}
-            return {"result": result}
-        return {"result": json.dumps(result, ensure_ascii=False, default=str)}
+    async def call_final(state: MessagesState) -> MessagesState:
+        # Финальный ответ после инструментов — модель без tools, чтобы
+        # маршрут гарантированно завершился.
+        messages = [SystemMessage(SYSTEM_PROMPT), *state["messages"]]
+        response: AIMessage | None = None
+        async for chunk in model.astream(messages):
+            response = chunk if response is None else response + chunk
+        return {"messages": [response]}
 
-    async def answer(state: FastState) -> FastState:
-        if state["result"] == "NO_TABLE":
-            content = (
-                "В извлечённых таблицах нет данных для ответа на этот вопрос "
-                "(no-table-answer). Попробуйте уточнить документ или отдел."
-            )
-            return {"messages": [AIMessage(content=content)]}
-        header_hints = [
-            {t["table_id"]: t.get("header_hint")}
-            for t in state["tables"]
-            if t.get("header_hint")
-        ]
-        prompt = (
-            f"Вопрос: {state['question']}\n"
-            f"SQL: {state.get('sql', '')}\n"
-            f"Результат: {state['result']}\n"
-            f"Таблицы: {json.dumps([t.get('source_path') for t in state['tables']], ensure_ascii=False)}\n"
-            f"Header-подсказки (записи, потерянные при извлечении — включи их в ответ, "
-            f"если релевантны): {json.dumps(header_hints, ensure_ascii=False)}"
-        )
-        # astream, а не ainvoke: только так токены финального ответа доходят
-        # до stream_mode="messages" (и до UI). plan_sql сознательно ainvoke —
-        # его вывод (сырой SQL) пользователь видеть не должен.
-        streamed = ""
-        async for chunk in model.astream(
-            [SystemMessage(FAST_ANSWER_PROMPT), HumanMessage(prompt)]
-        ):
-            if isinstance(chunk.content, str):
-                streamed += chunk.content
-        return {"messages": [AIMessage(content=streamed)]}
+    def route_after_model(state: MessagesState) -> str:
+        last = state["messages"][-1]
+        return "tools" if getattr(last, "tool_calls", None) else END
 
-    def after_execute(state: FastState) -> str:
-        return "plan_sql" if state.get("sql_error") else "answer"
-
-    graph = StateGraph(FastState)
-    graph.add_node("discover", discover)
-    graph.add_node("plan_sql", plan_sql)
-    graph.add_node("execute", execute)
-    graph.add_node("answer", answer)
-    graph.add_edge(START, "discover")
-    graph.add_edge("discover", "plan_sql")
-    graph.add_edge("plan_sql", "execute")
-    graph.add_conditional_edges("execute", after_execute, ["plan_sql", "answer"])
-    graph.add_edge("answer", END)
+    graph = StateGraph(MessagesState)
+    graph.add_node("model", call_model)
+    graph.add_node("tools", ToolNode(tools))
+    graph.add_node("final", call_final)
+    graph.add_edge(START, "model")
+    graph.add_conditional_edges("model", route_after_model, ["tools", END])
+    graph.add_edge("tools", "final")
+    graph.add_edge("final", END)
     return graph.compile()

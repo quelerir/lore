@@ -15,7 +15,7 @@ dependencies = [
 
 [tool.setuptools]
 py-modules = ["app", "auth"]
-packages = ["agents", "toast"]
+packages = ["agents"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

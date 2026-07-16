@@ -18,7 +18,6 @@ from sqlalchemy.pool import NullPool
 
 from agents import PROFILE_TO_MODE, Mode, build_agent
 from auth import verify_ticket
-from toast.pg import PgToastStore
 
 # ---------------------------------------------------------------------------
 # Data layer – SQLAlchemyDataLayer subclass that forces NullPool.
@@ -54,16 +53,6 @@ def get_data_layer() -> _NullPoolSQLAlchemyDataLayer:
     )
 
 
-_toast_store: Optional[PgToastStore] = None
-
-
-def get_toast_store() -> PgToastStore:
-    global _toast_store
-    if _toast_store is None:
-        _toast_store = PgToastStore(os.environ["TOAST_DATABASE_URL"])
-    return _toast_store
-
-
 @cl.set_chat_profiles
 async def chat_profiles() -> list[cl.ChatProfile]:
     return [
@@ -71,8 +60,8 @@ async def chat_profiles() -> list[cl.ChatProfile]:
             name="fast",
             display_name="Быстрый",
             markdown_description=(
-                "Фиксированный маршрут: поиск таблиц → один SQL → ответ. "
-                "Для типовых вопросов по документам."
+                "Фиксированный langgraph-маршрут с одним циклом "
+                "инструментов (калькулятор). Предсказуем и быстр."
             ),
             default=True,
         ),
@@ -80,8 +69,8 @@ async def chat_profiles() -> list[cl.ChatProfile]:
             name="deep",
             display_name="Умный",
             markdown_description=(
-                "deepagents: сам планирует discovery, inspect и SQL. "
-                "Для сложных вопросов и сравнений."
+                "deepagents: сам планирует шаги и вызовы инструментов. "
+                "Для сложных задач (медленнее)."
             ),
         ),
     ]
@@ -90,7 +79,7 @@ async def chat_profiles() -> list[cl.ChatProfile]:
 def _build_session_agent() -> CompiledStateGraph:
     profile = cl.user_session.get("chat_profile")
     mode = PROFILE_TO_MODE.get(profile or "", Mode.FAST)
-    return build_agent(mode, store=get_toast_store())
+    return build_agent(mode)
 
 
 @cl.header_auth_callback
