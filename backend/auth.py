@@ -1,5 +1,6 @@
-import os
 import jwt
+
+from config import get_settings
 
 
 def verify_ticket(token: str) -> dict[str, str]:
@@ -7,12 +8,13 @@ def verify_ticket(token: str) -> dict[str, str]:
 
     Raises jwt.InvalidTokenError (or subclass) on any validation failure.
     """
+    s = get_settings()
     payload = jwt.decode(
         token,
-        os.environ["CHAINLIT_JWT_SECRET"],
+        s.jwt_secret,
         algorithms=["HS256"],
-        audience=os.environ["CHAINLIT_JWT_AUDIENCE"],
-        issuer=os.environ["CHAINLIT_JWT_ISSUER"],
+        audience=s.jwt_audience,
+        issuer=s.jwt_issuer,
         options={"require": ["exp", "sub", "aud", "iss"]},
     )
     return {

@@ -18,13 +18,6 @@ def _token(**over):
     return jwt.encode(payload, SECRET, algorithm="HS256")
 
 
-@pytest.fixture(autouse=True)
-def _env(monkeypatch):
-    monkeypatch.setenv("CHAINLIT_JWT_SECRET", SECRET)
-    monkeypatch.setenv("CHAINLIT_JWT_ISSUER", "datacraft")
-    monkeypatch.setenv("CHAINLIT_JWT_AUDIENCE", "chainlit")
-
-
 def test_valid_ticket_returns_sub_and_username():
     claims = auth.verify_ticket(_token())
     assert claims == {"sub": "42", "username": "alice"}
