@@ -15,7 +15,12 @@ services:
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://${CHAINLIT_DB_USER:-chainlit}:${CHAINLIT_DB_PASSWORD:-chainlit}@chainlit-db:5432/${CHAINLIT_DB_NAME:-chainlit}
+      # Chainlit data-layer: компоненты подключения (DSN собирает config.py).
+      CHAINLIT_DB_HOST: chainlit-db
+      CHAINLIT_DB_PORT: "5432"
+      CHAINLIT_DB_USER: ${CHAINLIT_DB_USER:-chainlit}
+      CHAINLIT_DB_PASSWORD: ${CHAINLIT_DB_PASSWORD:-chainlit}
+      CHAINLIT_DB_NAME: ${CHAINLIT_DB_NAME:-chainlit}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3}
       # Модельный провайдер: openrouter (default) или ollama (фолбэк).
@@ -23,9 +28,13 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-haiku-4.5}
       OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
-      # Read-only доступ к TOAST-таблицам (loreagent_test). Пусто — сервис
-      # работает без инструмента таблиц.
-      TOAST_DATABASE_URL: ${TOAST_DATABASE_URL:-}
+      # Read-only доступ к TOAST-таблицам (loreagent_test): компоненты.
+      # Пусто — SQL-инструмент неактивен (toast_dsn = None).
+      TOAST_DB_HOST: ${TOAST_DB_HOST:-}
+      TOAST_DB_PORT: ${TOAST_DB_PORT:-5432}
+      TOAST_DB_USER: ${TOAST_DB_USER:-}
+      TOAST_DB_PASSWORD: ${TOAST_DB_PASSWORD:-}
+      TOAST_DB_NAME: ${TOAST_DB_NAME:-}
       # Секрет собственных сессий Chainlit (обязателен при включённой auth).
       CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET:-dev-only-auth-secret-change-me-32b!}
       # Проверка JWT-тикетов, выдаваемых внешней стороной (datacraft).
