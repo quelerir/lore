@@ -11,7 +11,10 @@ import pytest
 import config
 
 _BASELINE = {
-    "DATABASE_URL": "postgresql+asyncpg://u:p@localhost:5432/db",
+    "CHAINLIT_DB_HOST": "localhost",
+    "CHAINLIT_DB_USER": "u",
+    "CHAINLIT_DB_PASSWORD": "p",
+    "CHAINLIT_DB_NAME": "db",
     "CHAINLIT_JWT_SECRET": "test-secret-that-is-32-bytes-long!!",
     "CHAINLIT_JWT_AUDIENCE": "chainlit",
     "CHAINLIT_JWT_ISSUER": "datacraft",
