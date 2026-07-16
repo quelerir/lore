@@ -79,7 +79,14 @@ class Settings(BaseSettings):
     функционально их читает сам фреймворк из окружения.
     """
 
-    model_config = SettingsConfigDict(case_sensitive=False, extra="ignore")
+    model_config = SettingsConfigDict(
+        case_sensitive=False,
+        extra="ignore",
+        # Порядок приоритета файлов (побеждает последний): .env → .env.local.
+        # Реальные переменные окружения (compose) важнее любого файла.
+        env_file=(".env", ".env.local"),
+        env_file_encoding="utf-8",
+    )
 
     # --- Chainlit data layer (читает app.py) ---
     database_url: str  # DATABASE_URL — обязателен
@@ -159,6 +166,22 @@ from pydantic import Field
 Passthrough-поля используют `validation_alias` с их env-именами
 аналогично. Это делает соответствие поле↔переменная явным и единым.
 
+### Приоритет источников значений
+
+pydantic-settings разрешает значение по убыванию приоритета:
+
+1. **Переменные окружения** (то, что compose передаёт контейнеру) —
+   высший приоритет, перекрывают любой файл.
+2. **`.env.local`** — локальные переопределения разработчика
+   (в `.gitignore`, не коммитится).
+3. **`.env`** — базовые дефолты проекта (может коммититься).
+
+В `env_file=(".env", ".env.local")` файлы читаются по порядку, и при
+конфликте побеждает последний (`.env.local`). Оба файла опциональны:
+если их нет (как в контейнере, где всё приходит из окружения),
+pydantic-settings просто их пропускает. `.env.local` добавляется в
+корневой `.gitignore` бэкенда.
+
 ### Потребители
 
 **`auth.py`** — `verify_ticket` берёт значения из `get_settings()`:
@@ -230,9 +253,12 @@ if get_settings().oauth_generic_client_id:
 
 - **`backend/tests/conftest.py` (новый):** autouse-фикстура — выставляет
   baseline dev-env для 4 обязательных полей (`DATABASE_URL`,
-  `CHAINLIT_JWT_SECRET/AUDIENCE/ISSUER`) и делает `get_settings.cache_clear()`
-  до и после каждого теста. Убирает повторяющиеся `monkeypatch.setenv(JWT...)`
-  из `test_auth`, `test_oauth`, `test_app_imports`.
+  `CHAINLIT_JWT_SECRET/AUDIENCE/ISSUER`), отключает загрузку env-файлов в
+  тестах (`Settings.model_config["env_file"] = None` через monkeypatch —
+  тесты не должны зависеть от локального `.env.local` разработчика) и делает
+  `get_settings.cache_clear()` до и после каждого теста. Убирает
+  повторяющиеся `monkeypatch.setenv(JWT...)` из `test_auth`, `test_oauth`,
+  `test_app_imports`.
 - **`test_config.py` (новый):**
   - отсутствует обязательное поле → `ValidationError`;
   - дефолты применяются при пустом env;
@@ -255,4 +281,6 @@ if get_settings().oauth_generic_client_id:
 - Не вводим вложенные группы настроек.
 - Не переносим чтение passthrough-переменных из Chainlit в наш код —
   они остаются полями-документацией.
-- Не вводим `.env`-файл загрузку (значения приходят из compose).
+- Не создаём сам `.env` с секретами в репозитории — модуль лишь умеет
+  его читать, если файл появится; в контейнере значения приходят из
+  окружения (compose).
