@@ -1,7 +1,9 @@
 import os
 from enum import Enum
 
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 
 
 class Mode(Enum):
@@ -12,10 +14,19 @@ class Mode(Enum):
 PROFILE_TO_MODE: dict[str, Mode] = {"fast": Mode.FAST, "deep": Mode.DEEP}
 
 
-def build_model() -> ChatOllama:
-    return ChatOllama(
-        model=os.environ.get("OLLAMA_MODEL", "gemma3"),
-        base_url=os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434"),
+def build_model() -> BaseChatModel:
+    """OpenRouter по умолчанию; MODEL_PROVIDER=ollama — локальный фолбэк."""
+    if os.environ.get("MODEL_PROVIDER", "openrouter") == "ollama":
+        return ChatOllama(
+            model=os.environ.get("OLLAMA_MODEL", "gemma3"),
+            base_url=os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434"),
+        )
+    return ChatOpenAI(
+        model=os.environ.get("OPENROUTER_MODEL", "anthropic/claude-haiku-4.5"),
+        base_url=os.environ.get(
+            "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
+        ),
+        api_key=os.environ["OPENROUTER_API_KEY"],
     )
 
 

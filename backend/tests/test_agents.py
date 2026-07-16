@@ -123,3 +123,22 @@ def test_query_document_tables_wraps_connection_errors():
     tools = make_tools(model, BrokenStore())
     raw = asyncio.run(tools[1].ainvoke({"question": "вопрос"}))
     assert json.loads(raw)["status"] == "error"
+
+
+# --- model provider -----------------------------------------------------------
+
+
+def test_build_model_provider_switch(monkeypatch):
+    from langchain_ollama import ChatOllama
+    from langchain_openai import ChatOpenAI
+
+    from agents.base import build_model
+
+    monkeypatch.setenv("MODEL_PROVIDER", "openrouter")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    model = build_model()
+    assert isinstance(model, ChatOpenAI)
+    assert "openrouter.ai" in str(model.openai_api_base)
+
+    monkeypatch.setenv("MODEL_PROVIDER", "ollama")
+    assert isinstance(build_model(), ChatOllama)
