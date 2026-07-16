@@ -25,9 +25,9 @@ import socketio  # python-socketio[client]
 CHAINLIT = "http://localhost:8000"
 USERNAME = "akadmin"
 PASSWORD = "admin"
-# Вопрос по демо-данным TOAST-слоя: гоняет полный маршрут fast-режима
-# (discover -> plan_sql -> execute -> answer через Ollama).
-PROMPT = "Какие ФИО у юристов агентства?"
+# Вопрос с вычислением: гоняет полный fast-маршрут, включая ToolNode
+# (model -> calculator -> final через Ollama).
+PROMPT = "Сколько будет 17 * 23? Посчитай калькулятором."
 PROFILE = sys.argv[1] if len(sys.argv) > 1 else "fast"
 
 
