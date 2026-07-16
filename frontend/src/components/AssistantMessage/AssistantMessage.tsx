@@ -1,8 +1,23 @@
 import { useMessage } from "@assistant-ui/react";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import Markdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 import { copyText } from "../../chat/copyText";
 import styles from "./AssistantMessage.module.css";
+
+const REMARK_PLUGINS = [remarkGfm, remarkBreaks];
+
+function TypingIndicator() {
+  return (
+    <div className={styles.typing} aria-label="Ассистент печатает" role="status">
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
 
 export default function AssistantMessage() {
   const text = useMessage((m) =>
@@ -26,7 +41,11 @@ export default function AssistantMessage() {
     <div className={styles.row}>
       <div className={styles.content}>
         <div className={styles.bubble}>
-          <p>{text || "…"}</p>
+          {text ? (
+            <Markdown remarkPlugins={REMARK_PLUGINS}>{text}</Markdown>
+          ) : isRunning ? (
+            <TypingIndicator />
+          ) : null}
         </div>
         <div className={styles.actions}>
           <button
