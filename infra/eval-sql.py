@@ -68,7 +68,7 @@ def check(answer: str, case: dict) -> tuple[bool, list[str]]:
 
 async def main() -> None:
     # Гейт по env ДО get_settings(): в голой оболочке нет обязательных полей
-    # стека (DATABASE_URL/JWT), и Settings() упал бы раньше SKIP.
+    # стека (CHAINLIT_DB_*/JWT), и Settings() упал бы раньше SKIP.
     dsn = _toast_dsn()
     if not dsn or not os.environ.get("OPENROUTER_API_KEY"):
         print("SKIP: нужны TOAST_DB_* и OPENROUTER_API_KEY")
