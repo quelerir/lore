@@ -18,6 +18,14 @@ services:
       DATABASE_URL: postgresql+asyncpg://${CHAINLIT_DB_USER:-chainlit}:${CHAINLIT_DB_PASSWORD:-chainlit}@chainlit-db:5432/${CHAINLIT_DB_NAME:-chainlit}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3}
+      # Модельный провайдер: openrouter (default) или ollama (фолбэк).
+      MODEL_PROVIDER: ${MODEL_PROVIDER:-openrouter}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-haiku-4.5}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      # Read-only доступ к TOAST-таблицам (loreagent_test). Пусто — сервис
+      # работает без инструмента таблиц.
+      TOAST_DATABASE_URL: ${TOAST_DATABASE_URL:-}
       # Секрет собственных сессий Chainlit (обязателен при включённой auth).
       CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET:-dev-only-auth-secret-change-me-32b!}
       # Проверка JWT-тикетов, выдаваемых внешней стороной (datacraft).
