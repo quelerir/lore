@@ -615,6 +615,7 @@ dependencies = [
     { name = "langchain-ollama" },
     { name = "langchain-openai" },
     { name = "langgraph" },
+    { name = "pydantic-settings" },
     { name = "pyjwt" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
@@ -634,6 +635,7 @@ requires-dist = [
     { name = "langchain-ollama" },
     { name = "langchain-openai", specifier = ">=1.3.5" },
     { name = "langgraph" },
+    { name = "pydantic-settings", specifier = ">=2.14.2" },
     { name = "pyjwt", specifier = ">=2.8" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0" },
 ]
