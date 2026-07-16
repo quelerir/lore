@@ -205,16 +205,34 @@ function AppContent({
 
 export default function App() {
   const { state, login, logout, invalidate } = useAuth();
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  // Тред, выбранный пользователем (null = новый чат) — источник resume.
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  // Id, который сервер присвоил новому треду — только для подсветки в списке.
+  const [serverThreadId, setServerThreadId] = useState<string | null>(null);
+  // Растёт при каждом явном переключении сессии, чтобы SessionBridge
+  // переподключился даже когда выбранный тред формально не меняется
+  // (например «новый чат» → null поверх null).
+  const [sessionNonce, setSessionNonce] = useState(0);
   const [mode, setMode] = useState<ChatMode>("fast");
   const refreshThreadsRef = useRef<(() => void) | null>(null);
 
-  // Смена режима действует на новый чат: активный тред сбрасывается,
-  // SessionBridge создаст свежую сессию с выбранным профилем.
-  const handleModeChange = useCallback((next: ChatMode) => {
-    setMode(next);
-    setActiveThreadId(null);
+  const activeThreadId = selectedThreadId ?? serverThreadId;
+
+  // Явный старт сессии: выбор существующего треда или новый чат (null).
+  const startSession = useCallback((threadId: string | null) => {
+    setSelectedThreadId(threadId);
+    setServerThreadId(null);
+    setSessionNonce((n) => n + 1);
   }, []);
+
+  // Смена режима действует на новый чат: SessionBridge создаст свежую сессию.
+  const handleModeChange = useCallback(
+    (next: ChatMode) => {
+      setMode(next);
+      startSession(null);
+    },
+    [startSession],
+  );
 
   useEffect(() => {
     setOn401(invalidate);
@@ -224,8 +242,10 @@ export default function App() {
     refreshThreadsRef.current = refresh;
   }, []);
 
+  // Сервер присвоил id новому треду — обновляем подсветку, но НЕ трогаем
+  // selectedThreadId/sessionNonce, поэтому reconnect не запускается.
   const handleServerThreadId = useCallback((id: string) => {
-    setActiveThreadId(id);
+    setServerThreadId(id);
     refreshThreadsRef.current?.();
   }, []);
 
@@ -245,7 +265,8 @@ export default function App() {
 
   return (
     <ChainlitRuntimeProvider
-      activeThreadId={activeThreadId}
+      sessionThreadId={selectedThreadId}
+      sessionNonce={sessionNonce}
       chatProfile={mode}
       onServerThreadId={handleServerThreadId}
     >
@@ -254,7 +275,7 @@ export default function App() {
         activeThreadId={activeThreadId}
         mode={mode}
         onModeChange={handleModeChange}
-        onSelectThread={setActiveThreadId}
+        onSelectThread={startSession}
         registerRefresh={registerRefresh}
         onLogout={() => void logout()}
       />

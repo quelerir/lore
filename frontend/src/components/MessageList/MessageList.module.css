@@ -56,3 +56,47 @@
   margin: 0;
   font-size: 14px;
 }
+
+/* Мягкий лоадер на время переключения чата (вместо мигания пустотой) */
+.loading {
+  margin: auto;
+  display: inline-flex;
+  gap: 7px;
+  padding: 24px;
+}
+
+.loading span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #c2cad4;
+  animation: msglist-pulse 1.1s infinite ease-in-out both;
+}
+
+.loading span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.loading span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes msglist-pulse {
+  0%,
+  75%,
+  100% {
+    transform: scale(0.72);
+    opacity: 0.4;
+  }
+  35% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading span {
+    animation: none;
+    opacity: 0.6;
+  }
+}

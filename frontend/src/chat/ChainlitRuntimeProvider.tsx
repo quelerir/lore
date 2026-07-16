@@ -10,15 +10,21 @@ import {
   useChatMessages,
   useChatSession,
 } from "@chainlit/react-client";
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RecoilRoot } from "recoil";
 import { chainlitApi } from "./chainlitClient";
-import { convertMessage, isChatMessage } from "./convertMessage";
+import { collectChatMessages, convertMessage } from "./convertMessage";
+import { SessionUiContext } from "./sessionUi";
 
 export type ChatMode = "fast" | "deep";
 
 interface ProviderProps {
-  activeThreadId: string | null;
+  // Тред, выбранный пользователем (null = новый чат). Определяет resume.
+  sessionThreadId: string | null;
+  // Растёт при каждом ЯВНОМ переключении сессии (выбор треда / новый чат).
+  // Эхо серверного threadId сюда не входит — иначе принятие своего же id
+  // вызывало бесконечный reconnect.
+  sessionNonce: number;
   chatProfile: ChatMode;
   onServerThreadId: (id: string) => void;
   children: ReactNode;
@@ -31,7 +37,8 @@ const appendMessageText = (message: AppendMessage): string =>
     .join("\n");
 
 function SessionBridge({
-  activeThreadId,
+  sessionThreadId,
+  sessionNonce,
   chatProfile,
   onServerThreadId,
   children,
@@ -41,29 +48,65 @@ function SessionBridge({
   const { messages, threadId } = useChatMessages();
   const { loading, connected } = useChatData();
 
-  // Одна WS-сессия на активный тред: смена треда/режима = clear + reconnect.
-  // Профиль (fast/deep) уходит в WS-auth и фиксируется на треде сервером.
+  // Пока идёт намеренное переключение — маскируем разрыв сокета (плашка +
+  // мигание пустого чата). Реальные обрывы (без смены sessionNonce) не
+  // попадают под маску и покажут плашку как раньше.
+  const [switching, setSwitching] = useState(false);
+
+  // Явное переключение → входим в режим маскировки. Страховочный таймаут
+  // снимает маску, если reconnect почему-то затянулся.
+  useEffect(() => {
+    setSwitching(true);
+    const cap = window.setTimeout(() => setSwitching(false), 1500);
+    return () => window.clearTimeout(cap);
+  }, [sessionNonce]);
+
+  // Снимаем маску вскоре после восстановления соединения (тред уже резюмлен,
+  // сообщения отрисованы) — небольшой запас, чтобы не мигнуло.
+  useEffect(() => {
+    if (!switching || !connected) return;
+    const t = window.setTimeout(() => setSwitching(false), 140);
+    return () => window.clearTimeout(t);
+  }, [switching, connected]);
+
+  // Шаг 1. Явное переключение сессии (sessionNonce) или смена режима: чистим
+  // экран и ПУБЛИКУЕМ resume-id/профиль. Сам connect — в шаге 2 ниже.
+  //
+  // Почему не connect() прямо здесь: react-client замыкает resume-id (threadId)
+  // в момент рендера, поэтому connect() сразу после setIdToResume() подхватил
+  // бы ПРЕДЫДУЩИЙ id и резюмил не тот тред — баг «переключение со второго раза».
   useEffect(() => {
     clear();
     setChatProfile(chatProfile);
-    setIdToResume(activeThreadId ?? undefined);
+    setIdToResume(sessionThreadId ?? undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionNonce, chatProfile]);
+
+  // Шаг 2. Подключаемся при явном переключении (sessionNonce) ИЛИ когда
+  // react-client пересоздал `connect` уже со свежим resume-id — тогда сокет
+  // резюмит нужный тред. `connect` стабилен после подключения, так что
+  // reconnect-петли это не создаёт.
+  useEffect(() => {
     void connect({ userEnv: {} });
     return () => {
       disconnect();
     };
-    // connect/clear/… стабильны между рендерами (recoil-колбэки react-client)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeThreadId, chatProfile]);
+  }, [sessionNonce, connect]);
 
-  // Сервер присвоил id новому треду (первое сообщение) — сообщаем наверх.
+  // Сервер присвоил id новому треду (первое сообщение) — сообщаем наверх ТОЛЬКО
+  // для подсветки в списке. Это не трогает sessionNonce/sessionThreadId, так что
+  // reconnect не триггерится.
   useEffect(() => {
-    if (threadId && threadId !== activeThreadId) {
+    if (threadId && threadId !== sessionThreadId) {
       onServerThreadId(threadId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
-  const chatMessages = useMemo(() => messages.filter(isChatMessage), [messages]);
+  // react-client вкладывает ответы ассистента в run-обёртку on_message; берём
+  // сообщения из всего дерева, а не только с верхнего уровня.
+  const chatMessages = useMemo(() => collectChatMessages(messages), [messages]);
 
   const runtime = useExternalStoreRuntime({
     messages: chatMessages,
@@ -82,13 +125,17 @@ function SessionBridge({
     },
   });
 
+  const sessionUi = useMemo(() => ({ switching }), [switching]);
+
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      {connected === false ? (
-        <div className="wsReconnectBanner">Переподключение к серверу…</div>
-      ) : null}
-      {children}
-    </AssistantRuntimeProvider>
+    <SessionUiContext.Provider value={sessionUi}>
+      <AssistantRuntimeProvider runtime={runtime}>
+        {connected === false && !switching ? (
+          <div className="wsReconnectBanner">Переподключение к серверу…</div>
+        ) : null}
+        {children}
+      </AssistantRuntimeProvider>
+    </SessionUiContext.Provider>
   );
 }
 
