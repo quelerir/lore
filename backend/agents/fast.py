@@ -13,6 +13,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from agents.base import FAST_ANSWER_PROMPT, FAST_PLAN_PROMPT
+from toast.policy import PII_TABLES, POLICY_REFUSAL
 from toast.port import ToastStorePort
 
 
@@ -39,6 +40,10 @@ def build_fast_agent(model: BaseChatModel, store: ToastStorePort) -> CompiledSta
     async def plan_sql(state: FastState) -> FastState:
         if not state["tables"]:
             return {"sql": "NO_TABLE"}
+        # Policy gate ДО SQL (детерминированно, не доверяем решению LLM):
+        # если все найденные таблицы — PII, SQL не планируем вовсе.
+        if all(t["table_id"] in PII_TABLES for t in state["tables"]):
+            return {"sql": "PII_GATE"}
         prompt = (
             f"Вопрос: {state['question']}\n\n"
             f"Найденные таблицы:\n{json.dumps(state['tables'], ensure_ascii=False, default=str)}"
@@ -59,6 +64,8 @@ def build_fast_agent(model: BaseChatModel, store: ToastStorePort) -> CompiledSta
     async def execute(state: FastState) -> FastState:
         if state["sql"] == "NO_TABLE":
             return {"result": "NO_TABLE"}
+        if state["sql"] == "PII_GATE":
+            return {"result": POLICY_REFUSAL}
         result = await store.run_select(state["sql"])
         if isinstance(result, str):
             if result.startswith("Ошибка SQL") and not state.get("retried"):
@@ -73,11 +80,18 @@ def build_fast_agent(model: BaseChatModel, store: ToastStorePort) -> CompiledSta
                 "(no-table-answer). Попробуйте уточнить документ или отдел."
             )
             return {"messages": [AIMessage(content=content)]}
+        header_hints = [
+            {t["table_id"]: t.get("header_hint")}
+            for t in state["tables"]
+            if t.get("header_hint")
+        ]
         prompt = (
             f"Вопрос: {state['question']}\n"
             f"SQL: {state.get('sql', '')}\n"
             f"Результат: {state['result']}\n"
-            f"Таблицы: {json.dumps([t.get('source_path') for t in state['tables']], ensure_ascii=False)}"
+            f"Таблицы: {json.dumps([t.get('source_path') for t in state['tables']], ensure_ascii=False)}\n"
+            f"Header-подсказки (записи, потерянные при извлечении — включи их в ответ, "
+            f"если релевантны): {json.dumps(header_hints, ensure_ascii=False)}"
         )
         # astream, а не ainvoke: только так токены финального ответа доходят
         # до stream_mode="messages" (и до UI). plan_sql сознательно ainvoke —

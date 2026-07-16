@@ -68,6 +68,18 @@ def test_fast_route_happy_path():
     assert "Смирнов" in out["messages"][-1].content
 
 
+def test_fast_route_pii_gate_before_sql():
+    from toast.policy import POLICY_REFUSAL
+
+    pii_table = {**TABLE, "table_id": "toast_tbl_e1b2c3d4e5f6a7b8c9d0"}
+    model = FakeListChatModel(responses=["ответ про отказ policy gate"])
+    agent = build_fast_agent(model, FakeStore(tables=[pii_table]))
+    out = asyncio.run(agent.ainvoke({"messages": [HumanMessage("когда отпуск?")]}))
+    # SQL не планировался, результат — детерминированный отказ
+    assert out["sql"] == "PII_GATE"
+    assert out["result"] == POLICY_REFUSAL
+
+
 def test_fast_route_no_table_abstains():
     model = FakeListChatModel(responses=["не должен вызываться"])
     agent = build_fast_agent(model, FakeStore(tables=[]))

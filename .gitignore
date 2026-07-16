@@ -22,3 +22,6 @@ __pycache__/
 .ruff_cache/
 backend/.files/
 backend/.chainlit/translations/
+
+# Референс-отчёт с реальными ПД — не коммитить
+problem-questions-report.html
