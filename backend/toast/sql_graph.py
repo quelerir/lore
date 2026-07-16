@@ -95,6 +95,16 @@ class SqlToolState(TypedDict, total=False):
     status: str
 
 
+class SqlToolInput(TypedDict):
+    """Входные поля инструмента (форма ввода в Studio)."""
+
+    question: str
+    chunk_id: str
+    table: str
+    desc_vector: str
+    desc_full: str
+
+
 def parse_sql_candidates(text: str, limit: int) -> list[str]:
     """Достаёт до `limit` SELECT-строк из ответа модели.
 
@@ -245,7 +255,7 @@ def build_sql_graph(
         """Судья доволен → summarize; иначе → ещё раунд generate."""
         return "summarize" if state.get("verdict") == "sufficient" else "generate"
 
-    g = StateGraph(SqlToolState)
+    g = StateGraph(SqlToolState, input_schema=SqlToolInput)
     g.add_node("scope", scope)
     g.add_node("generate", generate)
     g.add_node("execute", execute)

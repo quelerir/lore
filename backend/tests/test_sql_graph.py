@@ -113,3 +113,10 @@ def test_candidates_run_in_parallel_batch():
     out = _run(model, exe, candidates=2, max_queries=3)
     assert out["status"] == "ok"
     assert len(exe.calls) == 2
+
+
+def test_input_schema_exposes_five_fields():
+    from toast.sql_graph import SqlToolInput
+
+    keys = set(SqlToolInput.__annotations__)
+    assert keys == {"question", "chunk_id", "table", "desc_vector", "desc_full"}
