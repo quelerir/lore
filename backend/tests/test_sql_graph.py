@@ -3,6 +3,7 @@ import asyncio
 from langchain_core.messages import AIMessage
 
 from fakes import ScriptedChatModel
+from toast.models import DbError, Refusal
 
 LEGAL = "toast_tbl_ec48a6d52d16ab405f95"
 
@@ -119,7 +120,7 @@ def test_guardrails_refusal_does_not_consume_budget():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Ответ."),
     ])
-    exe = FakeExecutor(results=[_sample(), "Отказ: разрешён только SELECT.",
+    exe = FakeExecutor(results=[_sample(), Refusal("Отказ: разрешён только SELECT."),
                                 _rows(1)])
     out = _run(model, exe, candidates=2, max_queries=2)
     assert out["status"] == "ok"
@@ -133,8 +134,8 @@ def test_round_cap_stops_refusal_only_batches():
         AIMessage(content='["DROP TABLE x"]'),
         AIMessage(content='["DROP TABLE y"]'),
     ])
-    exe = FakeExecutor(results=[_sample(), "Отказ: разрешён только SELECT.",
-                                "Отказ: разрешён только SELECT."])
+    exe = FakeExecutor(results=[_sample(), Refusal("Отказ: разрешён только SELECT."),
+                                Refusal("Отказ: разрешён только SELECT.")])
     out = _run(model, exe, candidates=1, max_queries=2)
     assert out["status"] == "error"
     assert "Отказ" in out["answer"]
@@ -146,7 +147,7 @@ def test_all_sql_errors_status_error():
         AIMessage(content='["SELECT worse FROM %s"]' % LEGAL),
         AIMessage(content='["SELECT nope FROM %s"]' % LEGAL),
     ])
-    exe = FakeExecutor(results=[_sample(), "Ошибка SQL: a", "Ошибка SQL: b", "Ошибка SQL: c"])
+    exe = FakeExecutor(results=[_sample(), DbError("Ошибка SQL: a"), DbError("Ошибка SQL: b"), DbError("Ошибка SQL: c")])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "error"
 
@@ -186,7 +187,7 @@ def test_sample_failure_is_not_fatal():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Ответ."),
     ])
-    exe = FakeExecutor(results=["Ошибка SQL: сеть", _rows(1)])
+    exe = FakeExecutor(results=[DbError("Ошибка SQL: сеть"), _rows(1)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "ok"
 
@@ -224,7 +225,7 @@ def test_executor_exception_becomes_failed_attempt():
 
 def test_structured_output_path_used_when_supported():
     from fakes import StructuredScriptedChatModel
-    from toast.sql_graph import JudgeVerdict, SqlCandidates
+    from toast.models import JudgeVerdict, SqlCandidates
 
     model = StructuredScriptedChatModel(responses=[
         SqlCandidates(candidates=["SELECT column_1 FROM %s" % LEGAL]),
@@ -239,7 +240,7 @@ def test_structured_output_path_used_when_supported():
 
 def test_judge_reason_feeds_next_generate_prompt():
     from fakes import StructuredScriptedChatModel
-    from toast.sql_graph import JudgeVerdict, SqlCandidates
+    from toast.models import JudgeVerdict, SqlCandidates
 
     captured: list[str] = []
 
@@ -282,14 +283,14 @@ def test_candidates_run_in_parallel_batch():
 
 
 def test_input_schema_exposes_five_fields():
-    from toast.sql_graph import SqlToolInput
+    from toast.models import SqlToolInput
 
     keys = set(SqlToolInput.__annotations__)
     assert keys == {"question", "chunk_id", "table", "desc_vector", "desc_full"}
 
 
 def test_state_has_defaults_instead_of_init():
-    from toast.sql_graph import SqlToolState
+    from toast.models import SqlToolState
 
     assert "columns" not in SqlToolState.model_fields
     state = SqlToolState(question="q", chunk_id="c", table="t",
@@ -345,16 +346,16 @@ def test_rows_context_caps_by_size():
 
 
 def test_attempt_from_refusal_result_and_exception():
-    from toast.sql_graph import _attempt
+    from toast.models import make_attempt
 
-    ref = _attempt("SELECT 1", "Отказ: только чтение")
+    ref = make_attempt("SELECT 1", Refusal("Отказ: только чтение"))
     assert ref == {"sql": "SELECT 1", "ok": False, "error": "Отказ: только чтение",
                    "rows": [], "row_count": 0, "truncated": False}
 
-    ok = _attempt("SELECT 2",
+    ok = make_attempt("SELECT 2",
                   {"rows": [{"a": 1}], "row_count": 1, "truncated": False})
     assert ok == {"sql": "SELECT 2", "ok": True, "error": None,
                   "rows": [{"a": 1}], "row_count": 1, "truncated": False}
 
-    boom = _attempt("SELECT 3", RuntimeError("boom"))
+    boom = make_attempt("SELECT 3", RuntimeError("boom"))
     assert boom["ok"] is False and "boom" in boom["error"]

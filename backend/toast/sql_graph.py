@@ -48,15 +48,28 @@ import asyncio
 import json
 import logging
 import re
-from typing import Any, TypedDict
+from typing import Any
 
 import sqlglot
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from pydantic import BaseModel, Field
 from sqlglot import exp as sql_exp
+
+from toast.models import (
+    Attempt,
+    DbError,
+    JudgeVerdict,
+    Refusal,
+    SqlCandidates,
+    SqlToolInput,
+    SqlToolState,
+    Status,
+    Verdict,
+    make_attempt,
+    ok_rows,
+)
 
 FIXED_SCHEMA = (
     "Таблицы извлечены из XLSX (Postgres, схема splitter_toast). У каждой "
@@ -97,19 +110,6 @@ SAMPLE_CONTEXT_CHARS = 2_000  # кап сериализованных приме
 _SUFFICIENT_RE = re.compile(r"\bsufficient\b")
 
 
-class SqlCandidates(BaseModel):
-    """Батч SQL-кандидатов — схема structured output узла generate."""
-
-    candidates: list[str]
-
-
-class JudgeVerdict(BaseModel):
-    """Вердикт судьи: достаточно ли строк и почему нет (structured output)."""
-
-    sufficient: bool
-    reason: str = ""
-
-
 def _log_fallback(node: str, exc: Exception) -> None:
     """Лог причины фолбэка structured output → текстовый путь.
 
@@ -137,47 +137,6 @@ async def _judge_verdict(model: BaseChatModel, messages: list) -> JudgeVerdict:
         text = str(reply.content).lower()
         ok = bool(_SUFFICIENT_RE.search(text)) and "need_more" not in text
         return JudgeVerdict(sufficient=ok, reason="")
-
-
-class Attempt(TypedDict):
-    """Одна попытка выполнения SQL-кандидата (успех или отказ/ошибка)."""
-
-    sql: str
-    ok: bool
-    error: str | None
-    rows: list[dict[str, Any]]
-    row_count: int
-    truncated: bool
-
-
-class SqlToolInput(BaseModel):
-    """Входные поля инструмента (форма ввода в Studio)."""
-
-    question: str
-    chunk_id: str
-    table: str
-    desc_vector: str
-    desc_full: str
-
-
-class SqlToolState(SqlToolInput):
-    """Состояние графа: вход + аккумуляторы с дефолтами.
-
-    Дефолты полей заменяют бывший узел init: langgraph применяет их сам,
-    «забытая инициализация» перестала существовать как класс ошибки
-    (инцидент KeyError: 'candidates' в TypedDict-версии). Узлы возвращают
-    dict-апдейты, langgraph сливает их в состояние.
-    """
-
-    sample_rows: list[dict] = Field(default_factory=list)
-    candidates: list[str] = Field(default_factory=list)
-    round: int = 0
-    executed_count: int = 0
-    attempts: list[Attempt] = Field(default_factory=list)
-    verdict: str = ""
-    judge_reason: str = ""
-    answer: str = ""
-    status: str = ""
 
 
 def parse_sql_candidates(text: str, limit: int) -> list[str]:
@@ -233,36 +192,6 @@ async def _generate_candidates(model: BaseChatModel, messages: list,
         reply = await model.ainvoke(messages, config={"tags": ["internal"]})
         return parse_sql_candidates(str(reply.content), n)
 
-
-def _attempt(sql: str, res: Any) -> Attempt:
-    """Собирает запись попытки из результата исполнителя.
-
-    Исполнитель возвращает str при отказе guardrails / ошибке SQL, иначе
-    SelectResult. Исключение приходит из gather(return_exceptions=True) —
-    неожиданный сбой исполнителя не должен ронять весь граф, но обязан
-    попасть в лог: иначе инфраструктурные проблемы (DNS, сеть до БД) видны
-    только в UI как текст неуспешной попытки.
-    """
-    if isinstance(res, BaseException):
-        logging.getLogger(__name__).warning(
-            "SQL attempt failed with exception: %r (sql=%.120s)", res, sql
-        )
-        res = f"Ошибка выполнения: {res!r}"
-    if isinstance(res, str):
-        return {"sql": sql, "ok": False, "error": res,
-                "rows": [], "row_count": 0, "truncated": False}
-    return {"sql": sql, "ok": True, "error": None,
-            "rows": res["rows"], "row_count": res["row_count"],
-            "truncated": res["truncated"]}
-
-
-def _ok_rows(attempts: list[Attempt]) -> list[dict]:
-    """Плоский список строк из всех успешных попыток (для судьи/суммаризатора)."""
-    out: list[dict] = []
-    for a in attempts:
-        if a["ok"]:
-            out.extend(a["rows"])
-    return out
 
 
 def _rows_context(attempts: list[Attempt]) -> str:
@@ -333,8 +262,9 @@ def build_sql_graph(
             logging.getLogger(__name__).warning(
                 "sample query failed for %s", state.table, exc_info=True)
             return {"sample_rows": []}
-        if isinstance(res, str):
-            logging.getLogger(__name__).warning("sample refused: %s", res)
+        if isinstance(res, (Refusal, DbError)):
+            reason = res.reason if isinstance(res, Refusal) else res.message
+            logging.getLogger(__name__).warning("sample refused: %s", reason)
             return {"sample_rows": []}
         return {"sample_rows": res["rows"]}
 
@@ -395,13 +325,10 @@ def build_sql_graph(
             *(executor.run_select(sql, table) for sql in unique),
             return_exceptions=True,
         )
-        new = [_attempt(sql, res) for sql, res in zip(unique, results)]
-        # Бюджет — только SQL, дошедшие до БД: отказ guardrails существует,
+        new = [make_attempt(sql, res) for sql, res in zip(unique, results)]
+        # Бюджет — только SQL, дошедшие до БД: Refusal guardrails существует,
         # чтобы модель ПЕРЕПИСАЛА запрос, и не должен съедать попытку.
-        executed = sum(
-            1 for a in new
-            if a["ok"] or not (a["error"] or "").startswith("Отказ:")
-        )
+        executed = sum(1 for r in results if not isinstance(r, Refusal))
         return {
             "attempts": state.attempts + new,
             "executed_count": state.executed_count + executed,
@@ -409,9 +336,9 @@ def build_sql_graph(
 
     async def judge(state: SqlToolState) -> dict:
         """LLM: достаточно ли строк для ответа. Без строк — need_more без вызова."""
-        rows = _ok_rows(state.attempts)
+        rows = ok_rows(state.attempts)
         if not rows:
-            return {"verdict": "need_more"}
+            return {"verdict": Verdict.NEED_MORE}
         verdict = await _judge_verdict(
             model,
             [
@@ -423,25 +350,25 @@ def build_sql_graph(
             ],
         )
         return {
-            "verdict": "sufficient" if verdict.sufficient else "need_more",
+            "verdict": Verdict.SUFFICIENT if verdict.sufficient else Verdict.NEED_MORE,
             "judge_reason": verdict.reason,
         }
 
     async def summarize(state: SqlToolState) -> dict:
         """Терминальный узел: ответ по строкам, либо статус no_data / error."""
-        rows = _ok_rows(state.attempts)
+        rows = ok_rows(state.attempts)
         if not rows:
             if not state.attempts:
                 # Сюда попадаем только из after_generate при пустом батче.
-                return {"status": "error",
+                return {"status": Status.ERROR,
                         "answer": f"Не удалось выполнить SQL: {NO_CANDIDATES_MSG}"}
             # Хоть один успешный (но пустой) SELECT → данных нет; иначе все
             # попытки — ошибки БД → техническая ошибка.
             if any(a["ok"] for a in state.attempts):
-                return {"status": "no_data", "answer": NO_DATA_MSG}
+                return {"status": Status.NO_DATA, "answer": NO_DATA_MSG}
             last = next((a["error"] for a in reversed(state.attempts) if a["error"]),
                         "неизвестная ошибка")
-            return {"status": "error", "answer": f"Не удалось выполнить SQL: {last}"}
+            return {"status": Status.ERROR, "answer": f"Не удалось выполнить SQL: {last}"}
         reply = await model.ainvoke(
             [
                 SystemMessage(SUMMARIZE_SYS),
@@ -451,7 +378,7 @@ def build_sql_graph(
                 ),
             ]
         )
-        return {"status": "ok", "answer": str(reply.content)}
+        return {"status": Status.OK, "answer": str(reply.content)}
 
     def after_generate(state: SqlToolState) -> str:
         """Пустой батч кандидатов → summarize (иначе цикл без прогресса)."""
@@ -469,7 +396,7 @@ def build_sql_graph(
 
     def after_judge(state: SqlToolState) -> str:
         """Судья доволен → summarize; иначе → ещё раунд generate."""
-        return "summarize" if state.verdict == "sufficient" else "generate"
+        return "summarize" if state.verdict == Verdict.SUFFICIENT else "generate"
 
     g = StateGraph(SqlToolState, input_schema=SqlToolInput)
     g.add_node("sample", sample)
