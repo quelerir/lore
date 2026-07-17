@@ -49,10 +49,19 @@
   border-left-color: #d0463b;
 }
 
-.name {
+.stepSummary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
   font-weight: 600;
   color: #2b3443;
-  margin-bottom: 3px;
+  user-select: none;
+}
+
+.mark {
+  font-size: 11px;
+  color: #5b6675;
 }
 
 .io {
