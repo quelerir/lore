@@ -24,6 +24,11 @@ def _rows(n):
             "row_count": n, "truncated": False}
 
 
+def _sample():
+    # результат сэмпл-запроса (первый run_select каждого прогона)
+    return _rows(1)
+
+
 def _inp(question="ФИО юристов"):
     return {
         "question": question,
@@ -49,11 +54,11 @@ def test_round1_sufficient_ok():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Юрист: Каневский Георгий."),
     ])
-    exe = FakeExecutor(results=[_rows(1), _rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
     out = _run(model, exe)
     assert out["status"] == "ok"
     assert "Каневский" in out["answer"]
-    assert len(exe.calls) == 2  # оба кандидата раунда выполнены (параллельно)
+    assert len(exe.calls) == 3  # сэмпл + оба кандидата раунда
 
 
 def test_retry_then_sufficient():
@@ -67,10 +72,10 @@ def test_retry_then_sufficient():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Ответ по данным."),
     ])
-    exe = FakeExecutor(results=[_rows(1), _rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "ok"
-    assert len(exe.calls) == 2
+    assert len(exe.calls) == 3
 
 
 def test_budget_exhausted_no_data():
@@ -83,24 +88,56 @@ def test_budget_exhausted_no_data():
         AIMessage(content='["SELECT column_2 FROM %s"]' % LEGAL),
         AIMessage(content='["SELECT column_3 FROM %s"]' % LEGAL),
     ])
-    exe = FakeExecutor(results=[_rows(0), _rows(0), _rows(0)])
+    exe = FakeExecutor(results=[_sample(), _rows(0), _rows(0), _rows(0)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "no_data"
-    assert len(exe.calls) == 3
+    assert len(exe.calls) == 4  # сэмпл + 3 кандидата
 
 
-def test_duplicate_candidate_not_reexecuted_but_counted():
-    # Повтор SQL из прошлого раунда не гоняется в БД, но бюджет списывается —
-    # иначе раунды из одних повторов крутились бы вечно.
+def test_duplicate_candidates_stopped_by_round_cap():
+    # Повтор SQL не гоняется в БД и бюджет НЕ двигает — цикл останавливает
+    # предел раундов (== max_queries).
     model = ScriptedChatModel(responses=[
         AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),
         AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),  # дубликат
         AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),  # дубликат
     ])
-    exe = FakeExecutor(results=[_rows(0)])
+    exe = FakeExecutor(results=[_sample(), _rows(0)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "no_data"
-    assert len(exe.calls) == 1
+    assert len(exe.calls) == 2  # сэмпл + один реальный SELECT
+
+
+def test_guardrails_refusal_does_not_consume_budget():
+    # Раунд 1: два кандидата — отказ валидатора + удачный SELECT. Отказ не
+    # списывается → executed=1 < 2 → зовётся СУДЬЯ. При старой семантике
+    # executed=2 исчерпал бы бюджет, judge был бы пропущен, и summarize
+    # съел бы заскриптованный "SUFFICIENT" как ответ — ассерт на answer
+    # ловит разницу.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["DROP TABLE x", "SELECT column_1 FROM %s"]' % LEGAL),
+        AIMessage(content="SUFFICIENT"),
+        AIMessage(content="Ответ."),
+    ])
+    exe = FakeExecutor(results=[_sample(), "Отказ: разрешён только SELECT.",
+                                _rows(1)])
+    out = _run(model, exe, candidates=2, max_queries=2)
+    assert out["status"] == "ok"
+    assert out["answer"] == "Ответ."
+
+
+def test_round_cap_stops_refusal_only_batches():
+    # Модель упорно генерит запрещённое: бюджет не тратится, но предел
+    # раундов (== max_queries) останавливает цикл со status=error.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["DROP TABLE x"]'),
+        AIMessage(content='["DROP TABLE y"]'),
+    ])
+    exe = FakeExecutor(results=[_sample(), "Отказ: разрешён только SELECT.",
+                                "Отказ: разрешён только SELECT."])
+    out = _run(model, exe, candidates=1, max_queries=2)
+    assert out["status"] == "error"
+    assert "Отказ" in out["answer"]
 
 
 def test_all_sql_errors_status_error():
@@ -109,7 +146,7 @@ def test_all_sql_errors_status_error():
         AIMessage(content='["SELECT worse FROM %s"]' % LEGAL),
         AIMessage(content='["SELECT nope FROM %s"]' % LEGAL),
     ])
-    exe = FakeExecutor(results=["Ошибка SQL: a", "Ошибка SQL: b", "Ошибка SQL: c"])
+    exe = FakeExecutor(results=[_sample(), "Ошибка SQL: a", "Ошибка SQL: b", "Ошибка SQL: c"])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "error"
 
@@ -120,10 +157,10 @@ def test_no_candidates_terminates_with_error():
     model = ScriptedChatModel(responses=[
         AIMessage(content="Извините, не могу составить запрос."),
     ])
-    exe = FakeExecutor(results=[])
+    exe = FakeExecutor(results=[_sample()])
     out = _run(model, exe, candidates=2, max_queries=3)
     assert out["status"] == "error"
-    assert exe.calls == []
+    assert exe.calls == [f"SELECT * FROM {LEGAL} LIMIT 5"]
 
 
 def test_insufficient_verdict_means_need_more():
@@ -136,8 +173,32 @@ def test_insufficient_verdict_means_need_more():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Ответ."),
     ])
-    exe = FakeExecutor(results=[_rows(1), _rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
     out = _run(model, exe, candidates=1, max_queries=3)
+    assert out["status"] == "ok"
+    assert len(exe.calls) == 3
+
+
+def test_sample_failure_is_not_fatal():
+    # Отказ/ошибка сэмпла не роняет граф и не мешает ответу.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),
+        AIMessage(content="SUFFICIENT"),
+        AIMessage(content="Ответ."),
+    ])
+    exe = FakeExecutor(results=["Ошибка SQL: сеть", _rows(1)])
+    out = _run(model, exe, candidates=1, max_queries=3)
+    assert out["status"] == "ok"
+
+
+def test_sample_not_counted_in_budget():
+    # max_queries=1: сэмпл вне бюджета, кандидат всё ещё выполняется.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),
+        AIMessage(content="Ответ."),  # summarize (бюджет исчерпан, судьи нет)
+    ])
+    exe = FakeExecutor(results=[_sample(), _rows(1)])
+    out = _run(model, exe, candidates=1, max_queries=1)
     assert out["status"] == "ok"
     assert len(exe.calls) == 2
 
@@ -163,17 +224,49 @@ def test_executor_exception_becomes_failed_attempt():
 
 def test_structured_output_path_used_when_supported():
     from fakes import StructuredScriptedChatModel
-    from toast.sql_graph import SqlCandidates
+    from toast.sql_graph import JudgeVerdict, SqlCandidates
 
     model = StructuredScriptedChatModel(responses=[
         SqlCandidates(candidates=["SELECT column_1 FROM %s" % LEGAL]),
-        AIMessage(content="SUFFICIENT"),
+        JudgeVerdict(sufficient=True, reason="ок"),  # судья тоже structured
         AIMessage(content="Ответ."),
     ])
-    exe = FakeExecutor(results=[_rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "ok"
-    assert exe.calls == ["SELECT column_1 FROM %s" % LEGAL]
+    assert exe.calls[1:] == ["SELECT column_1 FROM %s" % LEGAL]
+
+
+def test_judge_reason_feeds_next_generate_prompt():
+    from fakes import StructuredScriptedChatModel
+    from toast.sql_graph import JudgeVerdict, SqlCandidates
+
+    captured: list[str] = []
+
+    class CapturingModel(StructuredScriptedChatModel):
+        def with_structured_output(self, schema, **kwargs):
+            model = self
+
+            class _S:
+                async def ainvoke(self, messages, config=None):
+                    captured.append("\n".join(str(m.content) for m in messages))
+                    return model.responses.pop(0)
+
+            return _S()
+
+    model = CapturingModel(responses=[
+        SqlCandidates(candidates=["SELECT column_1 FROM %s" % LEGAL]),
+        JudgeVerdict(sufficient=False, reason="строки не про юристов"),
+        SqlCandidates(candidates=["SELECT column_2 FROM %s" % LEGAL]),
+        JudgeVerdict(sufficient=True, reason="ок"),
+        AIMessage(content="Ответ."),
+    ])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
+    out = _run(model, exe, candidates=1, max_queries=3)
+    assert out["status"] == "ok"
+    # причина судьи попала в промпт ВТОРОГО generate (порядок structured-
+    # вызовов в captured: generate, judge, generate, judge)
+    assert "строки не про юристов" in captured[2]
 
 
 def test_candidates_run_in_parallel_batch():
@@ -182,10 +275,10 @@ def test_candidates_run_in_parallel_batch():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="ok"),
     ])
-    exe = FakeExecutor(results=[_rows(1), _rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
     out = _run(model, exe, candidates=2, max_queries=3)
     assert out["status"] == "ok"
-    assert len(exe.calls) == 2
+    assert len(exe.calls) == 3
 
 
 def test_input_schema_exposes_five_fields():
@@ -195,24 +288,59 @@ def test_input_schema_exposes_five_fields():
     assert keys == {"question", "chunk_id", "table", "desc_vector", "desc_full"}
 
 
-def test_state_has_no_columns_field():
-    # init — DB-less: имена колонок берутся из desc_full, а не из БД.
+def test_state_has_defaults_instead_of_init():
     from toast.sql_graph import SqlToolState
 
-    assert "columns" not in SqlToolState.__annotations__
+    assert "columns" not in SqlToolState.model_fields
+    state = SqlToolState(question="q", chunk_id="c", table="t",
+                         desc_vector="v", desc_full="f")
+    assert state.attempts == [] and state.executed_count == 0 and state.round == 0
+
+
+def test_parse_candidates_multiline_sql_fallback():
+    from toast.sql_graph import parse_sql_candidates
+
+    text = ("SELECT column_1,\n       column_2\n"
+            "FROM splitter_toast.%s\nWHERE column_2 IS NOT NULL" % LEGAL)
+    out = parse_sql_candidates(text, 2)
+    assert len(out) == 1
+    assert "column_2" in out[0] and "WHERE" in out[0]
+
+
+def _ok_attempt(sql, rows):
+    return {"sql": sql, "ok": True, "error": None, "rows": rows,
+            "row_count": len(rows), "truncated": False}
+
+
+def _fail_attempt(sql="SELECT bad", error="Ошибка SQL: x"):
+    return {"sql": sql, "ok": False, "error": error, "rows": [],
+            "row_count": 0, "truncated": False}
+
+
+def test_rows_context_groups_by_attempt():
+    from toast.sql_graph import _rows_context
+
+    ctx = _rows_context([
+        _ok_attempt("SELECT a", [{"a": 1}]),
+        _fail_attempt(),
+        _ok_attempt("SELECT b", [{"b": 2}]),
+    ])
+    assert "Запрос: SELECT a" in ctx and "Запрос: SELECT b" in ctx
+    assert "SELECT bad" not in ctx  # неуспешные попытки не в контексте
+    assert "Показано строк: 2 из 2" in ctx
 
 
 def test_rows_context_caps_by_size():
     from toast.sql_graph import JUDGE_CONTEXT_CHARS, _rows_context
 
-    big = {"column_1": "x" * JUDGE_CONTEXT_CHARS}
-    small = {"column_1": "y"}
-    ctx = _rows_context([], [big, small])
+    big = _ok_attempt("SELECT big", [{"column_1": "x" * JUDGE_CONTEXT_CHARS}])
+    small = _ok_attempt("SELECT small", [{"column_1": "y"}])
+    ctx = _rows_context([big, small])
     assert "Показано строк: 1 из 2" in ctx
     assert '"y"' not in ctx
 
     # Хотя бы одна строка отдаётся всегда, даже если сама больше лимита.
-    ctx_one = _rows_context([], [big])
+    ctx_one = _rows_context([big])
     assert "Показано строк: 1 из 1" in ctx_one
 
 

@@ -3,7 +3,7 @@ import asyncio
 from langchain_core.messages import AIMessage
 
 from fakes import ScriptedChatModel
-from test_sql_graph import FakeExecutor, _rows  # переиспользуем фейки
+from test_sql_graph import FakeExecutor, _rows, _sample  # переиспользуем фейки
 
 LEGAL = "toast_tbl_ec48a6d52d16ab405f95"
 
@@ -16,7 +16,7 @@ def test_run_sql_tool_projects_contract():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Каневский Георгий."),
     ])
-    exe = FakeExecutor(results=[_rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1)])
     inputs = {"question": "ФИО юристов", "chunk_id": "c1", "table": LEGAL,
               "desc_vector": "юристы", "desc_full": "Таблица юристов"}
     out = asyncio.run(run_sql_tool(inputs, model, exe, max_queries=3,

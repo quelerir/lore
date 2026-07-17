@@ -75,6 +75,8 @@ def test_connect_has_no_startup_params(monkeypatch):
     _run(_select(ex))
     # Ровно причина падения за пулером: startup-параметры соединения.
     assert "server_settings" not in captured
+    # prepared statements ломаются за transaction-pooling пулером
+    assert captured.get("statement_cache_size") == 0
     # read-only и timeout — внутри транзакции; соединение закрыто.
     assert conn.readonly_flags == [True]
     assert any("statement_timeout" in q for q in conn.executed)

@@ -16,6 +16,17 @@ def test_bare_table_name_qualified():
     assert qualify_table(q, T) == q
 
 
+def test_qualify_does_not_touch_string_literals():
+    sql = f"SELECT * FROM {T} WHERE column_1 = 'from {T}'"
+    out = qualify_table(sql, T)
+    assert f"FROM splitter_toast.{T}" in out
+    assert f"'from {T}'" in out  # литерал цел
+
+
+def test_qualify_unparseable_sql_passthrough():
+    assert qualify_table("Извините, не могу", T) == "Извините, не могу"
+
+
 def test_self_join_allowed():
     sql = (f"SELECT a.column_1 FROM splitter_toast.{T} a "
            f"JOIN splitter_toast.{T} b USING (_splitter_source_row)")
@@ -67,6 +78,26 @@ def test_subquery_against_other_table_rejected():
 
 def test_table_function_rejected():
     assert validate_select("SELECT * FROM generate_series(1, 10)", T) is not None
+
+
+@pytest.mark.parametrize("bad", [
+    f"SELECT query_to_xml('SELECT * FROM public.users', true, false, '') FROM splitter_toast.{T}",
+    f"SELECT query_to_xml_and_xmlschema('SELECT 1', true, false, '') FROM splitter_toast.{T}",
+    f"SELECT * FROM splitter_toast.{T}, xmltable('/x' PASSING column_1 COLUMNS a text)",
+    f"SELECT * FROM splitter_toast.{T} t, dblink('c', 'SELECT 1') AS d(x int)",
+    f"SELECT pg_sleep(10) FROM splitter_toast.{T}",
+    f"SELECT pg_read_file('/etc/passwd') FROM splitter_toast.{T}",
+    f"SELECT current_setting('server_version') FROM splitter_toast.{T}",
+])
+def test_dangerous_functions_rejected(bad):
+    refusal = validate_select(bad, T)
+    assert refusal is not None and "функция" in refusal
+
+
+def test_benign_functions_allowed():
+    sql = (f"SELECT count(*), lower(column_1), coalesce(column_2, '-') "
+           f"FROM splitter_toast.{T} GROUP BY column_1, column_2")
+    assert validate_select(sql, T) is None
 
 
 def test_forbidden_word_inside_string_literal_allowed():

@@ -51,7 +51,9 @@ class PgExecutor:
         )
         try:
             conn = await asyncpg.connect(
-                self._dsn, command_timeout=STATEMENT_TIMEOUT_MS / 1000
+                self._dsn,
+                command_timeout=STATEMENT_TIMEOUT_MS / 1000,
+                statement_cache_size=0,  # prepared statements vs PgBouncer
             )
             try:
                 async with conn.transaction(readonly=True):
