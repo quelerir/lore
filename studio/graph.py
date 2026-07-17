@@ -37,12 +37,19 @@ def _toast_dsn() -> str:
 
 def _build_studio_graph():
     api_key = _require("OPENROUTER_API_KEY")
+    # Явный лимит вывода: без него OpenRouter резервирует полное окно модели
+    # (65536 у sonnet) и отвечает 402, когда кредитов меньше резерва. extra_body
+    # обязателен: langchain-openai шлёт max_completion_tokens, OpenRouter его
+    # игнорирует — родной max_tokens кладём в JSON запроса напрямую.
+    limit = int(os.environ.get("LLM_MAX_TOKENS", "2000"))
     model = ChatOpenAI(
         model=os.environ.get("SQL_MODEL", "anthropic/claude-sonnet-4.6"),
         base_url=os.environ.get(
             "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
         ),
         api_key=api_key,
+        max_tokens=limit,
+        extra_body={"max_tokens": limit},
     )
     executor = PgExecutor(_toast_dsn())
     return build_sql_graph(

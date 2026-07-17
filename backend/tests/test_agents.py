@@ -139,8 +139,10 @@ def test_build_sql_model_openrouter(monkeypatch):
     assert isinstance(m, ChatOpenAI)
     assert "openrouter.ai" in str(m.openai_api_base)
     # Без явного max_tokens OpenRouter резервирует полное окно модели и
-    # отвечает 402 при нехватке кредитов.
+    # отвечает 402 при нехватке кредитов. extra_body обязателен: langchain
+    # шлёт max_completion_tokens, который OpenRouter игнорирует.
     assert m.max_tokens == 2000
+    assert m.extra_body == {"max_tokens": 2000}
 
 
 def test_build_sql_model_requires_key(monkeypatch):
