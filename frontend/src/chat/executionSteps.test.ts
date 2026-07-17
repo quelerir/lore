@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IStep } from "@chainlit/react-client";
-import { collectTraceByMessage } from "./executionSteps";
+import { collectTraceByMessage, formatDuration } from "./executionSteps";
 
 const step = (over: Partial<IStep>): IStep =>
   ({
@@ -131,5 +131,29 @@ describe("collectTraceByMessage", () => {
     const map = collectTraceByMessage(tree);
     expect(map.get("a1")!.map((s) => s.id)).toEqual(["stage1"]);
     expect(map.get("a1")![0].steps!.map((s) => s.id)).toEqual(["att1", "att2"]);
+  });
+});
+
+describe("formatDuration", () => {
+  it("миллисекунды до секунды", () => {
+    expect(
+      formatDuration("2026-07-17T09:00:00.000Z", "2026-07-17T09:00:00.450Z"),
+    ).toBe("450 мс");
+  });
+
+  it("секунды с одним знаком", () => {
+    expect(
+      formatDuration("2026-07-17T09:00:00.000Z", "2026-07-17T09:00:01.230Z"),
+    ).toBe("1.2 с");
+  });
+
+  it("null без границ или с мусором", () => {
+    expect(formatDuration(undefined, "2026-07-17T09:00:01Z")).toBeNull();
+    expect(formatDuration("2026-07-17T09:00:01Z", undefined)).toBeNull();
+    expect(formatDuration("не дата", "2026-07-17T09:00:01Z")).toBeNull();
+    // end раньше start — часы разъехались, не показываем ерунду
+    expect(
+      formatDuration("2026-07-17T09:00:02Z", "2026-07-17T09:00:01Z"),
+    ).toBeNull();
   });
 });
