@@ -1,0 +1,5 @@
+{
+  "dependencies": ["."],
+  "graphs": { "sql_tool": "./graph.py:graph" },
+  "env": "../.env"
+}

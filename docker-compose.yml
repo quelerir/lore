@@ -1,0 +1,164 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # URL Chainlit, каким его видит браузер пользователя.
+        VITE_CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backend:
+    build: ./backend
+    # Весь пользовательский конфиг приходит из .env (шаблон — .env.example,
+    # `cp .env.example .env`). required:false: без .env compose не падает на
+    # разборе — контейнер стартует, а config.py даёт понятную ошибку валидации.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Только внутренняя связка контейнеров: значения указывают на сервисы
+      # compose и потому НЕ выносятся в .env (там были бы неверные для docker
+      # адреса). environment побеждает env_file — эта связка всегда в силе.
+      CHAINLIT_DB_HOST: chainlit-db
+      CHAINLIT_DB_PORT: "5432"
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      # CHAINLIT_URL нужен Chainlit для построения redirect_uri.
+      CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}
+      # authentik SSO: имена OAUTH_GENERIC_* читает Chainlit; значения маппятся
+      # из AUTHENTIK_* (.env) и внутренних адресов сервиса authentik-server.
+      OAUTH_GENERIC_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-lore-chainlit}
+      OAUTH_GENERIC_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET:-dev-only-oauth-client-secret-change-me}
+      OAUTH_GENERIC_AUTH_URL: ${AUTHENTIK_PUBLIC_URL:-http://localhost:9100}/application/o/authorize/
+      OAUTH_GENERIC_TOKEN_URL: http://authentik-server:9000/application/o/token/
+      OAUTH_GENERIC_USER_INFO_URL: http://authentik-server:9000/application/o/userinfo/
+    extra_hosts:
+      # Доступ из контейнера к Ollama, запущенной на хосте (Linux).
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    restart: unless-stopped
+    depends_on:
+      chainlit-db:
+        condition: service_healthy
+      authentik-server:
+        condition: service_healthy
+    healthcheck:
+      # curl'а в python-slim нет — проверяем стандартной библиотекой.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  chainlit-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${CHAINLIT_DB_USER:-chainlit}
+      POSTGRES_PASSWORD: ${CHAINLIT_DB_PASSWORD:-chainlit}
+      POSTGRES_DB: ${CHAINLIT_DB_NAME:-chainlit}
+    restart: unless-stopped
+    volumes:
+      - ./backend/init/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - chainlit-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CHAINLIT_DB_USER:-chainlit}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- authentik (SSO) ------------------------------------------------------
+
+  authentik-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${AUTHENTIK_DB_USER:-authentik}
+      POSTGRES_PASSWORD: ${AUTHENTIK_DB_PASSWORD:-authentik}
+      POSTGRES_DB: ${AUTHENTIK_DB_NAME:-authentik}
+    restart: unless-stopped
+    volumes:
+      - authentik-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTHENTIK_DB_USER:-authentik}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  authentik-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2026.2
+    command: server
+    environment: &authentik-env
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-dev-only-authentik-secret-key-change-me}
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-db
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_DB_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_DB_NAME:-authentik}
+      # Сеются один раз при первой инициализации БД authentik.
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-admin}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-dev-only-bootstrap-api-token-change-me}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+    restart: unless-stopped
+    ports:
+      - "${AUTHENTIK_PORT:-9100}:9000"
+    depends_on:
+      authentik-db:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/-/health/ready/ > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2026.2
+    command: worker
+    environment: *authentik-env
+    restart: unless-stopped
+    depends_on:
+      authentik-db:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+
+  authentik-init:
+    image: python:3.13-slim
+    command: ["python3", "/setup/authentik-bootstrap.py"]
+    environment:
+      AUTHENTIK_INTERNAL_URL: http://authentik-server:9000
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:-dev-only-bootstrap-api-token-change-me}
+      AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-lore-chainlit}
+      AUTHENTIK_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET:-dev-only-oauth-client-secret-change-me}
+      AUTHENTIK_APP_SLUG: ${AUTHENTIK_APP_SLUG:-lore}
+      AUTHENTIK_APP_NAME: ${AUTHENTIK_APP_NAME:-Lore Chat}
+      AUTHENTIK_REDIRECT_URI: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}/auth/oauth/generic/callback
+      LORE_FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
+    volumes:
+      - ./infra/authentik-bootstrap.py:/setup/authentik-bootstrap.py:ro
+    depends_on:
+      authentik-server:
+        condition: service_healthy
+    restart: "no"
+
+# Ollama намеренно не входит в compose — она запускается на хосте
+# (см. README), а контейнер бэкенда ходит к ней по OLLAMA_BASE_URL.
+
+volumes:
+  chainlit-db-data:
+  authentik-db-data:

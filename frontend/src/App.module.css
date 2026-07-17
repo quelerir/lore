@@ -1,0 +1,191 @@
+.shell {
+  height: 100dvh;
+  background: #f5f7fb;
+  padding: 12px;
+}
+
+.frame {
+  height: calc(100dvh - 24px);
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(232, 236, 240, 0.9);
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  box-shadow: 0 18px 56px rgba(205, 214, 224, 0.24);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.emptyState {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.emptyCard {
+  width: min(400px, 100%);
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(228, 233, 239, 0.95);
+  box-shadow: 0 14px 36px rgba(205, 214, 224, 0.18);
+}
+
+.emptyCard h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.emptyCard p {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.disclaimer {
+  margin: 0;
+  padding: 0 18px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #8c97a8;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 40;
+}
+
+.modalCard {
+  width: min(420px, 100%);
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+}
+
+.modalTitle {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #1f2937;
+}
+
+.modalText {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.modalInput {
+  width: 100%;
+  height: 44px;
+  border: 1px solid rgba(211, 220, 230, 0.95);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0 14px;
+  outline: none;
+  color: #1f2937;
+  font: inherit;
+  font-size: 14px;
+}
+
+.modalInput:focus {
+  border-color: #c5d1de;
+  box-shadow: 0 0 0 3px rgba(226, 232, 240, 0.75);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.modalSecondaryButton,
+.modalPrimaryButton {
+  min-width: 104px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.modalSecondaryButton {
+  background: #f3f5f7;
+  color: #475569;
+}
+
+.modalSecondaryButton:hover {
+  background: #e8edf2;
+}
+
+.modalPrimaryButton {
+  background: #1f2937;
+  color: #fff;
+}
+
+.modalPrimaryButton:hover {
+  background: #111827;
+}
+
+.modalPrimaryButton:disabled {
+  opacity: 0.45;
+}
+
+.modalPrimaryButton:disabled:hover {
+  background: #1f2937;
+}
+
+@media (max-width: 960px) {
+  .shell {
+    padding: 0;
+  }
+
+  .frame {
+    height: 100dvh;
+    border-radius: 0;
+  }
+
+  .disclaimer {
+    padding: 0 14px 8px;
+    font-size: 11px;
+  }
+
+  .modalCard {
+    padding: 18px;
+    border-radius: 20px;
+  }
+}
+
+.authLoading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 14px;
+}

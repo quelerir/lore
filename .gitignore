@@ -1,6 +1,31 @@
-node_modules
-dist
+# IDE / OS
+.idea/
+.DS_Store
+
+# Env / secrets
 .env
+.env.local
+
+# Frontend
+node_modules/
+dist/
 *.tsbuildinfo
-vite.config.js
-vite.config.d.ts
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# Backend (Python)
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+backend/.files/
+backend/.chainlit/translations/
+
+# LangGraph Studio local state
+studio/.langgraph_api/
+
+# Референс-отчёт и выгрузки из loreagent_test с реальными ПД — не коммитить
+problem-questions-report.html
+sqls/

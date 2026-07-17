@@ -1,0 +1,34 @@
+[project]
+name = "datacraft-chainlit"
+version = "0.1.0"
+description = "Minimal Chainlit + deepagents service for datacraft"
+requires-python = ">=3.13"
+dependencies = [
+    "chainlit>=2.0",
+    "deepagents",
+    "langchain-ollama",
+    "langgraph",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg",
+    "pyjwt>=2.8",
+    "langchain-openai>=1.3.5",
+    "pydantic-settings>=2.14.2",
+    "sqlglot>=30.12.0",
+]
+
+[tool.setuptools]
+py-modules = ["app", "auth", "config"]
+packages = ["agents", "toast"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# uv sync не устанавливает сам проект (нет [build-system], root — virtual),
+# поэтому модули app/agent/auth импортируются из корня проекта.
+pythonpath = ["."]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "mypy>=2.2.0",
+    "ruff>=0.15.21",
+]

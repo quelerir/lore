@@ -1,0 +1,13 @@
+.env
+.git
+.gitignore
+.idea/
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+tests/
+docs/
+.superpowers/
+.files/
+.chainlit/translations/
