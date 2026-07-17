@@ -26,5 +26,6 @@ backend/.chainlit/translations/
 # LangGraph Studio local state
 studio/.langgraph_api/
 
-# Референс-отчёт с реальными ПД — не коммитить
+# Референс-отчёт и выгрузки из loreagent_test с реальными ПД — не коммитить
 problem-questions-report.html
+sqls/
