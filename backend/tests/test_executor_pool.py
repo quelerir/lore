@@ -7,6 +7,8 @@ import asyncio
 
 import asyncpg
 
+from toast.models import DbError
+
 
 LEGAL = "toast_tbl_ec48a6d52d16ab405f95"
 
@@ -98,7 +100,7 @@ def test_client_timeout_returns_error_string(monkeypatch):
     # он не должен пробрасываться и ронять граф.
     ex, conn, _ = _patch(monkeypatch, fetch_error=TimeoutError())
     res = _run(_select(ex))
-    assert isinstance(res, str) and "таймаут" in res
+    assert isinstance(res, DbError) and "таймаут" in res.message
     assert conn.closed
 
 
@@ -107,7 +109,7 @@ def test_postgres_error_returns_error_string(monkeypatch):
         monkeypatch, fetch_error=asyncpg.PostgresSyntaxError("bad syntax")
     )
     res = _run(_select(ex))
-    assert isinstance(res, str) and res.startswith("Ошибка SQL:")
+    assert isinstance(res, DbError) and res.message.startswith("Ошибка SQL:")
     assert conn.closed
 
 

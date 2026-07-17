@@ -43,6 +43,8 @@ def test_run_select_ok_and_mutation_rejected():
         bad = await exe.run_select("DROP TABLE splitter_toast.x", LEGAL)
         return ok, bad
 
+    from toast.models import Refusal
+
     ok, bad = _run(run())
     assert not isinstance(ok, str) and ok["row_count"] >= 1
-    assert isinstance(bad, str) and "Отказ" in bad
+    assert isinstance(bad, Refusal) and "Отказ" in bad.reason
