@@ -57,8 +57,17 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from sqlglot import exp as sql_exp
 
+from toast.prompts import (
+    GENERATE_SYS,
+    JUDGE_SYS,
+    NO_CANDIDATES_MSG,
+    NO_DATA_MSG,
+    SAMPLE_LIMIT,
+    SUMMARIZE_SYS,
+    generate_prompt,
+    rows_context,
+)
 from toast.models import (
-    Attempt,
     DbError,
     JudgeVerdict,
     Refusal,
@@ -71,40 +80,6 @@ from toast.models import (
     ok_rows,
 )
 
-FIXED_SCHEMA = (
-    "Таблицы извлечены из XLSX (Postgres, схема splitter_toast). У каждой "
-    "первые служебные колонки: _splitter_row_number (int), "
-    "_splitter_source_row (int), _splitter_source_range (text). Дальше — "
-    "колонки данных: column_1, column_2, ... или переименованные "
-    "(из заголовков). Используй физические имена колонок строго как в "
-    "описании таблицы."
-)
-
-GENERATE_SYS = (
-    FIXED_SCHEMA
-    + " Составь SQL SELECT к ОДНОЙ переданной таблице, чтобы ответить на "
-    "вопрос. Верни JSON-массив из нескольких РАЗНЫХ по подходу SELECT-строк "
-    "(без markdown, без пояснений). Только SELECT, только эта таблица. "
-    "Каждый элемент — ровно один запрос SELECT (WITH разрешён), "
-    "без точки с запятой."
-)
-JUDGE_SYS = (
-    "Ты оцениваешь, достаточно ли полученных строк, чтобы ответить на "
-    "вопрос. Верни sufficient=true/false и короткую причину reason — "
-    "почему строк недостаточно (она попадёт генератору SQL)."
-)
-SUMMARIZE_SYS = (
-    "Ответь на вопрос пользователя СТРОГО по предоставленным строкам таблицы. "
-    "Не выдумывай. Если данных недостаточно — так и скажи. Если показаны не "
-    "все строки выборки — явно скажи, что ответ построен по неполной выборке. "
-    "Кратко, по-русски."
-)
-NO_DATA_MSG = "В данных таблицы нет ответа на этот вопрос."
-NO_CANDIDATES_MSG = "Модель не вернула ни одного SQL-кандидата."
-JUDGE_ROWS_CAP = 30  # сколько строк отдаём в контекст судьи/суммаризатора
-JUDGE_CONTEXT_CHARS = 8_000  # кап сериализованных строк для судьи/суммаризатора
-SAMPLE_LIMIT = 5  # строк-примеров для промпта generate
-SAMPLE_CONTEXT_CHARS = 2_000  # кап сериализованных примеров в промпте
 
 # «sufficient» с границами слова: в «insufficient» и «NEED_MORE...» не матчится.
 _SUFFICIENT_RE = re.compile(r"\bsufficient\b")
@@ -194,40 +169,6 @@ async def _generate_candidates(model: BaseChatModel, messages: list,
 
 
 
-def _rows_context(attempts: list[Attempt]) -> str:
-    """Строки успешных попыток, сгруппированные по их SQL.
-
-    Судья и суммаризатор видят, какой запрос что вернул, — плохой первый
-    кандидат не вытесняет из контекста хороший второй безымянной смесью.
-    Суммарные капы: JUDGE_ROWS_CAP строк и ~JUDGE_CONTEXT_CHARS символов;
-    хотя бы одна строка отдаётся всегда.
-    """
-    sections: list[str] = []
-    total = sum(a["row_count"] for a in attempts if a["ok"])
-    shown = 0
-    size = 0
-    for a in attempts:
-        if not a["ok"] or not a["rows"]:
-            continue
-        rows_out: list[dict] = []
-        for row in a["rows"]:
-            if shown >= JUDGE_ROWS_CAP:
-                break
-            piece = json.dumps(row, ensure_ascii=False, default=str)
-            if shown and size + len(piece) > JUDGE_CONTEXT_CHARS:
-                break
-            rows_out.append(row)
-            shown += 1
-            size += len(piece)
-        if rows_out:
-            sections.append(
-                f"Запрос: {a['sql']}\nСтроки: "
-                + json.dumps(rows_out, ensure_ascii=False, default=str)
-            )
-    note = f"Показано строк: {shown} из {total}"
-    if any(a["truncated"] for a in attempts):
-        note += " (результат SQL дополнительно усечён лимитом исполнителя)"
-    return note + ".\n" + "\n\n".join(sections)
 
 
 def build_sql_graph(
@@ -275,38 +216,10 @@ def build_sql_graph(
         # remaining >= 1 гарантируется маршрутизацией (в generate не попадаем при
         # исчерпанном бюджете); max(1, …) — просто страховка.
         n = max(1, min(candidates_per_round, remaining))
-        errors = [a["error"] for a in state.attempts if not a["ok"] and a["error"]]
-        empty = [a["sql"] for a in state.attempts if a["ok"] and a["row_count"] == 0]
-        prompt = (
-            f"Вопрос: {state.question}\n"
-            f"Таблица: {state.table}\n"
-            f"Описание (кратко): {state.desc_vector}\n"
-            f"Описание (полно): {state.desc_full}\n"
-            f"Нужно вернуть до {n} разных SELECT."
-        )
-        if errors:
-            prompt += "\n\nПрошлые ошибки SQL (исправь):\n" + "\n".join(errors[-3:])
-        if empty:
-            prompt += (
-                "\n\nЭти запросы выполнились, но вернули 0 строк — "
-                "нужен другой подход:\n" + "\n".join(empty[-3:])
-            )
-        if state.judge_reason:
-            prompt += (
-                "\n\nПрошлый результат отклонён судьёй: "
-                f"{state.judge_reason} — построй запрос иначе."
-            )
-        if state.sample_rows:
-            sample_json = json.dumps(
-                state.sample_rows, ensure_ascii=False, default=str
-            )[:SAMPLE_CONTEXT_CHARS]
-            prompt += (
-                f"\n\nПримеры строк таблицы (до {SAMPLE_LIMIT}, реальные "
-                f"имена колонок и формат значений):\n{sample_json}"
-            )
-        # tag internal: служебные токены не показываем пользователю в UI.
         candidates = await _generate_candidates(
-            model, [SystemMessage(GENERATE_SYS), HumanMessage(prompt)], n
+            model,
+            [SystemMessage(GENERATE_SYS), HumanMessage(generate_prompt(state, n))],
+            n,
         )
         return {"candidates": candidates, "round": state.round + 1}
 
@@ -345,7 +258,7 @@ def build_sql_graph(
                 SystemMessage(JUDGE_SYS),
                 HumanMessage(
                     f"Вопрос: {state.question}\n"
-                    + _rows_context(state.attempts)
+                    + rows_context(state.attempts)
                 ),
             ],
         )
@@ -374,7 +287,7 @@ def build_sql_graph(
                 SystemMessage(SUMMARIZE_SYS),
                 HumanMessage(
                     f"Вопрос: {state.question}\n"
-                    + _rows_context(state.attempts)
+                    + rows_context(state.attempts)
                 ),
             ]
         )
