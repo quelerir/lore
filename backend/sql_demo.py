@@ -11,6 +11,7 @@ from typing import TypedDict
 
 import chainlit as cl
 from langchain_core.messages import AIMessageChunk
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
 
 from agents.base import build_sql_model
@@ -123,8 +124,12 @@ async def handle_sql_message(graph: CompiledStateGraph, question: str,
     final_state: dict | None = None
     round_no = 0
     seen_attempts = 0
+    # Колбэк превращает LLM-вызовы узлов (generate/judge/summarize) в
+    # llm-шаги Chainlit — полный трейс для дебага. Тег internal скрывает
+    # только их токены из стрима сообщения, шаги остаются видимыми.
+    config = RunnableConfig(callbacks=[cl.LangchainCallbackHandler()])
     async for mode, payload in graph.astream(
-        inputs, stream_mode=["updates", "messages", "values"]
+        inputs, stream_mode=["updates", "messages", "values"], config=config
     ):
         if mode == "values":
             final_state = payload
