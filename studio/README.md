@@ -5,8 +5,10 @@
 
 ## Запуск
 
-1. Скопируй креды: `cp .env.example .env` и заполни `OPENROUTER_API_KEY` и
-   компоненты `TOAST_DB_*`.
+1. Креды берутся из ОБЩЕГО корневого `.env` (см. `.env.example` в корне):
+   нужны `OPENROUTER_API_KEY` и компоненты `TOAST_DB_*`. Отдельного
+   `studio/.env` больше нет — конфиг один на compose и Studio, чтобы они
+   не расходились.
 2. Подними сервер и Studio:
 
    ```bash
