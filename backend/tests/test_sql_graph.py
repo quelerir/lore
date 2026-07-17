@@ -24,6 +24,11 @@ def _rows(n):
             "row_count": n, "truncated": False}
 
 
+def _sample():
+    # результат сэмпл-запроса (первый run_select каждого прогона)
+    return _rows(1)
+
+
 def _inp(question="ФИО юристов"):
     return {
         "question": question,
@@ -49,11 +54,11 @@ def test_round1_sufficient_ok():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Юрист: Каневский Георгий."),
     ])
-    exe = FakeExecutor(results=[_rows(1), _rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
     out = _run(model, exe)
     assert out["status"] == "ok"
     assert "Каневский" in out["answer"]
-    assert len(exe.calls) == 2  # оба кандидата раунда выполнены (параллельно)
+    assert len(exe.calls) == 3  # сэмпл + оба кандидата раунда
 
 
 def test_retry_then_sufficient():
@@ -67,10 +72,10 @@ def test_retry_then_sufficient():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Ответ по данным."),
     ])
-    exe = FakeExecutor(results=[_rows(1), _rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "ok"
-    assert len(exe.calls) == 2
+    assert len(exe.calls) == 3
 
 
 def test_budget_exhausted_no_data():
@@ -83,10 +88,10 @@ def test_budget_exhausted_no_data():
         AIMessage(content='["SELECT column_2 FROM %s"]' % LEGAL),
         AIMessage(content='["SELECT column_3 FROM %s"]' % LEGAL),
     ])
-    exe = FakeExecutor(results=[_rows(0), _rows(0), _rows(0)])
+    exe = FakeExecutor(results=[_sample(), _rows(0), _rows(0), _rows(0)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "no_data"
-    assert len(exe.calls) == 3
+    assert len(exe.calls) == 4  # сэмпл + 3 кандидата
 
 
 def test_duplicate_candidate_not_reexecuted_but_counted():
@@ -97,10 +102,10 @@ def test_duplicate_candidate_not_reexecuted_but_counted():
         AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),  # дубликат
         AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),  # дубликат
     ])
-    exe = FakeExecutor(results=[_rows(0)])
+    exe = FakeExecutor(results=[_sample(), _rows(0)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "no_data"
-    assert len(exe.calls) == 1
+    assert len(exe.calls) == 2  # сэмпл + один реальный SELECT
 
 
 def test_all_sql_errors_status_error():
@@ -109,7 +114,7 @@ def test_all_sql_errors_status_error():
         AIMessage(content='["SELECT worse FROM %s"]' % LEGAL),
         AIMessage(content='["SELECT nope FROM %s"]' % LEGAL),
     ])
-    exe = FakeExecutor(results=["Ошибка SQL: a", "Ошибка SQL: b", "Ошибка SQL: c"])
+    exe = FakeExecutor(results=[_sample(), "Ошибка SQL: a", "Ошибка SQL: b", "Ошибка SQL: c"])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "error"
 
@@ -120,10 +125,10 @@ def test_no_candidates_terminates_with_error():
     model = ScriptedChatModel(responses=[
         AIMessage(content="Извините, не могу составить запрос."),
     ])
-    exe = FakeExecutor(results=[])
+    exe = FakeExecutor(results=[_sample()])
     out = _run(model, exe, candidates=2, max_queries=3)
     assert out["status"] == "error"
-    assert exe.calls == []
+    assert exe.calls == [f"SELECT * FROM {LEGAL} LIMIT 5"]
 
 
 def test_insufficient_verdict_means_need_more():
@@ -136,8 +141,32 @@ def test_insufficient_verdict_means_need_more():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Ответ."),
     ])
-    exe = FakeExecutor(results=[_rows(1), _rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
     out = _run(model, exe, candidates=1, max_queries=3)
+    assert out["status"] == "ok"
+    assert len(exe.calls) == 3
+
+
+def test_sample_failure_is_not_fatal():
+    # Отказ/ошибка сэмпла не роняет граф и не мешает ответу.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),
+        AIMessage(content="SUFFICIENT"),
+        AIMessage(content="Ответ."),
+    ])
+    exe = FakeExecutor(results=["Ошибка SQL: сеть", _rows(1)])
+    out = _run(model, exe, candidates=1, max_queries=3)
+    assert out["status"] == "ok"
+
+
+def test_sample_not_counted_in_budget():
+    # max_queries=1: сэмпл вне бюджета, кандидат всё ещё выполняется.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),
+        AIMessage(content="Ответ."),  # summarize (бюджет исчерпан, судьи нет)
+    ])
+    exe = FakeExecutor(results=[_sample(), _rows(1)])
+    out = _run(model, exe, candidates=1, max_queries=1)
     assert out["status"] == "ok"
     assert len(exe.calls) == 2
 
@@ -170,10 +199,10 @@ def test_structured_output_path_used_when_supported():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Ответ."),
     ])
-    exe = FakeExecutor(results=[_rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "ok"
-    assert exe.calls == ["SELECT column_1 FROM %s" % LEGAL]
+    assert exe.calls[1:] == ["SELECT column_1 FROM %s" % LEGAL]
 
 
 def test_candidates_run_in_parallel_batch():
@@ -182,10 +211,10 @@ def test_candidates_run_in_parallel_batch():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="ok"),
     ])
-    exe = FakeExecutor(results=[_rows(1), _rows(1)])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
     out = _run(model, exe, candidates=2, max_queries=3)
     assert out["status"] == "ok"
-    assert len(exe.calls) == 2
+    assert len(exe.calls) == 3
 
 
 def test_input_schema_exposes_five_fields():
