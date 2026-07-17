@@ -71,6 +71,17 @@ NO_DATA_MSG = "В данных таблицы нет ответа на этот 
 JUDGE_ROWS_CAP = 30  # сколько строк отдаём в контекст судьи/суммаризатора
 
 
+class Attempt(TypedDict):
+    """Одна попытка выполнения SQL-кандидата (успех или отказ/ошибка)."""
+
+    sql: str
+    ok: bool
+    error: str | None
+    rows: list[dict[str, Any]]
+    row_count: int
+    truncated: bool
+
+
 class SqlToolState(TypedDict, total=False):
     """Состояние графа. total=False: узлы возвращают частичные апдейты,
     langgraph сливает их в общее состояние (последняя запись побеждает).
@@ -89,7 +100,7 @@ class SqlToolState(TypedDict, total=False):
     candidates: list[str]
     round: int
     executed_count: int
-    attempts: list[dict[str, Any]]
+    attempts: list[Attempt]
     verdict: str
     answer: str
     status: str
@@ -126,7 +137,21 @@ def parse_sql_candidates(text: str, limit: int) -> list[str]:
     return lines[:limit] or ([cleaned] if cleaned.lower().startswith("select") else [])
 
 
-def _ok_rows(attempts: list[dict]) -> list[dict]:
+def _attempt(sql: str, res: Any) -> Attempt:
+    """Собирает запись попытки из результата исполнителя.
+
+    Исполнитель возвращает str при отказе guardrails / ошибке SQL, иначе
+    SelectResult со строками.
+    """
+    if isinstance(res, str):
+        return {"sql": sql, "ok": False, "error": res,
+                "rows": [], "row_count": 0, "truncated": False}
+    return {"sql": sql, "ok": True, "error": None,
+            "rows": res["rows"], "row_count": res["row_count"],
+            "truncated": res["truncated"]}
+
+
+def _ok_rows(attempts: list[Attempt]) -> list[dict]:
     """Плоский список строк из всех успешных попыток (для судьи/суммаризатора)."""
     out: list[dict] = []
     for a in attempts:
@@ -192,17 +217,7 @@ def build_sql_graph(
         results = await asyncio.gather(
             *(executor.run_select(sql, table) for sql in cands)
         )
-        new: list[dict] = []
-        for sql, res in zip(cands, results):
-            # Исполнитель возвращает str при отказе guardrails / ошибке SQL,
-            # иначе SelectResult со строками.
-            if isinstance(res, str):
-                new.append({"sql": sql, "ok": False, "error": res,
-                            "rows": [], "row_count": 0, "truncated": False})
-            else:
-                new.append({"sql": sql, "ok": True, "error": None,
-                            "rows": res["rows"], "row_count": res["row_count"],
-                            "truncated": res["truncated"]})
+        new = [_attempt(sql, res) for sql, res in zip(cands, results)]
         return {
             "attempts": state["attempts"] + new,
             "executed_count": state["executed_count"] + len(cands),

@@ -143,3 +143,16 @@ def test_state_has_no_columns_field():
     from toast.sql_graph import SqlToolState
 
     assert "columns" not in SqlToolState.__annotations__
+
+
+def test_attempt_from_refusal_and_result():
+    from toast.sql_graph import _attempt
+
+    ref = _attempt("SELECT 1", "Отказ: только чтение")
+    assert ref == {"sql": "SELECT 1", "ok": False, "error": "Отказ: только чтение",
+                   "rows": [], "row_count": 0, "truncated": False}
+
+    ok = _attempt("SELECT 2",
+                  {"rows": [{"a": 1}], "row_count": 1, "truncated": False})
+    assert ok == {"sql": "SELECT 2", "ok": True, "error": None,
+                  "rows": [{"a": 1}], "row_count": 1, "truncated": False}
