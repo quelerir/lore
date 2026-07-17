@@ -64,6 +64,33 @@
   color: #5b6675;
 }
 
+.typeBadge {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #e2e7ee;
+  color: #5b6675;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  text-transform: lowercase;
+}
+
+.stepName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.duration {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: #8a94a3;
+  font-weight: 400;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 .io {
   margin: 2px 0 0;
   padding: 6px 8px;

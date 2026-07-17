@@ -1,4 +1,5 @@
 import type { IStep } from "@chainlit/react-client";
+import { formatDuration, MESSAGE_TYPES } from "../../chat/executionSteps";
 import styles from "./ExecutionSteps.module.css";
 
 interface Props {
@@ -13,14 +14,17 @@ function statusMark(step: IStep): string {
 }
 
 function StepItem({ step }: { step: IStep }) {
-  const children = (step.steps ?? []).filter((s) => s.type === "tool");
+  const children = (step.steps ?? []).filter((s) => !MESSAGE_TYPES.has(s.type));
   const isRunning = Boolean(step.streaming) || !step.end;
+  const duration = formatDuration(step.start, step.end);
   return (
     <li className={step.isError ? styles.itemError : styles.item}>
       <details open={isRunning}>
         <summary className={styles.stepSummary}>
           <span className={styles.mark}>{statusMark(step)}</span>
-          {step.name}
+          <span className={styles.typeBadge}>{step.type}</span>
+          <span className={styles.stepName}>{step.name}</span>
+          {duration ? <span className={styles.duration}>{duration}</span> : null}
         </summary>
         {step.input ? <pre className={styles.io}>{step.input}</pre> : null}
         {step.output || step.streaming ? (
