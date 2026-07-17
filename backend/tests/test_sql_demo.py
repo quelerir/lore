@@ -49,61 +49,56 @@ def _attempt(sql="SELECT 1", ok=True, error=None, rows=None, row_count=0):
             "row_count": row_count, "truncated": False}
 
 
-def test_step_payload_generate():
-    from sql_demo import step_payload
-
-    desc = step_payload(
-        "generate", {"candidates": ["SELECT a", "SELECT b"], "round": 2},
-        round_no=2, seen_attempts=0,
-    )
-    assert desc["name"] == "Генерация SQL — раунд 2"
-    assert "SELECT a" in desc["output"] and "SELECT b" in desc["output"]
-    assert desc["children"] == []
-
-
-def test_step_payload_execute_slices_new_attempts():
-    from sql_demo import step_payload
+def test_attempt_substeps_slices_new_attempts():
+    from sql_demo import attempt_substeps
 
     old = _attempt(sql="SELECT old", rows=[{"a": 1}], row_count=1)
     ok = _attempt(sql="SELECT fresh", rows=[{"a": 2}], row_count=1)
     bad = _attempt(sql="SELECT bad", ok=False, error="Ошибка SQL: x")
-    desc = step_payload(
-        "execute", {"attempts": [old, ok, bad], "executed_count": 3},
-        round_no=2, seen_attempts=1,
+    subs = attempt_substeps(
+        {"attempts": [old, ok, bad], "executed_count": 3}, seen_attempts=1,
     )
-    assert desc["name"] == "Выполнение SQL — раунд 2"
-    assert [c["name"] for c in desc["children"]] == ["Попытка 2", "Попытка 3"]
-    assert desc["children"][0]["input"] == "SELECT fresh"
-    assert desc["children"][0]["is_error"] is False
-    assert desc["children"][1]["is_error"] is True
-    assert "Ошибка SQL: x" in desc["children"][1]["output"]
+    assert [c["name"] for c in subs] == ["Попытка 2", "Попытка 3"]
+    assert subs[0]["input"] == "SELECT fresh"
+    assert subs[0]["is_error"] is False
+    assert subs[1]["is_error"] is True
+    assert "Ошибка SQL: x" in subs[1]["output"]
 
 
-def test_step_payload_preview_truncates_rows():
-    from sql_demo import ROWS_PREVIEW, step_payload
+def test_attempt_substeps_preview_truncates_rows():
+    from sql_demo import ROWS_PREVIEW, attempt_substeps
 
     rows = [{"n": i} for i in range(ROWS_PREVIEW + 3)]
     att = _attempt(rows=rows, row_count=len(rows))
-    desc = step_payload("execute", {"attempts": [att]},
-                        round_no=1, seen_attempts=0)
-    out = desc["children"][0]["output"]
+    subs = attempt_substeps({"attempts": [att]}, seen_attempts=0)
+    out = subs[0]["output"]
     assert f"всего строк: {ROWS_PREVIEW + 3}" in out
     assert '"n": 0' in out
 
 
-def test_step_payload_zero_rows_and_judge_and_skips():
-    from sql_demo import step_payload
+def test_attempt_substeps_zero_rows_and_empty_delta():
+    from sql_demo import attempt_substeps
 
     empty = _attempt(rows=[], row_count=0)
-    desc = step_payload("execute", {"attempts": [empty]},
-                        round_no=1, seen_attempts=0)
-    assert desc["children"][0]["output"] == "0 строк"
+    subs = attempt_substeps({"attempts": [empty]}, seen_attempts=0)
+    assert subs[0]["output"] == "0 строк"
 
-    judge = step_payload("judge", {"verdict": "need_more"},
-                         round_no=1, seen_attempts=0)
-    assert judge["name"] == "Оценка достаточности"
-    assert judge["output"] == "need_more"
+    assert attempt_substeps({}, seen_attempts=0) == []
 
-    assert step_payload("init", {}, round_no=0, seen_attempts=0) is None
-    assert step_payload("summarize", {"answer": "x"},
-                        round_no=1, seen_attempts=0) is None
+
+def test_node_step_id_finds_last_matching_step():
+    from types import SimpleNamespace
+
+    from sql_demo import node_step_id
+
+    class FakeHandler:
+        # dict сохраняет порядок создания — как handler.steps в Chainlit.
+        steps = {
+            "r1": SimpleNamespace(name="execute", id="step-round-1"),
+            "r2": SimpleNamespace(name="generate", id="step-gen"),
+            "r3": SimpleNamespace(name="execute", id="step-round-2"),
+        }
+
+    assert node_step_id(FakeHandler(), "execute") == "step-round-2"
+    assert node_step_id(FakeHandler(), "judge") is None
+    assert node_step_id(object(), "execute") is None  # нет handler.steps

@@ -1,13 +1,14 @@
-"""Демо-режим «SQL (демо)»: конвертация хода SQL-графа в Chainlit-шаги.
+"""Демо-режим «SQL (демо)»: прогон SQL-графа с полным трейсом в Chainlit.
 
-Граф (toast/) про Chainlit не знает: он отдаёт события через
-astream(stream_mode=["updates", "messages", "values"]), а этот модуль
-превращает их в cl.Step (стадии + вложенные попытки) и стрим токенов ответа.
-Живёт только в демо-ветке; в прод не мержится.
+Дерево шагов строит LangchainCallbackHandler: корневой run «LangGraph», внутри
+него узлы графа (generate/execute/judge/summarize), внутри узлов — llm-вызовы.
+Этот модуль добавляет к нему только то, чего колбэк не видит: SQL-попытки
+исполнителя, вложенные под-шагами В УЗЕЛ execute (parent_id из handler.steps).
+Граф (toast/) про Chainlit не знает. Живёт только в демо-ветке.
 """
 
 import json
-from typing import TypedDict
+from typing import Any, TypedDict
 
 import chainlit as cl
 from langchain_core.messages import AIMessageChunk
@@ -31,14 +32,6 @@ class SubStep(TypedDict):
     is_error: bool
 
 
-class StepDesc(TypedDict):
-    """Описание Chainlit-шага стадии графа."""
-
-    name: str
-    output: str
-    children: list[SubStep]
-
-
 def _attempt_preview(attempt: dict) -> str:
     """Короткий output попытки: ошибка, «0 строк» или превью строк."""
     if not attempt["ok"]:
@@ -52,42 +45,34 @@ def _attempt_preview(attempt: dict) -> str:
     return preview
 
 
-def step_payload(node: str, delta: dict, *, round_no: int,
-                 seen_attempts: int) -> StepDesc | None:
-    """Описание шага для завершившегося узла графа; None — узел не показываем.
+def attempt_substeps(delta: dict, seen_attempts: int) -> list[SubStep]:
+    """Под-шаги для НОВЫХ попыток из дельты узла execute.
 
-    init не несёт информации; summarize уходит токенами в само сообщение.
     seen_attempts — сколько попыток уже показано прошлыми раундами: дельта
     узла execute содержит НАКОПЛЕННЫЙ список attempts.
     """
-    if node == "generate":
-        cands = delta.get("candidates", [])
-        return {
-            "name": f"Генерация SQL — раунд {round_no}",
-            "output": "\n\n".join(cands) if cands else "(нет кандидатов)",
-            "children": [],
+    new = delta.get("attempts", [])[seen_attempts:]
+    return [
+        {
+            "name": f"Попытка {seen_attempts + i + 1}",
+            "input": a["sql"],
+            "output": _attempt_preview(a),
+            "is_error": not a["ok"],
         }
-    if node == "execute":
-        new = delta.get("attempts", [])[seen_attempts:]
-        return {
-            "name": f"Выполнение SQL — раунд {round_no}",
-            "output": f"попыток: {len(new)}",
-            "children": [
-                {
-                    "name": f"Попытка {seen_attempts + i + 1}",
-                    "input": a["sql"],
-                    "output": _attempt_preview(a),
-                    "is_error": not a["ok"],
-                }
-                for i, a in enumerate(new)
-            ],
-        }
-    if node == "judge":
-        return {
-            "name": "Оценка достаточности",
-            "output": delta.get("verdict", ""),
-            "children": [],
-        }
+        for i, a in enumerate(new)
+    ]
+
+
+def node_step_id(handler: Any, node: str) -> str | None:
+    """id ПОСЛЕДНЕГО шага узла графа из колбэка — родитель для попыток.
+
+    handler.steps: dict[run_id, Step] в порядке создания; берём последний шаг
+    с именем узла (текущий раунд). None — колбэк шаг не создал (fail-open:
+    попытки лягут на верхний уровень, но не потеряются).
+    """
+    for step in reversed(list(getattr(handler, "steps", {}).values())):
+        if getattr(step, "name", None) == node:
+            return getattr(step, "id", None)
     return None
 
 
@@ -106,11 +91,12 @@ def build_demo_graph() -> CompiledStateGraph:
 
 async def handle_sql_message(graph: CompiledStateGraph, question: str,
                              out: cl.Message) -> None:
-    """Один прогон графа: стадии → cl.Step, токены summarize → сообщение out.
+    """Один прогон графа: трейс — от колбэка, попытки SQL — под узлом execute,
+    токены summarize — в сообщение out.
 
-    stream_mode: updates — завершившиеся узлы (→ шаги), messages — токены
-    LLM (незатегированный summarize стримится в ответ), values — финальное
-    состояние (ответ для no_data/error, где LLM не вызывается).
+    stream_mode: updates — завершившиеся узлы (→ попытки execute), messages —
+    токены LLM (незатегированный summarize стримится в ответ), values —
+    финальное состояние (ответ для no_data/error, где LLM не вызывается).
     """
     s = get_settings()
     inputs = {
@@ -122,12 +108,12 @@ async def handle_sql_message(graph: CompiledStateGraph, question: str,
     }
     streamed = ""
     final_state: dict | None = None
-    round_no = 0
     seen_attempts = 0
-    # Колбэк превращает LLM-вызовы узлов (generate/judge/summarize) в
-    # llm-шаги Chainlit — полный трейс для дебага. Тег internal скрывает
-    # только их токены из стрима сообщения, шаги остаются видимыми.
-    config = RunnableConfig(callbacks=[cl.LangchainCallbackHandler()])
+    # Колбэк строит дерево трейса (LangGraph → узлы → llm-вызовы). Тег
+    # internal скрывает только токены служебных вызовов из стрима сообщения,
+    # шаги остаются видимыми.
+    handler = cl.LangchainCallbackHandler()
+    config = RunnableConfig(callbacks=[handler])
     async for mode, payload in graph.astream(
         inputs, stream_mode=["updates", "messages", "values"], config=config
     ):
@@ -147,21 +133,18 @@ async def handle_sql_message(graph: CompiledStateGraph, question: str,
                 await out.stream_token(chunk.content)
             continue
         for node, delta in payload.items():
-            if node == "generate":
-                round_no = delta.get("round", round_no + 1)
-            desc = step_payload(node, delta, round_no=round_no,
-                                seen_attempts=seen_attempts)
-            if node == "execute":
-                seen_attempts = len(delta.get("attempts", []))
-            if desc is None:
+            if node != "execute":
                 continue
-            async with cl.Step(name=desc["name"], type="tool") as step:
-                step.output = desc["output"]
-                for child in desc["children"]:
-                    async with cl.Step(name=child["name"], type="tool") as sub:
-                        sub.input = child["input"]
-                        sub.output = child["output"]
-                        sub.is_error = child["is_error"]
+            subs = attempt_substeps(delta, seen_attempts)
+            seen_attempts = len(delta.get("attempts", []))
+            parent_id = node_step_id(handler, "execute")
+            for child in subs:
+                sub = cl.Step(name=child["name"], type="tool",
+                              parent_id=parent_id)
+                async with sub:
+                    sub.input = child["input"]
+                    sub.output = child["output"]
+                    sub.is_error = child["is_error"]
     # no_data/error не зовут LLM — токенов не было, берём ответ из состояния.
     if not streamed and final_state and final_state.get("answer"):
         await out.stream_token(final_state["answer"])
