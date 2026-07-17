@@ -77,21 +77,19 @@ async def main() -> None:
     exe = PgExecutor(dsn)
     model = build_sql_model()
     passed = 0
-    try:
-        for case in CASES:
-            inputs = {k: case[k] for k in
-                      ("question", "chunk_id", "table", "desc_vector", "desc_full")}
-            out = await run_sql_tool(inputs, model, exe,
-                                     s.sql_max_queries, s.sql_candidates_per_round)
-            ok, problems = check(out.get("answer", ""), case)
-            passed += ok
-            print(f"[{'PASS' if ok else 'FAIL'}] {case['id']} status={out['status']} "
-                  f"rows={out['rows_used']}")
-            if not ok:
-                print("      проблемы:", problems)
-                print("      ответ:", out.get("answer", "")[:300])
-    finally:
-        await exe.close()
+    # PgExecutor держит соединение только на время запроса — закрывать нечего.
+    for case in CASES:
+        inputs = {k: case[k] for k in
+                  ("question", "chunk_id", "table", "desc_vector", "desc_full")}
+        out = await run_sql_tool(inputs, model, exe,
+                                 s.sql_max_queries, s.sql_candidates_per_round)
+        ok, problems = check(out.get("answer", ""), case)
+        passed += ok
+        print(f"[{'PASS' if ok else 'FAIL'}] {case['id']} status={out['status']} "
+              f"rows={out['rows_used']}")
+        if not ok:
+            print("      проблемы:", problems)
+            print("      ответ:", out.get("answer", "")[:300])
     print(f"\nEVAL SQL: {passed}/{len(CASES)} passed")
 
 

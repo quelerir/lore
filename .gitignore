@@ -23,5 +23,8 @@ __pycache__/
 backend/.files/
 backend/.chainlit/translations/
 
+# LangGraph Studio local state
+studio/.langgraph_api/
+
 # Референс-отчёт с реальными ПД — не коммитить
 problem-questions-report.html
