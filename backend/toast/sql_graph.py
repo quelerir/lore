@@ -6,16 +6,16 @@
 
 Топология графа:
 
-    START → scope → generate → execute(∥) → judge ─┐
-                        ▲                    │      │
-      (нужен ещё раунд) └──────────< generate┘      │
-                                                    ▼
-                             (бюджет исчерпан) → summarize → END
+    START → init → generate → execute(∥) → judge ─┐
+                       ▲                    │      │
+     (нужен ещё раунд) └──────────< generate┘      │
+                                                   ▼
+                            (бюджет исчерпан) → summarize → END
 
 Ответственность узлов:
-  • scope     — детерминированный: тянет реальные имена колонок таблицы
-                (обязательно: физические имена часто переименованы и не
-                совпадают с человеческими заголовками из описания).
+  • init      — детерминированный: инициализирует аккумуляторы (без БД).
+                Имена и смысл колонок берутся из desc_full (рукописное
+                описание), поэтому реальные колонки из БД не тянутся.
   • generate  — LLM: по вопросу, описаниям и реальным колонкам выдаёт батч
                 РАЗНЫХ SQL-кандидатов (учитывая остаток бюджета и прошлые ошибки).
   • execute   — детерминированный: гоняет кандидатов ПАРАЛЛЕЛЬНО через read-only
@@ -49,7 +49,8 @@ FIXED_SCHEMA = (
     "первые служебные колонки: _splitter_row_number (int), "
     "_splitter_source_row (int), _splitter_source_range (text). Дальше — "
     "колонки данных: column_1, column_2, ... или переименованные "
-    "(из заголовков). Используй ТОЛЬКО реальные имена колонок из списка ниже."
+    "(из заголовков). Используй физические имена колонок строго как в "
+    "описании таблицы."
 )
 
 GENERATE_SYS = (
@@ -75,8 +76,8 @@ class SqlToolState(TypedDict, total=False):
     langgraph сливает их в общее состояние (последняя запись побеждает).
 
     Вход (от вызывающего): question, chunk_id, table, desc_vector, desc_full.
-    Заполняется узлами: columns (scope), candidates (generate),
-    round/executed_count/attempts (scope+execute), verdict (judge),
+    Заполняется узлами: candidates (generate),
+    round/executed_count/attempts (init+execute), verdict (judge),
     answer/status (summarize).
     """
 
@@ -85,7 +86,6 @@ class SqlToolState(TypedDict, total=False):
     table: str
     desc_vector: str
     desc_full: str
-    columns: list[str]
     candidates: list[str]
     round: int
     executed_count: int
@@ -153,10 +153,13 @@ def build_sql_graph(
     Узлы замыкают эти аргументы; состояние течёт по `SqlToolState`.
     """
 
-    async def scope(state: SqlToolState) -> SqlToolState:
-        """Детерминированный старт: реальные колонки + инициализация счётчиков."""
-        columns = await executor.fetch_columns(state["table"])
-        return {"columns": columns, "attempts": [], "executed_count": 0, "round": 0}
+    async def init(state: SqlToolState) -> SqlToolState:
+        """Детерминированный старт: инициализация аккумуляторов (без БД).
+
+        Имена и смысл колонок приходят из desc_full (рукописное описание),
+        поэтому реальные колонки из БД тянуть не нужно.
+        """
+        return {"attempts": [], "executed_count": 0, "round": 0}
 
     async def generate(state: SqlToolState) -> SqlToolState:
         """LLM выдаёт батч SQL-кандидатов под остаток бюджета и прошлые ошибки."""
@@ -170,7 +173,6 @@ def build_sql_graph(
             f"Таблица: {state['table']}\n"
             f"Описание (кратко): {state['desc_vector']}\n"
             f"Описание (полно): {state['desc_full']}\n"
-            f"Реальные колонки: {', '.join(state['columns'])}\n"
             f"Нужно вернуть до {n} разных SELECT."
         )
         if errors:
@@ -256,13 +258,13 @@ def build_sql_graph(
         return "summarize" if state.get("verdict") == "sufficient" else "generate"
 
     g = StateGraph(SqlToolState, input_schema=SqlToolInput)
-    g.add_node("scope", scope)
+    g.add_node("init", init)
     g.add_node("generate", generate)
     g.add_node("execute", execute)
     g.add_node("judge", judge)
     g.add_node("summarize", summarize)
-    g.add_edge(START, "scope")
-    g.add_edge("scope", "generate")
+    g.add_edge(START, "init")
+    g.add_edge("init", "generate")
     g.add_edge("generate", "execute")
     g.add_conditional_edges("execute", after_execute, ["judge", "summarize"])
     g.add_conditional_edges("judge", after_judge, ["generate", "summarize"])

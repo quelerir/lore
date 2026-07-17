@@ -120,3 +120,26 @@ def test_input_schema_exposes_five_fields():
 
     keys = set(SqlToolInput.__annotations__)
     assert keys == {"question", "chunk_id", "table", "desc_vector", "desc_full"}
+
+
+def test_init_does_not_query_columns_from_db():
+    # init — DB-less: имена колонок берутся из desc_full, а не из БД.
+    class NoFetchExecutor(FakeExecutor):
+        async def fetch_columns(self, table):
+            raise AssertionError("init не должен запрашивать колонки из БД")
+
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),
+        AIMessage(content="SUFFICIENT"),
+        AIMessage(content="ok"),
+    ])
+    exe = NoFetchExecutor(["column_1"], results=[_rows(1)])
+    out = _run(model, exe, candidates=1, max_queries=3)
+    assert out["status"] == "ok"
+    assert len(exe.calls) == 1
+
+
+def test_state_has_no_columns_field():
+    from toast.sql_graph import SqlToolState
+
+    assert "columns" not in SqlToolState.__annotations__
