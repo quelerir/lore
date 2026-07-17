@@ -17,7 +17,7 @@ import { collectChatMessages, convertMessage } from "./convertMessage";
 import { collectToolStepsByMessage } from "./executionSteps";
 import { SessionUiContext } from "./sessionUi";
 
-export type ChatMode = "fast" | "deep";
+export type ChatMode = "fast" | "deep" | "sql";
 
 interface ProviderProps {
   // Тред, выбранный пользователем (null = новый чат). Определяет resume.

@@ -80,6 +80,13 @@ export default function Sidebar({
           >
             Умный
           </button>
+          <button
+            type="button"
+            className={mode === "sql" ? styles.modeActive : styles.modeButton}
+            onClick={() => onModeChange("sql")}
+          >
+            SQL (демо)
+          </button>
         </div>
 
         {errorText ? <p className={styles.errorText}>{errorText}</p> : null}
