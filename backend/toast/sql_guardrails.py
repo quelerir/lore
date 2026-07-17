@@ -3,6 +3,7 @@
 Валидация по AST (sqlglot, диалект postgres), а не по regex: проверяются ВСЕ
 упомянутые в запросе таблицы, включая comma-join и подзапросы. Строковые
 литералы с «опасными» словами и точками с запятой ложных отказов не дают.
+CTE разрешены: алиасы WITH исключаются из проверки таблиц.
 Вторая линия обороны — read-only транзакция в исполнителе.
 """
 
@@ -40,14 +41,17 @@ def validate_select(sql: str, table: str) -> str | None:
     stmt = statements[0]
     if not isinstance(stmt, (exp.Select, exp.SetOperation)):
         return "Отказ: разрешён только SELECT."
-    if stmt.find(exp.With, exp.CTE):
-        return "Отказ: CTE (WITH) не поддерживается — перепиши подзапросом."
     for sel in stmt.find_all(exp.Select):
         if sel.args.get("into"):
             return "Отказ: SELECT INTO запрещён (только чтение)."
         if sel.args.get("locks"):
             return "Отказ: FOR UPDATE/SHARE запрещён (только чтение)."
-    tables = list(stmt.find_all(exp.Table))
+    # Ссылки без схемы на алиасы CTE — не таблицы; всё со схемой проверяем.
+    ctes = {cte.alias_or_name for cte in stmt.find_all(exp.CTE)}
+    tables = [
+        t for t in stmt.find_all(exp.Table)
+        if t.db or t.name not in ctes
+    ]
     if not tables:
         return "Отказ: не вижу FROM с явной таблицей."
     for t in tables:

@@ -84,8 +84,21 @@ def test_trailing_semicolon_allowed():
     assert validate_select(f"SELECT * FROM splitter_toast.{T};", T) is None
 
 
-def test_cte_rejected():
-    sql = f"WITH c AS (SELECT 1 FROM splitter_toast.{T}) SELECT * FROM c"
+def test_cte_over_own_table_allowed():
+    sql = (f"WITH c AS (SELECT column_1 FROM splitter_toast.{T}) "
+           "SELECT * FROM c")
+    assert validate_select(sql, T) is None
+
+
+def test_cte_over_foreign_table_rejected():
+    sql = ("WITH x AS (SELECT * FROM public.users) "
+           f"SELECT * FROM splitter_toast.{T} a JOIN x ON true")
+    assert validate_select(sql, T) is not None
+
+
+def test_cte_alias_only_without_real_table_rejected():
+    # Все relation — алиасы CTE, ни одной настоящей таблицы.
+    sql = "WITH c AS (SELECT 1) SELECT * FROM c"
     assert validate_select(sql, T) is not None
 
 
