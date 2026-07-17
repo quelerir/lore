@@ -1,5 +1,9 @@
 import type { IStep } from "@chainlit/react-client";
-import { formatDuration, MESSAGE_TYPES } from "../../chat/executionSteps";
+import {
+  formatDuration,
+  formatIo,
+  MESSAGE_TYPES,
+} from "../../chat/executionSteps";
 import styles from "./ExecutionSteps.module.css";
 
 interface Props {
@@ -26,10 +30,10 @@ function StepItem({ step }: { step: IStep }) {
           <span className={styles.stepName}>{step.name}</span>
           {duration ? <span className={styles.duration}>{duration}</span> : null}
         </summary>
-        {step.input ? <pre className={styles.io}>{step.input}</pre> : null}
+        {step.input ? <pre className={styles.io}>{formatIo(step.input)}</pre> : null}
         {step.output || step.streaming ? (
           <pre className={styles.io}>
-            {step.output || (step.streaming ? "…" : "")}
+            {formatIo(step.output) || (step.streaming ? "…" : "")}
           </pre>
         ) : null}
         {children.length ? (
