@@ -50,11 +50,13 @@ import logging
 import re
 from typing import Any, TypedDict
 
+import sqlglot
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field
+from sqlglot import exp as sql_exp
 
 FIXED_SCHEMA = (
     "Таблицы извлечены из XLSX (Postgres, схема splitter_toast). У каждой "
@@ -179,8 +181,9 @@ class SqlToolState(SqlToolInput):
 def parse_sql_candidates(text: str, limit: int) -> list[str]:
     """Достаёт до `limit` SELECT-строк из ответа модели.
 
-    Принимает два формата: JSON-массив строк (основной) или голые строки,
-    каждая начинается с SELECT (фолбэк, если модель проигнорировала формат).
+    Форматы по убыванию приоритета: JSON-массив строк (основной); текст
+    целиком как SQL через sqlglot (многострочные запросы целы); построчный
+    сбор строк, начинающихся с SELECT (прозаический ответ со вкраплениями).
     Снимает markdown-ограждение ```/```json.
     """
     cleaned = text.strip().strip("`").strip()
@@ -192,6 +195,19 @@ def parse_sql_candidates(text: str, limit: int) -> list[str]:
             return [str(x).strip() for x in data if str(x).strip()][:limit]
     except json.JSONDecodeError:
         pass
+    # Фолбэк 1: текст целиком — SQL (в т.ч. многострочный / несколько команд).
+    try:
+        statements = [s for s in sqlglot.parse(cleaned, read="postgres") if s]
+        sqls = [
+            s.sql(dialect="postgres")
+            for s in statements
+            if isinstance(s, (sql_exp.Select, sql_exp.SetOperation))
+        ]
+        if sqls:
+            return sqls[:limit]
+    except sqlglot.errors.ParseError:
+        pass
+    # Фолбэк 2: прозаический ответ со вкраплениями однострочных SELECT.
     lines = [ln.strip() for ln in cleaned.splitlines()
              if ln.strip().lower().startswith("select")]
     return lines[:limit] or ([cleaned] if cleaned.lower().startswith("select") else [])

@@ -297,6 +297,16 @@ def test_state_has_defaults_instead_of_init():
     assert state.attempts == [] and state.executed_count == 0 and state.round == 0
 
 
+def test_parse_candidates_multiline_sql_fallback():
+    from toast.sql_graph import parse_sql_candidates
+
+    text = ("SELECT column_1,\n       column_2\n"
+            "FROM splitter_toast.%s\nWHERE column_2 IS NOT NULL" % LEGAL)
+    out = parse_sql_candidates(text, 2)
+    assert len(out) == 1
+    assert "column_2" in out[0] and "WHERE" in out[0]
+
+
 def test_rows_context_caps_by_size():
     from toast.sql_graph import JUDGE_CONTEXT_CHARS, _rows_context
 
