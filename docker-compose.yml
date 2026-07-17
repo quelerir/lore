@@ -40,6 +40,10 @@ services:
       SQL_MAX_QUERIES: ${SQL_MAX_QUERIES:-3}
       SQL_CANDIDATES_PER_ROUND: ${SQL_CANDIDATES_PER_ROUND:-2}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2000}
+      # Демо-таблица профиля «SQL (демо)» (пусто — дефолты config.py).
+      SQL_DEMO_TABLE: ${SQL_DEMO_TABLE:-}
+      SQL_DEMO_DESC_VECTOR: ${SQL_DEMO_DESC_VECTOR:-}
+      SQL_DEMO_DESC_FULL: ${SQL_DEMO_DESC_FULL:-}
       # Секрет собственных сессий Chainlit (обязателен при включённой auth).
       CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET:-dev-only-auth-secret-change-me-32b!}
       # Проверка JWT-тикетов, выдаваемых внешней стороной (datacraft).
