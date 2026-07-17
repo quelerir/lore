@@ -42,3 +42,12 @@ export function collectTraceByMessage(steps: IStep[]): Map<string, IStep[]> {
   walk(steps);
   return map;
 }
+
+/** Длительность шага для трейса: "450 мс" / "1.2 с"; null, если границ нет. */
+export function formatDuration(start?: string, end?: string): string | null {
+  if (!start || !end) return null;
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  if (ms < 1000) return `${Math.round(ms)} мс`;
+  return `${(ms / 1000).toFixed(1)} с`;
+}
