@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RecoilRoot } from "recoil";
 import { chainlitApi } from "./chainlitClient";
 import { collectChatMessages, convertMessage } from "./convertMessage";
-import { collectToolStepsByMessage } from "./executionSteps";
+import { collectTraceByMessage } from "./executionSteps";
 import { SessionUiContext } from "./sessionUi";
 
 export type ChatMode = "fast" | "deep";
@@ -126,8 +126,8 @@ function SessionBridge({
     },
   });
 
-  const toolStepsByMessage = useMemo(
-    () => collectToolStepsByMessage(messages),
+  const traceByMessage = useMemo(
+    () => collectTraceByMessage(messages),
     [messages],
   );
 
@@ -142,8 +142,8 @@ function SessionBridge({
   }, [loading, chatMessages]);
 
   const sessionUi = useMemo(
-    () => ({ switching, toolStepsByMessage, activeMessageId }),
-    [switching, toolStepsByMessage, activeMessageId],
+    () => ({ switching, traceByMessage, activeMessageId }),
+    [switching, traceByMessage, activeMessageId],
   );
 
   return (

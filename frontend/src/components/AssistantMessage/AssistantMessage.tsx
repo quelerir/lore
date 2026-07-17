@@ -29,8 +29,8 @@ export default function AssistantMessage() {
       .join("\n"),
   );
   const id = useMessage((m) => m.id);
-  const { toolStepsByMessage, activeMessageId } = useSessionUi();
-  const steps = toolStepsByMessage.get(id) ?? [];
+  const { traceByMessage, activeMessageId } = useSessionUi();
+  const steps = traceByMessage.get(id) ?? [];
   const isActive = id === activeMessageId;
   const [isCopied, setIsCopied] = useState(false);
 
