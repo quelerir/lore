@@ -195,11 +195,13 @@ def test_input_schema_exposes_five_fields():
     assert keys == {"question", "chunk_id", "table", "desc_vector", "desc_full"}
 
 
-def test_state_has_no_columns_field():
-    # init — DB-less: имена колонок берутся из desc_full, а не из БД.
+def test_state_has_defaults_instead_of_init():
     from toast.sql_graph import SqlToolState
 
-    assert "columns" not in SqlToolState.__annotations__
+    assert "columns" not in SqlToolState.model_fields
+    state = SqlToolState(question="q", chunk_id="c", table="t",
+                         desc_vector="v", desc_full="f")
+    assert state.attempts == [] and state.executed_count == 0 and state.round == 0
 
 
 def test_rows_context_caps_by_size():

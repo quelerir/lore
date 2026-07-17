@@ -6,17 +6,18 @@
 
 Топология графа:
 
-    START → init → generate → execute(∥) → judge → summarize → END
+    START → generate → execute(∥) → judge → summarize → END
 
     с тремя условными переходами:
       generate → summarize   если модель не дала ни одного кандидата
       execute  → summarize   если бюджет запросов исчерпан (минуя судью)
       judge    → generate    если строк недостаточно (ещё раунд)
 
+Состояние — pydantic-модель с дефолтами: аккумуляторы (attempts,
+executed_count, round, …) инициализируются схемой, отдельный узел init не
+нужен. Имена и смысл колонок берутся из desc_full (рукописное описание).
+
 Ответственность узлов:
-  • init      — детерминированный: инициализирует аккумуляторы (без БД).
-                Имена и смысл колонок берутся из desc_full (рукописное
-                описание), поэтому реальные колонки из БД не тянутся.
   • generate  — LLM: по вопросу и описаниям таблицы выдаёт батч РАЗНЫХ
                 SQL-кандидатов (учитывая остаток бюджета, прошлые ошибки и
                 запросы, вернувшие 0 строк).
@@ -50,7 +51,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 FIXED_SCHEMA = (
     "Таблицы извлечены из XLSX (Postgres, схема splitter_toast). У каждой "
@@ -103,31 +104,7 @@ class Attempt(TypedDict):
     truncated: bool
 
 
-class SqlToolState(TypedDict, total=False):
-    """Состояние графа. total=False: узлы возвращают частичные апдейты,
-    langgraph сливает их в общее состояние (последняя запись побеждает).
-
-    Вход (от вызывающего): question, chunk_id, table, desc_vector, desc_full.
-    Заполняется узлами: candidates (generate),
-    round/executed_count/attempts (init+execute), verdict (judge),
-    answer/status (summarize).
-    """
-
-    question: str
-    chunk_id: str
-    table: str
-    desc_vector: str
-    desc_full: str
-    candidates: list[str]
-    round: int
-    executed_count: int
-    attempts: list[Attempt]
-    verdict: str
-    answer: str
-    status: str
-
-
-class SqlToolInput(TypedDict):
+class SqlToolInput(BaseModel):
     """Входные поля инструмента (форма ввода в Studio)."""
 
     question: str
@@ -135,6 +112,24 @@ class SqlToolInput(TypedDict):
     table: str
     desc_vector: str
     desc_full: str
+
+
+class SqlToolState(SqlToolInput):
+    """Состояние графа: вход + аккумуляторы с дефолтами.
+
+    Дефолты полей заменяют бывший узел init: langgraph применяет их сам,
+    «забытая инициализация» перестала существовать как класс ошибки
+    (инцидент KeyError: 'candidates' в TypedDict-версии). Узлы возвращают
+    dict-апдейты, langgraph сливает их в состояние.
+    """
+
+    candidates: list[str] = Field(default_factory=list)
+    round: int = 0
+    executed_count: int = 0
+    attempts: list[Attempt] = Field(default_factory=list)
+    verdict: str = ""
+    answer: str = ""
+    status: str = ""
 
 
 def parse_sql_candidates(text: str, limit: int) -> list[str]:
@@ -246,28 +241,20 @@ def build_sql_graph(
     Узлы замыкают эти аргументы; состояние течёт по `SqlToolState`.
     """
 
-    async def init(state: SqlToolState) -> SqlToolState:
-        """Детерминированный старт: инициализация аккумуляторов (без БД).
-
-        Имена и смысл колонок приходят из desc_full (рукописное описание),
-        поэтому реальные колонки из БД тянуть не нужно.
-        """
-        return {"attempts": [], "executed_count": 0, "round": 0}
-
-    async def generate(state: SqlToolState) -> SqlToolState:
+    async def generate(state: SqlToolState) -> dict:
         """LLM выдаёт батч SQL-кандидатов под остаток бюджета, прошлые ошибки
         и запросы, вернувшие 0 строк."""
-        remaining = max_queries - state["executed_count"]
+        remaining = max_queries - state.executed_count
         # remaining >= 1 гарантируется маршрутизацией (в generate не попадаем при
         # исчерпанном бюджете); max(1, …) — просто страховка.
         n = max(1, min(candidates_per_round, remaining))
-        errors = [a["error"] for a in state["attempts"] if not a["ok"] and a["error"]]
-        empty = [a["sql"] for a in state["attempts"] if a["ok"] and a["row_count"] == 0]
+        errors = [a["error"] for a in state.attempts if not a["ok"] and a["error"]]
+        empty = [a["sql"] for a in state.attempts if a["ok"] and a["row_count"] == 0]
         prompt = (
-            f"Вопрос: {state['question']}\n"
-            f"Таблица: {state['table']}\n"
-            f"Описание (кратко): {state['desc_vector']}\n"
-            f"Описание (полно): {state['desc_full']}\n"
+            f"Вопрос: {state.question}\n"
+            f"Таблица: {state.table}\n"
+            f"Описание (кратко): {state.desc_vector}\n"
+            f"Описание (полно): {state.desc_full}\n"
             f"Нужно вернуть до {n} разных SELECT."
         )
         if errors:
@@ -281,9 +268,9 @@ def build_sql_graph(
         candidates = await _generate_candidates(
             model, [SystemMessage(GENERATE_SYS), HumanMessage(prompt)], n
         )
-        return {"candidates": candidates, "round": state["round"] + 1}
+        return {"candidates": candidates, "round": state.round + 1}
 
-    async def execute(state: SqlToolState) -> SqlToolState:
+    async def execute(state: SqlToolState) -> dict:
         """Гоняет кандидатов раунда параллельно; копит попытки и счётчик.
 
         Уже выполнявшиеся SQL повторно не гоняем (бюджет на них всё равно
@@ -291,30 +278,30 @@ def build_sql_graph(
         цикл не завершался бы). return_exceptions: сбой одного кандидата не
         роняет остальных — он станет неуспешной попыткой в _attempt.
         """
-        table = state["table"]
-        tried = {a["sql"] for a in state["attempts"]}
-        unique = [s for s in dict.fromkeys(state["candidates"]) if s not in tried]
+        table = state.table
+        tried = {a["sql"] for a in state.attempts}
+        unique = [s for s in dict.fromkeys(state.candidates) if s not in tried]
         results = await asyncio.gather(
             *(executor.run_select(sql, table) for sql in unique),
             return_exceptions=True,
         )
         new = [_attempt(sql, res) for sql, res in zip(unique, results)]
         return {
-            "attempts": state["attempts"] + new,
-            "executed_count": state["executed_count"] + len(state["candidates"]),
+            "attempts": state.attempts + new,
+            "executed_count": state.executed_count + len(state.candidates),
         }
 
-    async def judge(state: SqlToolState) -> SqlToolState:
+    async def judge(state: SqlToolState) -> dict:
         """LLM: достаточно ли строк для ответа. Без строк — need_more без вызова."""
-        rows = _ok_rows(state["attempts"])
+        rows = _ok_rows(state.attempts)
         if not rows:
             return {"verdict": "need_more"}
         reply = await model.ainvoke(
             [
                 SystemMessage(JUDGE_SYS),
                 HumanMessage(
-                    f"Вопрос: {state['question']}\n"
-                    + _rows_context(state["attempts"], rows)
+                    f"Вопрос: {state.question}\n"
+                    + _rows_context(state.attempts, rows)
                 ),
             ],
             config={"tags": ["internal"]},
@@ -323,27 +310,27 @@ def build_sql_graph(
         sufficient = bool(_SUFFICIENT_RE.search(text)) and "need_more" not in text
         return {"verdict": "sufficient" if sufficient else "need_more"}
 
-    async def summarize(state: SqlToolState) -> SqlToolState:
+    async def summarize(state: SqlToolState) -> dict:
         """Терминальный узел: ответ по строкам, либо статус no_data / error."""
-        rows = _ok_rows(state["attempts"])
+        rows = _ok_rows(state.attempts)
         if not rows:
-            if not state["attempts"]:
+            if not state.attempts:
                 # Сюда попадаем только из after_generate при пустом батче.
                 return {"status": "error",
                         "answer": f"Не удалось выполнить SQL: {NO_CANDIDATES_MSG}"}
             # Хоть один успешный (но пустой) SELECT → данных нет; иначе все
             # попытки — ошибки БД → техническая ошибка.
-            if any(a["ok"] for a in state["attempts"]):
+            if any(a["ok"] for a in state.attempts):
                 return {"status": "no_data", "answer": NO_DATA_MSG}
-            last = next((a["error"] for a in reversed(state["attempts"]) if a["error"]),
+            last = next((a["error"] for a in reversed(state.attempts) if a["error"]),
                         "неизвестная ошибка")
             return {"status": "error", "answer": f"Не удалось выполнить SQL: {last}"}
         reply = await model.ainvoke(
             [
                 SystemMessage(SUMMARIZE_SYS),
                 HumanMessage(
-                    f"Вопрос: {state['question']}\n"
-                    + _rows_context(state["attempts"], rows)
+                    f"Вопрос: {state.question}\n"
+                    + _rows_context(state.attempts, rows)
                 ),
             ]
         )
@@ -351,24 +338,22 @@ def build_sql_graph(
 
     def after_generate(state: SqlToolState) -> str:
         """Пустой батч кандидатов → summarize (иначе цикл без прогресса)."""
-        return "execute" if state["candidates"] else "summarize"
+        return "execute" if state.candidates else "summarize"
 
     def after_execute(state: SqlToolState) -> str:
         """Бюджет исчерпан → сразу summarize (судью не зовём); иначе → judge."""
-        return "summarize" if state["executed_count"] >= max_queries else "judge"
+        return "summarize" if state.executed_count >= max_queries else "judge"
 
     def after_judge(state: SqlToolState) -> str:
         """Судья доволен → summarize; иначе → ещё раунд generate."""
-        return "summarize" if state.get("verdict") == "sufficient" else "generate"
+        return "summarize" if state.verdict == "sufficient" else "generate"
 
     g = StateGraph(SqlToolState, input_schema=SqlToolInput)
-    g.add_node("init", init)
     g.add_node("generate", generate)
     g.add_node("execute", execute)
     g.add_node("judge", judge)
     g.add_node("summarize", summarize)
-    g.add_edge(START, "init")
-    g.add_edge("init", "generate")
+    g.add_edge(START, "generate")
     g.add_conditional_edges("generate", after_generate, ["execute", "summarize"])
     g.add_conditional_edges("execute", after_execute, ["judge", "summarize"])
     g.add_conditional_edges("judge", after_judge, ["generate", "summarize"])
