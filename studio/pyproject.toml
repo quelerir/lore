@@ -10,6 +10,7 @@ dependencies = [
     "langchain-core",
     "asyncpg",
     "pydantic-settings",
+    "sqlglot>=30.12.0",
 ]
 
 [dependency-groups]
