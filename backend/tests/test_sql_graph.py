@@ -224,17 +224,49 @@ def test_executor_exception_becomes_failed_attempt():
 
 def test_structured_output_path_used_when_supported():
     from fakes import StructuredScriptedChatModel
-    from toast.sql_graph import SqlCandidates
+    from toast.sql_graph import JudgeVerdict, SqlCandidates
 
     model = StructuredScriptedChatModel(responses=[
         SqlCandidates(candidates=["SELECT column_1 FROM %s" % LEGAL]),
-        AIMessage(content="SUFFICIENT"),
+        JudgeVerdict(sufficient=True, reason="ок"),  # судья тоже structured
         AIMessage(content="Ответ."),
     ])
     exe = FakeExecutor(results=[_sample(), _rows(1)])
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "ok"
     assert exe.calls[1:] == ["SELECT column_1 FROM %s" % LEGAL]
+
+
+def test_judge_reason_feeds_next_generate_prompt():
+    from fakes import StructuredScriptedChatModel
+    from toast.sql_graph import JudgeVerdict, SqlCandidates
+
+    captured: list[str] = []
+
+    class CapturingModel(StructuredScriptedChatModel):
+        def with_structured_output(self, schema, **kwargs):
+            model = self
+
+            class _S:
+                async def ainvoke(self, messages, config=None):
+                    captured.append("\n".join(str(m.content) for m in messages))
+                    return model.responses.pop(0)
+
+            return _S()
+
+    model = CapturingModel(responses=[
+        SqlCandidates(candidates=["SELECT column_1 FROM %s" % LEGAL]),
+        JudgeVerdict(sufficient=False, reason="строки не про юристов"),
+        SqlCandidates(candidates=["SELECT column_2 FROM %s" % LEGAL]),
+        JudgeVerdict(sufficient=True, reason="ок"),
+        AIMessage(content="Ответ."),
+    ])
+    exe = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
+    out = _run(model, exe, candidates=1, max_queries=3)
+    assert out["status"] == "ok"
+    # причина судьи попала в промпт ВТОРОГО generate (порядок structured-
+    # вызовов в captured: generate, judge, generate, judge)
+    assert "строки не про юристов" in captured[2]
 
 
 def test_candidates_run_in_parallel_batch():

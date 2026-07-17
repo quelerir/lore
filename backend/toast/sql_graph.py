@@ -74,8 +74,9 @@ GENERATE_SYS = (
     "без точки с запятой."
 )
 JUDGE_SYS = (
-    "Ты оцениваешь, достаточно ли полученных строк, чтобы ответить на вопрос. "
-    "Ответь ровно одним словом: SUFFICIENT или NEED_MORE."
+    "Ты оцениваешь, достаточно ли полученных строк, чтобы ответить на "
+    "вопрос. Верни sufficient=true/false и короткую причину reason — "
+    "почему строк недостаточно (она попадёт генератору SQL)."
 )
 SUMMARIZE_SYS = (
     "Ответь на вопрос пользователя СТРОГО по предоставленным строкам таблицы. "
@@ -96,6 +97,42 @@ class SqlCandidates(BaseModel):
     """Батч SQL-кандидатов — схема structured output узла generate."""
 
     candidates: list[str]
+
+
+class JudgeVerdict(BaseModel):
+    """Вердикт судьи: достаточно ли строк и почему нет (structured output)."""
+
+    sufficient: bool
+    reason: str = ""
+
+
+def _log_fallback(node: str, exc: Exception) -> None:
+    """Лог причины фолбэка structured output → текстовый путь.
+
+    NotImplementedError — ожидаемо (фейки, модели без tools) → debug;
+    остальное (сеть, 4xx) — warning: транзиентные ошибки не должны молча
+    удваивать латентность.
+    """
+    level = logging.DEBUG if isinstance(exc, NotImplementedError) else logging.WARNING
+    logging.getLogger(__name__).log(
+        level, "%s: structured output недоступен (%r), текстовый фолбэк",
+        node, exc,
+    )
+
+
+async def _judge_verdict(model: BaseChatModel, messages: list) -> JudgeVerdict:
+    """Вердикт через structured output; фолбэк — текстовый парсинг без причины."""
+    try:
+        structured = model.with_structured_output(
+            JudgeVerdict, method="function_calling"
+        )
+        return await structured.ainvoke(messages, config={"tags": ["internal"]})
+    except Exception as e:
+        _log_fallback("judge", e)
+        reply = await model.ainvoke(messages, config={"tags": ["internal"]})
+        text = str(reply.content).lower()
+        ok = bool(_SUFFICIENT_RE.search(text)) and "need_more" not in text
+        return JudgeVerdict(sufficient=ok, reason="")
 
 
 class Attempt(TypedDict):
@@ -134,6 +171,7 @@ class SqlToolState(SqlToolInput):
     executed_count: int = 0
     attempts: list[Attempt] = Field(default_factory=list)
     verdict: str = ""
+    judge_reason: str = ""
     answer: str = ""
     status: str = ""
 
@@ -172,7 +210,8 @@ async def _generate_candidates(model: BaseChatModel, messages: list,
         )
         result = await structured.ainvoke(messages, config={"tags": ["internal"]})
         return [c.strip() for c in result.candidates if c.strip()][:n]
-    except Exception:
+    except Exception as e:
+        _log_fallback("generate", e)
         reply = await model.ainvoke(messages, config={"tags": ["internal"]})
         return parse_sql_candidates(str(reply.content), n)
 
@@ -289,6 +328,11 @@ def build_sql_graph(
                 "\n\nЭти запросы выполнились, но вернули 0 строк — "
                 "нужен другой подход:\n" + "\n".join(empty[-3:])
             )
+        if state.judge_reason:
+            prompt += (
+                "\n\nПрошлый результат отклонён судьёй: "
+                f"{state.judge_reason} — построй запрос иначе."
+            )
         if state.sample_rows:
             sample_json = json.dumps(
                 state.sample_rows, ensure_ascii=False, default=str
@@ -335,7 +379,8 @@ def build_sql_graph(
         rows = _ok_rows(state.attempts)
         if not rows:
             return {"verdict": "need_more"}
-        reply = await model.ainvoke(
+        verdict = await _judge_verdict(
+            model,
             [
                 SystemMessage(JUDGE_SYS),
                 HumanMessage(
@@ -343,11 +388,11 @@ def build_sql_graph(
                     + _rows_context(state.attempts, rows)
                 ),
             ],
-            config={"tags": ["internal"]},
         )
-        text = str(reply.content).lower()
-        sufficient = bool(_SUFFICIENT_RE.search(text)) and "need_more" not in text
-        return {"verdict": "sufficient" if sufficient else "need_more"}
+        return {
+            "verdict": "sufficient" if verdict.sufficient else "need_more",
+            "judge_reason": verdict.reason,
+        }
 
     async def summarize(state: SqlToolState) -> dict:
         """Терминальный узел: ответ по строкам, либо статус no_data / error."""
