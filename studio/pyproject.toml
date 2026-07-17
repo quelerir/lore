@@ -2,7 +2,7 @@
 name = "lore-studio"
 version = "0.1.0"
 description = "LangGraph Studio runner for the SQL tool (dev-only, optional)"
-requires-python = ">=3.13"
+requires-python = ">=3.13, <3.14"
 dependencies = [
     "langgraph-cli[inmem]",
     "langgraph",
