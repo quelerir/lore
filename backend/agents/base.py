@@ -29,6 +29,10 @@ def build_model() -> BaseChatModel:
         base_url=s.openrouter_base_url,
         api_key=s.openrouter_api_key,
         max_tokens=s.llm_max_tokens,
+        # langchain-openai шлёт max_completion_tokens, который OpenRouter
+        # игнорирует (и резервирует полное окно модели → 402 при нехватке
+        # кредитов). extra_body кладёт родной max_tokens прямо в JSON запроса.
+        extra_body={"max_tokens": s.llm_max_tokens},
     )
 
 
@@ -44,6 +48,8 @@ def build_sql_model(temperature: float = 0.0) -> BaseChatModel:
         api_key=s.openrouter_api_key,
         temperature=temperature,
         max_tokens=s.llm_max_tokens,
+        # См. комментарий в build_model: OpenRouter понимает только max_tokens.
+        extra_body={"max_tokens": s.llm_max_tokens},
     )
 
 
