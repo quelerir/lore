@@ -299,7 +299,7 @@ def test_state_has_defaults_instead_of_init():
 
 
 def test_parse_candidates_multiline_sql_fallback():
-    from toast.sql_graph import parse_sql_candidates
+    from toast.llm import parse_sql_candidates
 
     text = ("SELECT column_1,\n       column_2\n"
             "FROM splitter_toast.%s\nWHERE column_2 IS NOT NULL" % LEGAL)
