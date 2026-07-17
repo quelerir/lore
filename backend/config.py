@@ -87,6 +87,22 @@ class Settings(BaseSettings):
     )
     toast_db_name: str | None = Field(default=None, validation_alias="TOAST_DB_NAME")
 
+    # --- SQL-демо: таблица и описания для профиля «SQL (демо)» (demo-ветка) ---
+    sql_demo_table: str = Field(
+        default="toast_tbl_ec48a6d52d16ab405f95",
+        validation_alias="SQL_DEMO_TABLE",
+    )
+    sql_demo_desc_vector: str = Field(
+        default="юристы Adventum, ФИО и должности",
+        validation_alias="SQL_DEMO_DESC_VECTOR",
+    )
+    sql_demo_desc_full: str = Field(
+        default=(
+            "Table payload: Лист1 A15:R16. Реестр юристов: ФИО, должность, email."
+        ),
+        validation_alias="SQL_DEMO_DESC_FULL",
+    )
+
     # --- OAuth generic: CLIENT_ID читает app.py, остальное — Chainlit ---
     oauth_generic_client_id: str | None = Field(
         default=None, validation_alias="OAUTH_GENERIC_CLIENT_ID"

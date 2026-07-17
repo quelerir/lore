@@ -59,7 +59,7 @@ def get_data_layer() -> _NullPoolSQLAlchemyDataLayer:
 
 @cl.set_chat_profiles
 async def chat_profiles() -> list[cl.ChatProfile]:
-    return [
+    profiles = [
         cl.ChatProfile(
             name="fast",
             display_name="Быстрый",
@@ -78,6 +78,20 @@ async def chat_profiles() -> list[cl.ChatProfile]:
             ),
         ),
     ]
+    s = get_settings()
+    # Демо SQL-графа: только при полном конфиге — полурабочих режимов нет.
+    if s.toast_dsn and s.openrouter_api_key:
+        profiles.append(
+            cl.ChatProfile(
+                name="sql",
+                display_name="SQL (демо)",
+                markdown_description=(
+                    "Каждый вопрос идёт в SQL-граф по демо-таблице; стадии "
+                    "видны в «Ходе выполнения»."
+                ),
+            )
+        )
+    return profiles
 
 
 def _build_session_agent() -> CompiledStateGraph:
