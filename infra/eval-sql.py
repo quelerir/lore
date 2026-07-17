@@ -29,7 +29,7 @@ def _toast_dsn() -> str | None:
     port = int(os.environ.get("TOAST_DB_PORT", "5432"))
     return build_dsn("postgresql", user, password, host, port, name)
 
-# desc_full — реальный display_text из sqls/second_sql.csv (сокращённо).
+# desc_full — реальный display_text соответствующего чанка (сокращённо).
 CASES = [
     {
         "id": "sql-legal-001",
