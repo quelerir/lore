@@ -6,6 +6,40 @@ interface Props {
   running: boolean;
 }
 
+function statusMark(step: IStep): string {
+  if (step.isError) return "✗";
+  if (step.streaming || !step.end) return "…";
+  return "✓";
+}
+
+function StepItem({ step }: { step: IStep }) {
+  const children = (step.steps ?? []).filter((s) => s.type === "tool");
+  const isRunning = Boolean(step.streaming) || !step.end;
+  return (
+    <li className={step.isError ? styles.itemError : styles.item}>
+      <details open={isRunning}>
+        <summary className={styles.stepSummary}>
+          <span className={styles.mark}>{statusMark(step)}</span>
+          {step.name}
+        </summary>
+        {step.input ? <pre className={styles.io}>{step.input}</pre> : null}
+        {step.output || step.streaming ? (
+          <pre className={styles.io}>
+            {step.output || (step.streaming ? "…" : "")}
+          </pre>
+        ) : null}
+        {children.length ? (
+          <ol className={styles.list}>
+            {children.map((child) => (
+              <StepItem key={child.id} step={child} />
+            ))}
+          </ol>
+        ) : null}
+      </details>
+    </li>
+  );
+}
+
 export default function ExecutionSteps({ steps, running }: Props) {
   if (!steps.length) return null;
 
@@ -17,16 +51,7 @@ export default function ExecutionSteps({ steps, running }: Props) {
       </summary>
       <ol className={styles.list}>
         {steps.map((step) => (
-          <li
-            key={step.id}
-            className={step.isError ? styles.itemError : styles.item}
-          >
-            <div className={styles.name}>{step.name}</div>
-            {step.input ? <pre className={styles.io}>{step.input}</pre> : null}
-            <pre className={styles.io}>
-              {step.output || (step.streaming ? "…" : "")}
-            </pre>
-          </li>
+          <StepItem key={step.id} step={step} />
         ))}
       </ol>
     </details>
