@@ -14,48 +14,28 @@ services:
 
   backend:
     build: ./backend
+    # Весь пользовательский конфиг приходит из .env (шаблон — .env.example,
+    # `cp .env.example .env`). required:false: без .env compose не падает на
+    # разборе — контейнер стартует, а config.py даёт понятную ошибку валидации.
+    env_file:
+      - path: .env
+        required: false
     environment:
-      # Chainlit data-layer: компоненты подключения (DSN собирает config.py).
+      # Только внутренняя связка контейнеров: значения указывают на сервисы
+      # compose и потому НЕ выносятся в .env (там были бы неверные для docker
+      # адреса). environment побеждает env_file — эта связка всегда в силе.
       CHAINLIT_DB_HOST: chainlit-db
       CHAINLIT_DB_PORT: "5432"
-      CHAINLIT_DB_USER: ${CHAINLIT_DB_USER:-chainlit}
-      CHAINLIT_DB_PASSWORD: ${CHAINLIT_DB_PASSWORD:-chainlit}
-      CHAINLIT_DB_NAME: ${CHAINLIT_DB_NAME:-chainlit}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3}
-      # Модельный провайдер: openrouter (default) или ollama (фолбэк).
-      MODEL_PROVIDER: ${MODEL_PROVIDER:-openrouter}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-haiku-4.5}
-      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
-      # Read-only доступ к TOAST-таблицам (loreagent_test): компоненты.
-      # Пусто — SQL-инструмент неактивен (toast_dsn = None).
-      TOAST_DB_HOST: ${TOAST_DB_HOST:-}
-      TOAST_DB_PORT: ${TOAST_DB_PORT:-5432}
-      TOAST_DB_USER: ${TOAST_DB_USER:-}
-      TOAST_DB_PASSWORD: ${TOAST_DB_PASSWORD:-}
-      TOAST_DB_NAME: ${TOAST_DB_NAME:-}
-      # SQL-инструмент: модель, бюджет и лимит вывода (дефолты в config.py).
-      SQL_MODEL: ${SQL_MODEL:-anthropic/claude-sonnet-4.6}
-      SQL_MAX_QUERIES: ${SQL_MAX_QUERIES:-3}
-      SQL_CANDIDATES_PER_ROUND: ${SQL_CANDIDATES_PER_ROUND:-2}
-      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-2000}
-      # Секрет собственных сессий Chainlit (обязателен при включённой auth).
-      CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET:-dev-only-auth-secret-change-me-32b!}
-      # Проверка JWT-тикетов, выдаваемых внешней стороной (datacraft).
-      CHAINLIT_JWT_SECRET: ${CHAINLIT_JWT_SECRET:-dev-only-secret-change-me-32-bytes!}
-      CHAINLIT_JWT_AUDIENCE: ${CHAINLIT_JWT_AUDIENCE:-chainlit}
-      CHAINLIT_JWT_ISSUER: ${CHAINLIT_JWT_ISSUER:-datacraft}
-      # authentik SSO — generic OAuth-провайдер Chainlit.
       # CHAINLIT_URL нужен Chainlit для построения redirect_uri.
       CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}
+      # authentik SSO: имена OAUTH_GENERIC_* читает Chainlit; значения маппятся
+      # из AUTHENTIK_* (.env) и внутренних адресов сервиса authentik-server.
       OAUTH_GENERIC_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-lore-chainlit}
       OAUTH_GENERIC_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET:-dev-only-oauth-client-secret-change-me}
       OAUTH_GENERIC_AUTH_URL: ${AUTHENTIK_PUBLIC_URL:-http://localhost:9100}/application/o/authorize/
       OAUTH_GENERIC_TOKEN_URL: http://authentik-server:9000/application/o/token/
       OAUTH_GENERIC_USER_INFO_URL: http://authentik-server:9000/application/o/userinfo/
-      OAUTH_GENERIC_SCOPES: ${OAUTH_GENERIC_SCOPES:-openid profile email}
-      OAUTH_GENERIC_USER_IDENTIFIER: ${OAUTH_GENERIC_USER_IDENTIFIER:-preferred_username}
     extra_hosts:
       # Доступ из контейнера к Ollama, запущенной на хосте (Linux).
       - "host.docker.internal:host-gateway"

@@ -10,7 +10,7 @@ from enum import Enum
 from functools import lru_cache
 from urllib.parse import quote
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -68,10 +68,22 @@ class Settings(BaseSettings):
     openrouter_api_key: str | None = Field(
         default=None, validation_alias="OPENROUTER_API_KEY"
     )
-    # Явный предел токенов ответа для OpenRouter-моделей: без него OpenRouter
-    # резервирует ПОЛНОЕ окно вывода модели (напр. 65536 у sonnet) и отклоняет
-    # запрос с 402, если кредитов меньше резерва. Ответы графа/агента короткие.
-    llm_max_tokens: int = Field(default=2000, validation_alias="LLM_MAX_TOKENS")
+    # Необязательный предел токенов ответа для OpenRouter-моделей. По умолчанию
+    # None — лимита нет. Если задан, OpenRouter резервирует ровно столько токенов
+    # вывода (иначе бронирует ПОЛНОЕ окно модели и может ответить 402 при
+    # нехватке кредитов). Пробрасывается через extra_body — см. build_model.
+    llm_max_tokens: int | None = Field(
+        default=None, validation_alias="LLM_MAX_TOKENS"
+    )
+
+    @field_validator("llm_max_tokens", mode="before")
+    @classmethod
+    def _empty_str_as_none(cls, v: object) -> object:
+        """Пустая строка из compose (${LLM_MAX_TOKENS:-}) означает «не задан»."""
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
     ollama_model: str = Field(default="gemma3", validation_alias="OLLAMA_MODEL")
     ollama_base_url: str = Field(
         default="http://ollama:11434", validation_alias="OLLAMA_BASE_URL"
