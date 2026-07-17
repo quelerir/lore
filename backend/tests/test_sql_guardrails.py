@@ -16,6 +16,17 @@ def test_bare_table_name_qualified():
     assert qualify_table(q, T) == q
 
 
+def test_qualify_does_not_touch_string_literals():
+    sql = f"SELECT * FROM {T} WHERE column_1 = 'from {T}'"
+    out = qualify_table(sql, T)
+    assert f"FROM splitter_toast.{T}" in out
+    assert f"'from {T}'" in out  # литерал цел
+
+
+def test_qualify_unparseable_sql_passthrough():
+    assert qualify_table("Извините, не могу", T) == "Извините, не могу"
+
+
 def test_self_join_allowed():
     sql = (f"SELECT a.column_1 FROM splitter_toast.{T} a "
            f"JOIN splitter_toast.{T} b USING (_splitter_source_row)")
