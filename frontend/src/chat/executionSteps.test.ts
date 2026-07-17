@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IStep } from "@chainlit/react-client";
-import { collectToolStepsByMessage } from "./executionSteps";
+import { collectTraceByMessage } from "./executionSteps";
 
 const step = (over: Partial<IStep>): IStep =>
   ({
@@ -12,15 +12,15 @@ const step = (over: Partial<IStep>): IStep =>
     ...over,
   }) as IStep;
 
-describe("collectToolStepsByMessage", () => {
-  it("пустая Map, если инструментов нет", () => {
+describe("collectTraceByMessage", () => {
+  it("пустая Map, если хода нет", () => {
     const tree: IStep[] = [
       step({ id: "u1", type: "user_message", output: "привет" }),
     ];
-    expect(collectToolStepsByMessage(tree).size).toBe(0);
+    expect(collectTraceByMessage(tree).size).toBe(0);
   });
 
-  it("группирует tool-шаги по ответу того же on_message-run", () => {
+  it("отдаёт всё поддерево run'а: контейнеры и вложенные шаги", () => {
     const tree: IStep[] = [
       step({
         id: "u1",
@@ -38,14 +38,7 @@ describe("collectToolStepsByMessage", () => {
                 name: "LangGraph",
                 type: "run",
                 steps: [
-                  step({
-                    id: "t1",
-                    name: "query_document_tables",
-                    type: "tool",
-                    input: "грейды",
-                    output: "{...}",
-                    createdAt: "2026-07-16T09:00:01Z",
-                  }),
+                  step({ id: "t1", name: "calculator", type: "tool" }),
                 ],
               }),
             ],
@@ -54,12 +47,46 @@ describe("collectToolStepsByMessage", () => {
       }),
     ];
 
-    const map = collectToolStepsByMessage(tree);
+    const map = collectTraceByMessage(tree);
     expect([...map.keys()]).toEqual(["a1"]);
-    expect(map.get("a1")!.map((s) => s.id)).toEqual(["t1"]);
+    expect(map.get("a1")!.map((s) => s.id)).toEqual(["lg"]);
+    expect(map.get("a1")![0].steps!.map((s) => s.id)).toEqual(["t1"]);
   });
 
-  it("не смешивает инструменты между двумя ходами", () => {
+  it("llm-шаги входят в трейс", () => {
+    const tree: IStep[] = [
+      step({
+        id: "run1",
+        type: "run",
+        steps: [
+          step({ id: "a1", type: "assistant_message", output: "ответ" }),
+          step({ id: "llm1", type: "llm", name: "sql-plan" }),
+        ],
+      }),
+    ];
+    expect(collectTraceByMessage(tree).get("a1")!.map((s) => s.id)).toEqual([
+      "llm1",
+    ]);
+  });
+
+  it("*_message-шаги в трейс не попадают", () => {
+    const tree: IStep[] = [
+      step({
+        id: "run1",
+        type: "run",
+        steps: [
+          step({ id: "u1", type: "user_message", output: "вопрос" }),
+          step({ id: "a1", type: "assistant_message", output: "ответ" }),
+          step({ id: "t1", type: "tool", name: "calculator" }),
+        ],
+      }),
+    ];
+    expect(collectTraceByMessage(tree).get("a1")!.map((s) => s.id)).toEqual([
+      "t1",
+    ]);
+  });
+
+  it("не смешивает трейсы двух ходов", () => {
     const turn = (uid: string, aid: string, tid: string): IStep =>
       step({
         id: uid,
@@ -70,18 +97,14 @@ describe("collectToolStepsByMessage", () => {
             type: "run",
             steps: [
               step({ id: aid, type: "assistant_message", output: "ok" }),
-              step({
-                id: `lg-${uid}`,
-                type: "run",
-                steps: [step({ id: tid, type: "tool", name: "calculator" })],
-              }),
+              step({ id: tid, type: "tool", name: "calculator" }),
             ],
           }),
         ],
       });
     const tree: IStep[] = [turn("u1", "a1", "t1"), turn("u2", "a2", "t2")];
 
-    const map = collectToolStepsByMessage(tree);
+    const map = collectTraceByMessage(tree);
     expect(map.get("a1")!.map((s) => s.id)).toEqual(["t1"]);
     expect(map.get("a2")!.map((s) => s.id)).toEqual(["t2"]);
   });
@@ -105,22 +128,8 @@ describe("collectToolStepsByMessage", () => {
         ],
       }),
     ];
-    const map = collectToolStepsByMessage(tree);
+    const map = collectTraceByMessage(tree);
     expect(map.get("a1")!.map((s) => s.id)).toEqual(["stage1"]);
     expect(map.get("a1")![0].steps!.map((s) => s.id)).toEqual(["att1", "att2"]);
-  });
-
-  it("игнорирует llm-шаги (внутренний SQL)", () => {
-    const tree: IStep[] = [
-      step({
-        id: "run1",
-        type: "run",
-        steps: [
-          step({ id: "a1", type: "assistant_message", output: "ответ" }),
-          step({ id: "llm1", type: "llm", name: "sql-plan" }),
-        ],
-      }),
-    ];
-    expect(collectToolStepsByMessage(tree).size).toBe(0);
   });
 });
