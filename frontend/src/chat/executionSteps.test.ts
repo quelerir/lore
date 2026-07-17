@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { IStep } from "@chainlit/react-client";
-import { collectTraceByMessage, formatDuration } from "./executionSteps";
+import {
+  collectTraceByMessage,
+  formatDuration,
+  formatIo,
+} from "./executionSteps";
 
 const step = (over: Partial<IStep>): IStep =>
   ({
@@ -155,5 +159,29 @@ describe("formatDuration", () => {
     expect(
       formatDuration("2026-07-17T09:00:02Z", "2026-07-17T09:00:01Z"),
     ).toBeNull();
+  });
+});
+
+describe("formatIo", () => {
+  it("разворачивает \\uXXXX-эскейпы из json.dumps(ensure_ascii=True)", () => {
+    const escaped = '{"question": "\\u0424\\u0418\\u041e \\u044e\\u0440\\u0438\\u0441\\u0442\\u043e\\u0432"}';
+    expect(formatIo(escaped)).toContain("ФИО юристов");
+  });
+
+  it("pretty-print валидного JSON", () => {
+    expect(formatIo('{"a":1,"b":[2,3]}')).toBe(
+      '{\n  "a": 1,\n  "b": [\n    2,\n    3\n  ]\n}',
+    );
+  });
+
+  it("обёртка {content: str} разворачивается до текста", () => {
+    expect(formatIo('{"content": "SELECT 1"}')).toBe("SELECT 1");
+  });
+
+  it("не-JSON возвращается как есть", () => {
+    expect(formatIo("SELECT column_1 FROM t")).toBe("SELECT column_1 FROM t");
+    expect(formatIo("{сломанный json")).toBe("{сломанный json");
+    expect(formatIo("")).toBe("");
+    expect(formatIo(undefined)).toBe("");
   });
 });

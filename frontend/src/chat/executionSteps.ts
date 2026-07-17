@@ -43,6 +43,33 @@ export function collectTraceByMessage(steps: IStep[]): Map<string, IStep[]> {
   return map;
 }
 
+/**
+ * Готовит input/output шага к показу. Chainlit сериализует их через
+ * json.dumps(ensure_ascii=True), поэтому кириллица приходит как К….
+ * Валидный JSON парсим и печатаем заново (JSON.stringify отдаёт юникод как
+ * есть + pretty-print); обёртку {"content": "..."} разворачиваем до текста.
+ */
+export function formatIo(value?: string): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!/^[{[]/.test(trimmed)) return value;
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (
+      parsed !== null &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed) &&
+      Object.keys(parsed).length === 1 &&
+      typeof (parsed as { content?: unknown }).content === "string"
+    ) {
+      return (parsed as { content: string }).content;
+    }
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return value;
+  }
+}
+
 /** Длительность шага для трейса: "450 мс" / "1.2 с"; null, если границ нет. */
 export function formatDuration(
   start?: string | number,
