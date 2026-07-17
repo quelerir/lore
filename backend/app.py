@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Optional
 
 import chainlit as cl
@@ -18,10 +19,13 @@ from sqlalchemy.pool import NullPool
 from agents import PROFILE_TO_MODE, Mode, build_agent
 from auth import verify_ticket
 from config import get_settings
+from sql_demo import build_demo_graph, handle_sql_message
 
 # Сколько последних сообщений истории отдаём агенту: без предела длинный
 # диалог рано или поздно упирается в контекст модели.
 MAX_HISTORY_MESSAGES = 40
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Data layer – SQLAlchemyDataLayer subclass that forces NullPool.
@@ -145,12 +149,19 @@ if get_settings().oauth_generic_client_id:
 
 @cl.on_chat_start
 async def on_chat_start() -> None:
+    if cl.user_session.get("chat_profile") == "sql":
+        cl.user_session.set("sql_graph", build_demo_graph())
+        return
     cl.user_session.set("agent", _build_session_agent())
     cl.user_session.set("history", [])
 
 
 @cl.on_chat_resume
 async def on_chat_resume(thread: ThreadDict) -> None:
+    if cl.user_session.get("chat_profile") == "sql":
+        # Граф без памяти диалога: история сообщений/шагов и так в data layer.
+        cl.user_session.set("sql_graph", build_demo_graph())
+        return
     cl.user_session.set("agent", _build_session_agent())
     # Restore prior turns so the agent keeps context after a page reload/resume.
     # Chainlit persists each message as a step; rebuild the LangChain history
@@ -214,6 +225,20 @@ async def handle_message(
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
+    sql_graph = cl.user_session.get("sql_graph")
+    if sql_graph is not None:
+        out = cl.Message(content="")
+        await out.send()
+        try:
+            await handle_sql_message(sql_graph, message.content, out)
+        except Exception:
+            logger.exception("SQL demo run failed")
+            await out.stream_token(
+                "Не удалось выполнить прогон SQL-графа. Попробуйте ещё раз."
+            )
+        await out.update()
+        return
+
     agent = cl.user_session.get("agent")
     if agent is None:
         await cl.Message(
