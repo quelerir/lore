@@ -28,6 +28,7 @@ def build_model() -> BaseChatModel:
         model=s.openrouter_model,
         base_url=s.openrouter_base_url,
         api_key=s.openrouter_api_key,
+        max_tokens=s.llm_max_tokens,
     )
 
 
@@ -42,6 +43,7 @@ def build_sql_model(temperature: float = 0.0) -> BaseChatModel:
         base_url=s.openrouter_base_url,
         api_key=s.openrouter_api_key,
         temperature=temperature,
+        max_tokens=s.llm_max_tokens,
     )
 
 

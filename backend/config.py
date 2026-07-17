@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     openrouter_api_key: str | None = Field(
         default=None, validation_alias="OPENROUTER_API_KEY"
     )
+    # Явный предел токенов ответа для OpenRouter-моделей: без него OpenRouter
+    # резервирует ПОЛНОЕ окно вывода модели (напр. 65536 у sonnet) и отклоняет
+    # запрос с 402, если кредитов меньше резерва. Ответы графа/агента короткие.
+    llm_max_tokens: int = Field(default=2000, validation_alias="LLM_MAX_TOKENS")
     ollama_model: str = Field(default="gemma3", validation_alias="OLLAMA_MODEL")
     ollama_base_url: str = Field(
         default="http://ollama:11434", validation_alias="OLLAMA_BASE_URL"
