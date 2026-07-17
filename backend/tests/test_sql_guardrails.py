@@ -46,3 +46,13 @@ def test_join_to_other_table_rejected():
     sql = (f"SELECT * FROM splitter_toast.{T} a "
            f"JOIN splitter_toast.{OTHER} b USING (_splitter_source_row)")
     assert validate_select(sql, T) is not None
+
+
+def test_quoted_qualified_table_accepted():
+    # Модель может закавычить идентификатор — это валидный SELECT к своей таблице.
+    assert validate_select(f'SELECT column_1 FROM splitter_toast."{T}"', T) is None
+    assert validate_select(f'SELECT * FROM "splitter_toast"."{T}"', T) is None
+
+
+def test_quoted_other_table_rejected():
+    assert validate_select(f'SELECT * FROM splitter_toast."{OTHER}"', T) is not None

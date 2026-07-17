@@ -9,8 +9,10 @@ _FORBIDDEN = re.compile(
     re.IGNORECASE,
 )
 # Цели FROM/JOIN: schema.table (alias.column проверке не подлежит).
+# "?…"? — допускаем закавыченные идентификаторы, но захватываем имя без кавычек.
 _RELATION = re.compile(
-    r"\b(?:from|join)\s+([a-zA-Z_]\w*)\s*\.\s*([a-zA-Z_]\w*)", re.IGNORECASE
+    r'\b(?:from|join)\s+"?([a-zA-Z_]\w*)"?\s*\.\s*"?([a-zA-Z_]\w*)"?',
+    re.IGNORECASE,
 )
 _BARE = re.compile(r"(?i)\b(from|join)\s+(toast_tbl_[0-9a-f]{20})\b")
 
