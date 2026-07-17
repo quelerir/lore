@@ -37,6 +37,8 @@ def test_calculator_rejects_evil():
     assert "Ошибка" in calculator.invoke({"expression": "1 if True else 2"})
     assert "Ошибка" in calculator.invoke({"expression": "1/0"})
     assert "Ошибка" in calculator.invoke({"expression": "2 ** 999999"})
+    # степень в лимите, но результат астрономический — режем по размеру
+    assert "Ошибка" in calculator.invoke({"expression": "(2 ** 10000) ** 10000"})
 
 
 def test_evaluate_expression_pure():

@@ -19,6 +19,10 @@ from agents import PROFILE_TO_MODE, Mode, build_agent
 from auth import verify_ticket
 from config import get_settings
 
+# Сколько последних сообщений истории отдаём агенту: без предела длинный
+# диалог рано или поздно упирается в контекст модели.
+MAX_HISTORY_MESSAGES = 40
+
 # ---------------------------------------------------------------------------
 # Data layer – SQLAlchemyDataLayer subclass that forces NullPool.
 #
@@ -92,9 +96,11 @@ def header_auth_callback(headers: dict[str, str]) -> Optional[cl.User]:
         claims = verify_ticket(token)
     except Exception:
         return None
+    # identifier = username, как и в oauth_user (preferred_username): один и
+    # тот же человек через тикет и через authentik — один пользователь/треды.
     return cl.User(
-        identifier=str(claims["sub"]),
-        metadata={"username": claims["username"]},
+        identifier=claims["username"],
+        metadata={"provider": "ticket", "sub": claims["sub"]},
     )
 
 
@@ -142,7 +148,7 @@ async def on_chat_resume(thread: ThreadDict) -> None:
             history.append(HumanMessage(content=output))
         elif step.get("type") == "assistant_message":
             history.append(AIMessage(content=output))
-    cl.user_session.set("history", history)
+    cl.user_session.set("history", history[-MAX_HISTORY_MESSAGES:])
 
 
 async def handle_message(
@@ -211,4 +217,4 @@ async def on_message(message: cl.Message) -> None:
     await out.update()
 
     history.append(AIMessage(content=answer))
-    cl.user_session.set("history", history)
+    cl.user_session.set("history", history[-MAX_HISTORY_MESSAGES:])
