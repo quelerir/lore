@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=False,
         extra="ignore",
+        # compose передаёт незаданные переменные пустыми строками
+        # (`${VAR:-}`) — считаем их незаданными, иначе '' затирает дефолты
+        # и из пяти пустых TOAST_DB_* собирается мусорный DSN.
+        env_ignore_empty=True,
         # Порядок приоритета файлов (побеждает последний): .env → .env.local.
         # Реальные переменные окружения (compose) важнее любого файла.
         env_file=(".env", ".env.local"),
