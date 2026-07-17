@@ -134,15 +134,49 @@ def test_build_sql_model_openrouter(monkeypatch):
 
     monkeypatch.setenv("OPENROUTER_API_KEY", "k")
     monkeypatch.setenv("SQL_MODEL", "anthropic/claude-sonnet-4.6")
+    monkeypatch.delenv("LLM_MAX_TOKENS", raising=False)
     get_settings.cache_clear()
     m = build_sql_model()
     assert isinstance(m, ChatOpenAI)
     assert "openrouter.ai" in str(m.openai_api_base)
-    # Без явного max_tokens OpenRouter резервирует полное окно модели и
-    # отвечает 402 при нехватке кредитов. extra_body обязателен: langchain
-    # шлёт max_completion_tokens, который OpenRouter игнорирует.
+    # По умолчанию лимита нет: max_tokens не задаём, extra_body пуст.
+    assert m.max_tokens is None
+    assert m.extra_body is None
+
+
+def test_build_sql_model_respects_max_tokens(monkeypatch):
+    from langchain_openai import ChatOpenAI
+
+    from agents.base import build_sql_model
+    from config import get_settings
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    monkeypatch.setenv("SQL_MODEL", "anthropic/claude-sonnet-4.6")
+    monkeypatch.setenv("LLM_MAX_TOKENS", "2000")
+    get_settings.cache_clear()
+    m = build_sql_model()
+    assert isinstance(m, ChatOpenAI)
+    # Заданный лимит идёт и в max_tokens, и в extra_body (OpenRouter игнорирует
+    # max_completion_tokens, читает родной max_tokens из JSON запроса).
     assert m.max_tokens == 2000
     assert m.extra_body == {"max_tokens": 2000}
+
+
+def test_build_sql_model_empty_max_tokens_means_unset(monkeypatch):
+    from langchain_openai import ChatOpenAI
+
+    from agents.base import build_sql_model
+    from config import get_settings
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    monkeypatch.setenv("SQL_MODEL", "anthropic/claude-sonnet-4.6")
+    # Пустая строка из compose (${LLM_MAX_TOKENS:-}) трактуется как «не задан».
+    monkeypatch.setenv("LLM_MAX_TOKENS", "")
+    get_settings.cache_clear()
+    m = build_sql_model()
+    assert isinstance(m, ChatOpenAI)
+    assert m.max_tokens is None
+    assert m.extra_body is None
 
 
 def test_build_sql_model_requires_key(monkeypatch):

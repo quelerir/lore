@@ -15,6 +15,16 @@ class Mode(Enum):
 PROFILE_TO_MODE: dict[str, Mode] = {"fast": Mode.FAST, "deep": Mode.DEEP}
 
 
+def _max_tokens_kwargs(limit: int | None) -> dict:
+    """Опциональный предел вывода для OpenRouter. Пусто, если лимит не задан.
+    langchain-openai шлёт max_completion_tokens, который OpenRouter игнорирует
+    (и резервирует полное окно модели → 402 при нехватке кредитов), поэтому
+    родной max_tokens кладём ещё и в extra_body — прямо в JSON запроса."""
+    if limit is None:
+        return {}
+    return {"max_tokens": limit, "extra_body": {"max_tokens": limit}}
+
+
 def build_model() -> BaseChatModel:
     """OpenRouter по умолчанию; MODEL_PROVIDER=ollama — локальный фолбэк."""
     s = get_settings()
@@ -28,11 +38,7 @@ def build_model() -> BaseChatModel:
         model=s.openrouter_model,
         base_url=s.openrouter_base_url,
         api_key=s.openrouter_api_key,
-        max_tokens=s.llm_max_tokens,
-        # langchain-openai шлёт max_completion_tokens, который OpenRouter
-        # игнорирует (и резервирует полное окно модели → 402 при нехватке
-        # кредитов). extra_body кладёт родной max_tokens прямо в JSON запроса.
-        extra_body={"max_tokens": s.llm_max_tokens},
+        **_max_tokens_kwargs(s.llm_max_tokens),
     )
 
 
@@ -47,9 +53,7 @@ def build_sql_model(temperature: float = 0.0) -> BaseChatModel:
         base_url=s.openrouter_base_url,
         api_key=s.openrouter_api_key,
         temperature=temperature,
-        max_tokens=s.llm_max_tokens,
-        # См. комментарий в build_model: OpenRouter понимает только max_tokens.
-        extra_body={"max_tokens": s.llm_max_tokens},
+        **_max_tokens_kwargs(s.llm_max_tokens),
     )
 
 
