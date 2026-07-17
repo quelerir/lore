@@ -3,7 +3,7 @@ import asyncio
 from langchain_core.messages import AIMessage
 
 from fakes import ScriptedChatModel
-from test_sql_graph import FakeExecutor, _rows, _sample  # переиспользуем фейки
+from graph_utils import FakeExecutor, _rows, _sample  # переиспользуем фейки
 
 LEGAL = "toast_tbl_ec48a6d52d16ab405f95"
 
