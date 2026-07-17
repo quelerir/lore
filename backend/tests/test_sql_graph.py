@@ -202,6 +202,20 @@ def test_state_has_no_columns_field():
     assert "columns" not in SqlToolState.__annotations__
 
 
+def test_rows_context_caps_by_size():
+    from toast.sql_graph import JUDGE_CONTEXT_CHARS, _rows_context
+
+    big = {"column_1": "x" * JUDGE_CONTEXT_CHARS}
+    small = {"column_1": "y"}
+    ctx = _rows_context([], [big, small])
+    assert "Показано строк: 1 из 2" in ctx
+    assert '"y"' not in ctx
+
+    # Хотя бы одна строка отдаётся всегда, даже если сама больше лимита.
+    ctx_one = _rows_context([], [big])
+    assert "Показано строк: 1 из 1" in ctx_one
+
+
 def test_attempt_from_refusal_result_and_exception():
     from toast.sql_graph import _attempt
 

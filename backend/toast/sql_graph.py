@@ -79,6 +79,7 @@ SUMMARIZE_SYS = (
 NO_DATA_MSG = "В данных таблицы нет ответа на этот вопрос."
 NO_CANDIDATES_MSG = "Модель не вернула ни одного SQL-кандидата."
 JUDGE_ROWS_CAP = 30  # сколько строк отдаём в контекст судьи/суммаризатора
+JUDGE_CONTEXT_CHARS = 8_000  # кап сериализованных строк для судьи/суммаризатора
 
 # «sufficient» с границами слова: в «insufficient» и «NEED_MORE...» не матчится.
 _SUFFICIENT_RE = re.compile(r"\bsufficient\b")
@@ -201,8 +202,20 @@ def _ok_rows(attempts: list[Attempt]) -> list[dict]:
 
 
 def _rows_context(attempts: list[Attempt], rows: list[dict]) -> str:
-    """Строки для контекста LLM с честной пометкой о неполноте выборки."""
-    shown = rows[:JUDGE_ROWS_CAP]
+    """Строки для контекста LLM с честной пометкой о неполноте выборки.
+
+    Два капа: не больше JUDGE_ROWS_CAP строк и не больше ~JUDGE_CONTEXT_CHARS
+    символов JSON (одна «широкая» строка не должна раздувать контекст).
+    Хотя бы одна строка отдаётся всегда.
+    """
+    shown: list[dict] = []
+    size = 0
+    for row in rows[:JUDGE_ROWS_CAP]:
+        piece = json.dumps(row, ensure_ascii=False, default=str)
+        if shown and size + len(piece) > JUDGE_CONTEXT_CHARS:
+            break
+        shown.append(row)
+        size += len(piece)
     note = f"Показано строк: {len(shown)} из {len(rows)}"
     if any(a["truncated"] for a in attempts):
         note += " (результат SQL дополнительно усечён лимитом исполнителя)"
