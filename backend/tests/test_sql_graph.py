@@ -94,9 +94,9 @@ def test_budget_exhausted_no_data():
     assert len(exe.calls) == 4  # сэмпл + 3 кандидата
 
 
-def test_duplicate_candidate_not_reexecuted_but_counted():
-    # Повтор SQL из прошлого раунда не гоняется в БД, но бюджет списывается —
-    # иначе раунды из одних повторов крутились бы вечно.
+def test_duplicate_candidates_stopped_by_round_cap():
+    # Повтор SQL не гоняется в БД и бюджет НЕ двигает — цикл останавливает
+    # предел раундов (== max_queries).
     model = ScriptedChatModel(responses=[
         AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),
         AIMessage(content='["SELECT column_1 FROM %s"]' % LEGAL),  # дубликат
@@ -106,6 +106,38 @@ def test_duplicate_candidate_not_reexecuted_but_counted():
     out = _run(model, exe, candidates=1, max_queries=3)
     assert out["status"] == "no_data"
     assert len(exe.calls) == 2  # сэмпл + один реальный SELECT
+
+
+def test_guardrails_refusal_does_not_consume_budget():
+    # Раунд 1: два кандидата — отказ валидатора + удачный SELECT. Отказ не
+    # списывается → executed=1 < 2 → зовётся СУДЬЯ. При старой семантике
+    # executed=2 исчерпал бы бюджет, judge был бы пропущен, и summarize
+    # съел бы заскриптованный "SUFFICIENT" как ответ — ассерт на answer
+    # ловит разницу.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["DROP TABLE x", "SELECT column_1 FROM %s"]' % LEGAL),
+        AIMessage(content="SUFFICIENT"),
+        AIMessage(content="Ответ."),
+    ])
+    exe = FakeExecutor(results=[_sample(), "Отказ: разрешён только SELECT.",
+                                _rows(1)])
+    out = _run(model, exe, candidates=2, max_queries=2)
+    assert out["status"] == "ok"
+    assert out["answer"] == "Ответ."
+
+
+def test_round_cap_stops_refusal_only_batches():
+    # Модель упорно генерит запрещённое: бюджет не тратится, но предел
+    # раундов (== max_queries) останавливает цикл со status=error.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["DROP TABLE x"]'),
+        AIMessage(content='["DROP TABLE y"]'),
+    ])
+    exe = FakeExecutor(results=[_sample(), "Отказ: разрешён только SELECT.",
+                                "Отказ: разрешён только SELECT."])
+    out = _run(model, exe, candidates=1, max_queries=2)
+    assert out["status"] == "error"
+    assert "Отказ" in out["answer"]
 
 
 def test_all_sql_errors_status_error():
