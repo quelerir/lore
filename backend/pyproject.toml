@@ -13,6 +13,7 @@ dependencies = [
     "pyjwt>=2.8",
     "langchain-openai>=1.3.5",
     "pydantic-settings>=2.14.2",
+    "sqlglot>=30.12.0",
 ]
 
 [tool.setuptools]

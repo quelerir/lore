@@ -1,11 +1,10 @@
-"""Read-only исполнитель одной toast-таблицы: фетч колонок + guarded SELECT."""
+"""Read-only исполнитель одной toast-таблицы: guarded SELECT с лимитом строк."""
 
-import json
 from typing import Any, TypedDict
 
 import asyncpg
 
-from toast.sql_guardrails import TOAST_TABLE_RE, qualify_table, validate_select
+from toast.sql_guardrails import qualify_table, validate_select
 
 MAX_ROWS = 200
 STATEMENT_TIMEOUT_MS = 5000
@@ -36,48 +35,36 @@ class PgExecutor:
     def __init__(self, dsn: str) -> None:
         self._dsn = dsn
 
-    async def _read_only(self, query: str, *args: Any) -> list[asyncpg.Record]:
-        """Выполнить один fetch в свежем соединении в read-only транзакции с
-        statement_timeout; соединение гарантированно закрывается."""
-        conn = await asyncpg.connect(
-            self._dsn, command_timeout=STATEMENT_TIMEOUT_MS / 1000
-        )
-        try:
-            async with conn.transaction(readonly=True):
-                await conn.execute(
-                    f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}"
-                )
-                return await conn.fetch(query, *args)
-        finally:
-            await conn.close()
-
-    async def fetch_columns(self, table: str) -> list[str]:
-        """Реальные имена колонок таблицы (в порядке ordinal_position).
-
-        Обязательно для генерации SQL: физические имена часто переименованы из
-        заголовков и не совпадают с человеческим описанием таблицы.
-        """
-        if not TOAST_TABLE_RE.match(table):
-            raise ValueError(f"bad table id: {table!r}")
-        rows = await self._read_only(
-            """SELECT column_name FROM information_schema.columns
-               WHERE table_schema = 'splitter_toast' AND table_name = $1
-               ORDER BY ordinal_position""",
-            table,
-        )
-        return [r["column_name"] for r in rows]
-
     async def run_select(self, sql: str, table: str) -> SelectResult | str:
         """Выполнить SELECT к `table` в read-only транзакции.
 
         Возвращает SelectResult при успехе или строку-отказ (guardrails) /
-        текст ошибки БД. Результат усечён до MAX_ROWS (флаг truncated).
+        текст ошибки БД / таймаута. Результат усечён до MAX_ROWS ещё на
+        стороне БД (обёртка LIMIT MAX_ROWS+1 — лишние строки в память не
+        тянем; наличие (MAX_ROWS+1)-й строки поднимает флаг truncated).
         """
         sql = qualify_table(sql, table)
         if refusal := validate_select(sql, table):
             return refusal
+        wrapped = (
+            f"SELECT * FROM ({sql.strip().rstrip(';')}) AS _q LIMIT {MAX_ROWS + 1}"
+        )
         try:
-            rows = await self._read_only(sql.strip().rstrip(";"))
+            conn = await asyncpg.connect(
+                self._dsn, command_timeout=STATEMENT_TIMEOUT_MS / 1000
+            )
+            try:
+                async with conn.transaction(readonly=True):
+                    await conn.execute(
+                        f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}"
+                    )
+                    rows = await conn.fetch(wrapped)
+            finally:
+                await conn.close()
+        except TimeoutError:
+            # Клиентский command_timeout asyncpg; серверный statement_timeout
+            # приходит как QueryCanceledError (подкласс PostgresError).
+            return f"Ошибка SQL: превышен таймаут {STATEMENT_TIMEOUT_MS} мс"
         except asyncpg.PostgresError as e:
             return f"Ошибка SQL: {e}"
         truncated = len(rows) > MAX_ROWS
@@ -92,13 +79,13 @@ class PgExecutor:
 
 
 def _plain(value: Any) -> Any:
+    """Приведение значения asyncpg к JSON-совместимому типу.
+
+    json/jsonb asyncpg отдаёт как str; bytes — это bytea, декодируем с
+    заменой некорректных байтов. Остальное (Decimal, даты, UUID) — str().
+    """
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
-    try:
-        return (
-            json.loads(value)
-            if isinstance(value, (bytes, bytearray))
-            else str(value)
-        )
-    except Exception:
-        return str(value)
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return bytes(value).decode("utf-8", "replace")
+    return str(value)

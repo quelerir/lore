@@ -1,26 +1,26 @@
-"""SQL-guardrails: разрешён только SELECT ровно к одной переданной таблице."""
+"""SQL-guardrails: разрешён только SELECT ровно к одной переданной таблице.
+
+Валидация по AST (sqlglot, диалект postgres), а не по regex: проверяются ВСЕ
+упомянутые в запросе таблицы, включая comma-join и подзапросы. Строковые
+литералы с «опасными» словами и точками с запятой ложных отказов не дают.
+Вторая линия обороны — read-only транзакция в исполнителе.
+"""
 
 import re
 
+import sqlglot
+from sqlglot import exp
+
 TOAST_TABLE_RE = re.compile(r"^toast_tbl_[0-9a-f]{20}$")
-_FORBIDDEN = re.compile(
-    r"\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|"
-    r"copy|vacuum|call|do)\b",
-    re.IGNORECASE,
-)
-# Цели FROM/JOIN: schema.table (alias.column проверке не подлежит).
-# "?…"? — допускаем закавыченные идентификаторы, но захватываем имя без кавычек.
-_RELATION = re.compile(
-    r'\b(?:from|join)\s+"?([a-zA-Z_]\w*)"?\s*\.\s*"?([a-zA-Z_]\w*)"?',
-    re.IGNORECASE,
-)
 _BARE = re.compile(r"(?i)\b(from|join)\s+(toast_tbl_[0-9a-f]{20})\b")
+
+ALLOWED_SCHEMA = "splitter_toast"
 
 
 def qualify_table(sql: str, table: str) -> str:
     """Дописывает splitter_toast. к голому имени переданной таблицы."""
     return _BARE.sub(
-        lambda m: f"{m.group(1)} splitter_toast.{m.group(2)}"
+        lambda m: f"{m.group(1)} {ALLOWED_SCHEMA}.{m.group(2)}"
         if m.group(2) == table
         else m.group(0),
         sql,
@@ -31,20 +31,30 @@ def validate_select(sql: str, table: str) -> str | None:
     """None — можно выполнять; иначе текст отказа для LLM."""
     if not TOAST_TABLE_RE.match(table):
         return f"Отказ: недопустимое имя таблицы '{table}'."
-    stripped = sql.strip().rstrip(";").strip()
-    if ";" in stripped:
+    try:
+        statements = [s for s in sqlglot.parse(sql, read="postgres") if s is not None]
+    except sqlglot.errors.ParseError as e:
+        return f"Отказ: не удалось разобрать SQL ({e})."
+    if len(statements) != 1:
         return "Отказ: разрешена ровно одна SQL-команда."
-    if not re.match(r"^select\b", stripped, re.IGNORECASE):
+    stmt = statements[0]
+    if not isinstance(stmt, (exp.Select, exp.SetOperation)):
         return "Отказ: разрешён только SELECT."
-    if _FORBIDDEN.search(stripped):
-        return "Отказ: запрещённая операция (только чтение)."
-    relations = _RELATION.findall(stripped)
-    if not relations:
+    if stmt.find(exp.With, exp.CTE):
+        return "Отказ: CTE (WITH) не поддерживается — перепиши подзапросом."
+    for sel in stmt.find_all(exp.Select):
+        if sel.args.get("into"):
+            return "Отказ: SELECT INTO запрещён (только чтение)."
+        if sel.args.get("locks"):
+            return "Отказ: FOR UPDATE/SHARE запрещён (только чтение)."
+    tables = list(stmt.find_all(exp.Table))
+    if not tables:
         return "Отказ: не вижу FROM с явной таблицей."
-    for schema, name in relations:
-        if schema.lower() != "splitter_toast" or name != table:
+    for t in tables:
+        if t.db.lower() != ALLOWED_SCHEMA or t.name != table:
+            found = ".".join(p for p in (t.db, t.name) if p) or t.sql()
             return (
-                f"Отказ: разрешена только таблица splitter_toast.{table}, "
-                f"найдено {schema}.{name}."
+                f"Отказ: разрешена только таблица {ALLOWED_SCHEMA}.{table}, "
+                f"найдено {found}."
             )
     return None

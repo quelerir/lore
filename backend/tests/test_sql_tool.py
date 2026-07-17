@@ -16,7 +16,7 @@ def test_run_sql_tool_projects_contract():
         AIMessage(content="SUFFICIENT"),
         AIMessage(content="Каневский Георгий."),
     ])
-    exe = FakeExecutor(["column_1"], results=[_rows(1)])
+    exe = FakeExecutor(results=[_rows(1)])
     inputs = {"question": "ФИО юристов", "chunk_id": "c1", "table": LEGAL,
               "desc_vector": "юристы", "desc_full": "Таблица юристов"}
     out = asyncio.run(run_sql_tool(inputs, model, exe, max_queries=3,

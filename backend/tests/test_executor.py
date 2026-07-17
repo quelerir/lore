@@ -33,17 +33,6 @@ def _exe():
     return PgExecutor(DSN)
 
 
-def test_fetch_columns_includes_service_and_renamed():
-    exe = _exe()
-
-    async def run():
-        return await exe.fetch_columns(LEGAL)
-
-    cols = _run(run())
-    assert "_splitter_source_row" in cols
-    assert "senior_legal_manager" in cols  # переименованная колонка из отчёта
-
-
 def test_run_select_ok_and_mutation_rejected():
     exe = _exe()
 

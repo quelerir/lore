@@ -22,6 +22,12 @@ def test_self_join_allowed():
     assert validate_select(sql, T) is None
 
 
+def test_union_of_same_table_allowed():
+    sql = (f"SELECT column_1 FROM splitter_toast.{T} "
+           f"UNION SELECT column_2 FROM splitter_toast.{T}")
+    assert validate_select(sql, T) is None
+
+
 @pytest.mark.parametrize("bad", [
     "DROP TABLE splitter_toast.x",
     "DELETE FROM splitter_toast.x",
@@ -46,6 +52,53 @@ def test_join_to_other_table_rejected():
     sql = (f"SELECT * FROM splitter_toast.{T} a "
            f"JOIN splitter_toast.{OTHER} b USING (_splitter_source_row)")
     assert validate_select(sql, T) is not None
+
+
+def test_comma_join_to_other_table_rejected():
+    # Regex-версия guardrails пропускала comma-join — чтение чужих таблиц.
+    sql = f"SELECT u.* FROM splitter_toast.{T}, public.users u"
+    assert validate_select(sql, T) is not None
+
+
+def test_subquery_against_other_table_rejected():
+    sql = f"SELECT (SELECT max(x) FROM public.secrets) FROM splitter_toast.{T}"
+    assert validate_select(sql, T) is not None
+
+
+def test_table_function_rejected():
+    assert validate_select("SELECT * FROM generate_series(1, 10)", T) is not None
+
+
+def test_forbidden_word_inside_string_literal_allowed():
+    # Слово из чёрного списка в данных — не повод для отказа.
+    sql = f"SELECT * FROM splitter_toast.{T} WHERE column_1 = 'create table'"
+    assert validate_select(sql, T) is None
+
+
+def test_semicolon_inside_string_literal_allowed():
+    sql = f"SELECT * FROM splitter_toast.{T} WHERE column_1 = 'a;b'"
+    assert validate_select(sql, T) is None
+
+
+def test_trailing_semicolon_allowed():
+    assert validate_select(f"SELECT * FROM splitter_toast.{T};", T) is None
+
+
+def test_cte_rejected():
+    sql = f"WITH c AS (SELECT 1 FROM splitter_toast.{T}) SELECT * FROM c"
+    assert validate_select(sql, T) is not None
+
+
+def test_select_into_rejected():
+    assert validate_select(f"SELECT * INTO x FROM splitter_toast.{T}", T) is not None
+
+
+def test_for_update_rejected():
+    assert validate_select(f"SELECT * FROM splitter_toast.{T} FOR UPDATE", T) is not None
+
+
+def test_non_sql_text_rejected():
+    assert validate_select("Извините, не могу составить запрос", T) is not None
 
 
 def test_quoted_qualified_table_accepted():
