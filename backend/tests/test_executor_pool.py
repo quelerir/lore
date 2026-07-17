@@ -1,5 +1,6 @@
-"""Регресс: пул НЕ шлёт startup-параметры (их рвёт transaction-pooling пулер),
-read-only и statement_timeout навешиваются ПО-ТРАНЗАКЦИОННО. Живая БД не нужна."""
+"""Регресс: соединение НЕ шлёт startup-параметры (их рвёт transaction-pooling
+пулер), read-only и statement_timeout навешиваются ПО-ТРАНЗАКЦИОННО, а само
+соединение гарантированно закрывается. Живая БД не нужна."""
 
 import asyncio
 
@@ -26,6 +27,7 @@ class _FakeConn:
     def __init__(self):
         self.readonly_flags: list[bool] = []
         self.executed: list[str] = []
+        self.closed = False
 
     def transaction(self, readonly=False):
         return _FakeTxn(self, readonly)
@@ -36,27 +38,8 @@ class _FakeConn:
     async def fetch(self, query, *args):
         return []
 
-
-class _FakeAcquire:
-    def __init__(self, conn):
-        self._conn = conn
-
-    async def __aenter__(self):
-        return self._conn
-
-    async def __aexit__(self, *exc):
-        return False
-
-
-class _FakePool:
-    def __init__(self, conn):
-        self._conn = conn
-
-    def acquire(self):
-        return _FakeAcquire(self._conn)
-
     async def close(self):
-        pass
+        self.closed = True
 
 
 def _patch(monkeypatch):
@@ -65,16 +48,16 @@ def _patch(monkeypatch):
     conn = _FakeConn()
     captured: dict = {}
 
-    async def fake_create_pool(dsn, **kwargs):
+    async def fake_connect(dsn, **kwargs):
         captured["dsn"] = dsn
         captured.update(kwargs)
-        return _FakePool(conn)
+        return conn
 
-    monkeypatch.setattr(ex.asyncpg, "create_pool", fake_create_pool)
+    monkeypatch.setattr(ex.asyncpg, "connect", fake_connect)
     return ex, conn, captured
 
 
-def test_pool_has_no_startup_params(monkeypatch):
+def test_connect_has_no_startup_params(monkeypatch):
     ex, conn, captured = _patch(monkeypatch)
 
     async def run():
@@ -82,11 +65,12 @@ def test_pool_has_no_startup_params(monkeypatch):
         await e.fetch_columns(LEGAL)
 
     _run(run())
-    # Ровно эта причина падения за пулером: server_settings как startup-параметры.
+    # Ровно причина падения за пулером: startup-параметры соединения.
     assert "server_settings" not in captured
-    # read-only и timeout — теперь внутри транзакции.
+    # read-only и timeout — внутри транзакции; соединение закрыто.
     assert conn.readonly_flags == [True]
     assert any("statement_timeout" in q for q in conn.executed)
+    assert conn.closed
 
 
 def test_run_select_uses_readonly_transaction(monkeypatch):
@@ -101,3 +85,4 @@ def test_run_select_uses_readonly_transaction(monkeypatch):
     _run(run())
     assert conn.readonly_flags == [True]
     assert any("statement_timeout" in q for q in conn.executed)
+    assert conn.closed

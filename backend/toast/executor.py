@@ -21,33 +21,35 @@ class SelectResult(TypedDict):
 
 
 class PgExecutor:
-    """Пул соединений к БД toast-таблиц (asyncpg).
+    """Read-only исполнитель toast-таблиц (asyncpg, соединение на запрос).
 
     Юзер БД пишущий, поэтому read-only и statement_timeout навязываем сами —
     ПО-ТРАНЗАКЦИОННО (BEGIN READ ONLY + SET LOCAL), а не через server_settings
-    пула: startup-параметры не принимает transaction-pooling пулер (PgBouncer),
-    он рвёт коннект с `unsupported startup parameter`. Пул ленивый — создаётся
-    при первом обращении.
+    соединения: startup-параметры не принимает transaction-pooling пулер
+    (PgBouncer), он рвёт коннект с `unsupported startup parameter`.
+
+    Пул не держим: перед БД и так стоит пулер, а на каждый запрос берём
+    отдельное соединение — кандидаты раунда исполняются параллельно, а одно
+    asyncpg-соединение нельзя делить между конкурентными запросами.
     """
 
     def __init__(self, dsn: str) -> None:
         self._dsn = dsn
-        self._pool: asyncpg.Pool | None = None
 
-    async def _acquire_pool(self) -> asyncpg.Pool:
-        if self._pool is None:
-            self._pool = await asyncpg.create_pool(
-                self._dsn,
-                min_size=0,
-                max_size=3,
-                command_timeout=STATEMENT_TIMEOUT_MS / 1000,
-            )
-        return self._pool
-
-    async def close(self) -> None:
-        if self._pool is not None:
-            await self._pool.close()
-            self._pool = None
+    async def _read_only(self, query: str, *args: Any) -> list[asyncpg.Record]:
+        """Выполнить один fetch в свежем соединении в read-only транзакции с
+        statement_timeout; соединение гарантированно закрывается."""
+        conn = await asyncpg.connect(
+            self._dsn, command_timeout=STATEMENT_TIMEOUT_MS / 1000
+        )
+        try:
+            async with conn.transaction(readonly=True):
+                await conn.execute(
+                    f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}"
+                )
+                return await conn.fetch(query, *args)
+        finally:
+            await conn.close()
 
     async def fetch_columns(self, table: str) -> list[str]:
         """Реальные имена колонок таблицы (в порядке ordinal_position).
@@ -57,16 +59,12 @@ class PgExecutor:
         """
         if not TOAST_TABLE_RE.match(table):
             raise ValueError(f"bad table id: {table!r}")
-        pool = await self._acquire_pool()
-        async with pool.acquire() as conn:
-            async with conn.transaction(readonly=True):
-                await conn.execute(f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}")
-                rows = await conn.fetch(
-                    """SELECT column_name FROM information_schema.columns
-                       WHERE table_schema = 'splitter_toast' AND table_name = $1
-                       ORDER BY ordinal_position""",
-                    table,
-                )
+        rows = await self._read_only(
+            """SELECT column_name FROM information_schema.columns
+               WHERE table_schema = 'splitter_toast' AND table_name = $1
+               ORDER BY ordinal_position""",
+            table,
+        )
         return [r["column_name"] for r in rows]
 
     async def run_select(self, sql: str, table: str) -> SelectResult | str:
@@ -78,12 +76,8 @@ class PgExecutor:
         sql = qualify_table(sql, table)
         if refusal := validate_select(sql, table):
             return refusal
-        pool = await self._acquire_pool()
         try:
-            async with pool.acquire() as conn:
-                async with conn.transaction(readonly=True):
-                    await conn.execute(f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}")
-                    rows = await conn.fetch(sql.strip().rstrip(";"))
+            rows = await self._read_only(sql.strip().rstrip(";"))
         except asyncpg.PostgresError as e:
             return f"Ошибка SQL: {e}"
         truncated = len(rows) > MAX_ROWS
