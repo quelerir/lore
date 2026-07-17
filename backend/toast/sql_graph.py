@@ -82,7 +82,9 @@ JUDGE_SYS = (
 )
 SUMMARIZE_SYS = (
     "Ответь на вопрос пользователя СТРОГО по предоставленным строкам таблицы. "
-    "Не выдумывай. Если данных недостаточно — так и скажи. Кратко, по-русски."
+    "Не выдумывай. Если данных недостаточно — так и скажи. Если показаны не "
+    "все строки выборки — явно скажи, что ответ построен по неполной выборке. "
+    "Кратко, по-русски."
 )
 NO_DATA_MSG = "В данных таблицы нет ответа на этот вопрос."
 NO_CANDIDATES_MSG = "Модель не вернула ни одного SQL-кандидата."
@@ -263,25 +265,40 @@ def _ok_rows(attempts: list[Attempt]) -> list[dict]:
     return out
 
 
-def _rows_context(attempts: list[Attempt], rows: list[dict]) -> str:
-    """Строки для контекста LLM с честной пометкой о неполноте выборки.
+def _rows_context(attempts: list[Attempt]) -> str:
+    """Строки успешных попыток, сгруппированные по их SQL.
 
-    Два капа: не больше JUDGE_ROWS_CAP строк и не больше ~JUDGE_CONTEXT_CHARS
-    символов JSON (одна «широкая» строка не должна раздувать контекст).
-    Хотя бы одна строка отдаётся всегда.
+    Судья и суммаризатор видят, какой запрос что вернул, — плохой первый
+    кандидат не вытесняет из контекста хороший второй безымянной смесью.
+    Суммарные капы: JUDGE_ROWS_CAP строк и ~JUDGE_CONTEXT_CHARS символов;
+    хотя бы одна строка отдаётся всегда.
     """
-    shown: list[dict] = []
+    sections: list[str] = []
+    total = sum(a["row_count"] for a in attempts if a["ok"])
+    shown = 0
     size = 0
-    for row in rows[:JUDGE_ROWS_CAP]:
-        piece = json.dumps(row, ensure_ascii=False, default=str)
-        if shown and size + len(piece) > JUDGE_CONTEXT_CHARS:
-            break
-        shown.append(row)
-        size += len(piece)
-    note = f"Показано строк: {len(shown)} из {len(rows)}"
+    for a in attempts:
+        if not a["ok"] or not a["rows"]:
+            continue
+        rows_out: list[dict] = []
+        for row in a["rows"]:
+            if shown >= JUDGE_ROWS_CAP:
+                break
+            piece = json.dumps(row, ensure_ascii=False, default=str)
+            if shown and size + len(piece) > JUDGE_CONTEXT_CHARS:
+                break
+            rows_out.append(row)
+            shown += 1
+            size += len(piece)
+        if rows_out:
+            sections.append(
+                f"Запрос: {a['sql']}\nСтроки: "
+                + json.dumps(rows_out, ensure_ascii=False, default=str)
+            )
+    note = f"Показано строк: {shown} из {total}"
     if any(a["truncated"] for a in attempts):
         note += " (результат SQL дополнительно усечён лимитом исполнителя)"
-    return f"{note}.\nСтроки: {json.dumps(shown, ensure_ascii=False, default=str)}"
+    return note + ".\n" + "\n\n".join(sections)
 
 
 def build_sql_graph(
@@ -401,7 +418,7 @@ def build_sql_graph(
                 SystemMessage(JUDGE_SYS),
                 HumanMessage(
                     f"Вопрос: {state.question}\n"
-                    + _rows_context(state.attempts, rows)
+                    + _rows_context(state.attempts)
                 ),
             ],
         )
@@ -430,7 +447,7 @@ def build_sql_graph(
                 SystemMessage(SUMMARIZE_SYS),
                 HumanMessage(
                     f"Вопрос: {state.question}\n"
-                    + _rows_context(state.attempts, rows)
+                    + _rows_context(state.attempts)
                 ),
             ]
         )
