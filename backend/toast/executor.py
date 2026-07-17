@@ -1,22 +1,14 @@
 """Read-only исполнитель одной toast-таблицы: guarded SELECT с лимитом строк."""
 
-from typing import Any, TypedDict
+from typing import Any
 
 import asyncpg
 
+from toast.models import DbError, Refusal, SelectResult
 from toast.sql_guardrails import qualify_table, validate_select
 
 MAX_ROWS = 200
 STATEMENT_TIMEOUT_MS = 5000
-
-
-class SelectResult(TypedDict):
-    """Результат успешного SELECT (строки уже приведены к JSON-совместимым типам)."""
-
-    columns: list[str]
-    rows: list[dict[str, Any]]
-    row_count: int
-    truncated: bool
 
 
 class PgExecutor:
@@ -35,17 +27,20 @@ class PgExecutor:
     def __init__(self, dsn: str) -> None:
         self._dsn = dsn
 
-    async def run_select(self, sql: str, table: str) -> SelectResult | str:
+    async def run_select(
+        self, sql: str, table: str
+    ) -> SelectResult | Refusal | DbError:
         """Выполнить SELECT к `table` в read-only транзакции.
 
-        Возвращает SelectResult при успехе или строку-отказ (guardrails) /
-        текст ошибки БД / таймаута. Результат усечён до MAX_ROWS ещё на
-        стороне БД (обёртка LIMIT MAX_ROWS+1 — лишние строки в память не
-        тянем; наличие (MAX_ROWS+1)-й строки поднимает флаг truncated).
+        Возвращает SelectResult при успехе, Refusal при отказе guardrails,
+        DbError при ошибке БД/таймауте — различение типами, а не строковым
+        префиксом. Результат усечён до MAX_ROWS ещё на стороне БД (обёртка
+        LIMIT MAX_ROWS+1 — лишние строки в память не тянем; наличие
+        (MAX_ROWS+1)-й строки поднимает флаг truncated).
         """
         sql = qualify_table(sql, table)
         if refusal := validate_select(sql, table):
-            return refusal
+            return Refusal(refusal)
         wrapped = (
             f"SELECT * FROM ({sql.strip().rstrip(';')}) AS _q LIMIT {MAX_ROWS + 1}"
         )
@@ -66,9 +61,9 @@ class PgExecutor:
         except TimeoutError:
             # Клиентский command_timeout asyncpg; серверный statement_timeout
             # приходит как QueryCanceledError (подкласс PostgresError).
-            return f"Ошибка SQL: превышен таймаут {STATEMENT_TIMEOUT_MS} мс"
+            return DbError(f"Ошибка SQL: превышен таймаут {STATEMENT_TIMEOUT_MS} мс")
         except asyncpg.PostgresError as e:
-            return f"Ошибка SQL: {e}"
+            return DbError(f"Ошибка SQL: {e}")
         truncated = len(rows) > MAX_ROWS
         rows = rows[:MAX_ROWS]
         columns = list(rows[0].keys()) if rows else []
