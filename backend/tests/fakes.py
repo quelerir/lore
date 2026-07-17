@@ -24,3 +24,22 @@ class ScriptedChatModel(BaseChatModel):
 
     def bind_tools(self, tools, **kwargs):
         return self  # tool_calls зашиты в responses
+
+    def with_structured_output(self, schema, **kwargs):
+        # Скриптованные тесты идут через текстовый фолбэк generate:
+        # bind_tools у фейка возвращает self, и без явного отказа structured-
+        # путь съел бы лишний response из сценария.
+        raise NotImplementedError
+
+
+class StructuredScriptedChatModel(ScriptedChatModel):
+    """with_structured_output отдаёт следующий response как готовый объект схемы."""
+
+    def with_structured_output(self, schema, **kwargs):
+        model = self
+
+        class _Structured:
+            async def ainvoke(self, messages, config=None):
+                return model.responses.pop(0)
+
+        return _Structured()

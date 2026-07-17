@@ -161,6 +161,21 @@ def test_executor_exception_becomes_failed_attempt():
     assert "connection refused" in out["answer"]
 
 
+def test_structured_output_path_used_when_supported():
+    from fakes import StructuredScriptedChatModel
+    from toast.sql_graph import SqlCandidates
+
+    model = StructuredScriptedChatModel(responses=[
+        SqlCandidates(candidates=["SELECT column_1 FROM %s" % LEGAL]),
+        AIMessage(content="SUFFICIENT"),
+        AIMessage(content="Ответ."),
+    ])
+    exe = FakeExecutor(results=[_rows(1)])
+    out = _run(model, exe, candidates=1, max_queries=3)
+    assert out["status"] == "ok"
+    assert exe.calls == ["SELECT column_1 FROM %s" % LEGAL]
+
+
 def test_candidates_run_in_parallel_batch():
     model = ScriptedChatModel(responses=[
         AIMessage(content='["SELECT column_1 FROM %s","SELECT column_2 FROM %s"]' % (LEGAL, LEGAL)),
