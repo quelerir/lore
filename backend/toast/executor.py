@@ -21,10 +21,13 @@ class SelectResult(TypedDict):
 
 
 class PgExecutor:
-    """Пул read-only соединений к БД toast-таблиц (asyncpg).
+    """Пул соединений к БД toast-таблиц (asyncpg).
 
-    Юзер БД пишущий, поэтому read-only и statement_timeout навязываем сами на
-    уровне сессии пула. Пул ленивый — создаётся при первом обращении.
+    Юзер БД пишущий, поэтому read-only и statement_timeout навязываем сами —
+    ПО-ТРАНЗАКЦИОННО (BEGIN READ ONLY + SET LOCAL), а не через server_settings
+    пула: startup-параметры не принимает transaction-pooling пулер (PgBouncer),
+    он рвёт коннект с `unsupported startup parameter`. Пул ленивый — создаётся
+    при первом обращении.
     """
 
     def __init__(self, dsn: str) -> None:
@@ -38,10 +41,6 @@ class PgExecutor:
                 min_size=0,
                 max_size=3,
                 command_timeout=STATEMENT_TIMEOUT_MS / 1000,
-                server_settings={
-                    "default_transaction_read_only": "on",
-                    "statement_timeout": str(STATEMENT_TIMEOUT_MS),
-                },
             )
         return self._pool
 
@@ -60,12 +59,14 @@ class PgExecutor:
             raise ValueError(f"bad table id: {table!r}")
         pool = await self._acquire_pool()
         async with pool.acquire() as conn:
-            rows = await conn.fetch(
-                """SELECT column_name FROM information_schema.columns
-                   WHERE table_schema = 'splitter_toast' AND table_name = $1
-                   ORDER BY ordinal_position""",
-                table,
-            )
+            async with conn.transaction(readonly=True):
+                await conn.execute(f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}")
+                rows = await conn.fetch(
+                    """SELECT column_name FROM information_schema.columns
+                       WHERE table_schema = 'splitter_toast' AND table_name = $1
+                       ORDER BY ordinal_position""",
+                    table,
+                )
         return [r["column_name"] for r in rows]
 
     async def run_select(self, sql: str, table: str) -> SelectResult | str:
@@ -81,6 +82,7 @@ class PgExecutor:
         try:
             async with pool.acquire() as conn:
                 async with conn.transaction(readonly=True):
+                    await conn.execute(f"SET LOCAL statement_timeout = {STATEMENT_TIMEOUT_MS}")
                     rows = await conn.fetch(sql.strip().rstrip(";"))
         except asyncpg.PostgresError as e:
             return f"Ошибка SQL: {e}"
