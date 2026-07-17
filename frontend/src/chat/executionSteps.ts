@@ -6,10 +6,14 @@ const stepTime = (step: IStep): number => {
   return Number.isNaN(ms) ? 0 : ms;
 };
 
-// Собирает все tool-шаги из поддерева узла (в т.ч. вложенные в run/llm).
+// Собирает верхнеуровневые tool-шаги поддерева: в tool-узлы не спускаемся,
+// их дети остаются доступными через step.steps (иерархия для рендера).
 function gatherTools(nodes: IStep[], out: IStep[]): void {
   for (const node of nodes) {
-    if (node.type === "tool") out.push(node);
+    if (node.type === "tool") {
+      out.push(node);
+      continue;
+    }
     if (node.steps?.length) gatherTools(node.steps, out);
   }
 }

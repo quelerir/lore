@@ -86,6 +86,30 @@ describe("collectToolStepsByMessage", () => {
     expect(map.get("a2")!.map((s) => s.id)).toEqual(["t2"]);
   });
 
+  it("вложенные tool-шаги остаются детьми и не дублируются на верхнем уровне", () => {
+    const tree: IStep[] = [
+      step({
+        id: "run1",
+        type: "run",
+        steps: [
+          step({ id: "a1", type: "assistant_message", output: "ответ" }),
+          step({
+            id: "stage1",
+            name: "Выполнение SQL — раунд 1",
+            type: "tool",
+            steps: [
+              step({ id: "att1", name: "Попытка 1", type: "tool" }),
+              step({ id: "att2", name: "Попытка 2", type: "tool" }),
+            ],
+          }),
+        ],
+      }),
+    ];
+    const map = collectToolStepsByMessage(tree);
+    expect(map.get("a1")!.map((s) => s.id)).toEqual(["stage1"]);
+    expect(map.get("a1")![0].steps!.map((s) => s.id)).toEqual(["att1", "att2"]);
+  });
+
   it("игнорирует llm-шаги (внутренний SQL)", () => {
     const tree: IStep[] = [
       step({
