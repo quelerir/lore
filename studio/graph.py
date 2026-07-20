@@ -8,7 +8,7 @@ Backend не установлен пакетом — подключаем по s
 import os
 import sys
 
-_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
+_BACKEND = os.path.join(os.path.dirname(__file__), "..", "lore-core", "services", "lore-chat")
 if _BACKEND not in sys.path:
     sys.path.insert(0, _BACKEND)
 

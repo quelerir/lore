@@ -112,7 +112,7 @@ npm test             # юнит-тесты (vitest)
 ```
 
 Чтобы dev-сервер ходил в бэкенд, добавьте origin `http://localhost:5173`
-в `allow_origins` (`backend/.chainlit/config.toml`) и перезапустите backend.
+в `allow_origins` (`lore-core/services/lore-chat/.chainlit/config.toml`) и перезапустите chat.
 
 Бэкенд без docker (Python ≥ 3.13; Postgres и authentik проще оставить в
 compose). Модель — OpenRouter по ключу, либо Ollama при

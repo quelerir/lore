@@ -1,6 +1,6 @@
 # LangGraph Studio-раннер SQL-инструмента
 
-Опциональный dev-инструмент: запускает SQL-граф (`backend/toast/sql_graph.py`)
+Опциональный dev-инструмент: запускает SQL-граф (`lore-core/services/lore-chat/toast/sql_graph.py`)
 против живой `loreagent_test` и показывает ход выполнения в LangGraph Studio.
 
 ## Запуск

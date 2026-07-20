@@ -111,7 +111,7 @@ docker compose down -v
 docker compose up -d --build   # чистая инициализация + bootstrap заново
 ```
 
-Схема `backend/init/schema.sql` применяется только при первой инициализации
+Схема `lore-core/services/lore-chat/init/schema.sql` применяется только при первой инициализации
 тома `chainlit-db-data`; миграций нет — при изменении схемы том нужно
 пересоздавать (или накатывать изменения вручную).
 
@@ -119,7 +119,7 @@ docker compose up -d --build   # чистая инициализация + boots
 
 ```bash
 git pull
-docker compose up -d --build    # пересоберёт backend/frontend, перезапустит изменённое
+docker compose up -d --build    # пересоберёт chat/frontend, перезапустит изменённое
 ```
 
 `CHAT_PROVIDER` и `CHAINLIT_PUBLIC_URL` вшиваются во frontend на этапе
@@ -155,7 +155,7 @@ Dev-дефолты рассчитаны на локальную машину. Ч
    - `CHAINLIT_PUBLIC_URL=https://chat-api.example.com`
    - `AUTHENTIK_PUBLIC_URL=https://auth.example.com`
    - домен фронтенда — в `allow_origins`
-     (`backend/.chainlit/config.toml`).
+     (`lore-core/services/lore-chat/.chainlit/config.toml`).
 3. **Redirect URI.** Bootstrap-скрипт заводит redirect
    `${CHAINLIT_PUBLIC_URL}/auth/oauth/generic/callback` только при первом
    старте. При смене домена позже — поправить в админке authentik
