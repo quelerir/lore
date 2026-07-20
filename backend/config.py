@@ -128,6 +128,9 @@ class Settings(BaseSettings):
     oauth_generic_scopes: str | None = None
     oauth_generic_user_identifier: str | None = None
 
+    # LANGSMITH_ENDPOINT / LANGSMITH_API_KEY / LANGSMITH_TRACING читает сам
+    # langsmith SDK из окружения — здесь не дублируем (нужны только eval-скрипту).
+
     @property
     def database_url(self) -> str:
         """DSN Chainlit data-layer (SQLAlchemy async)."""
