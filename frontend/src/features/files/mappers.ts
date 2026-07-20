@@ -1,5 +1,11 @@
 // Map real audit-read DTOs to the FileViewer's UI types (see types.ts).
-import type { FileChunk, FileRecord, FileRun, RunStatus } from "./types";
+import type {
+  FileChunk,
+  FileChunkPayloadRef,
+  FileRecord,
+  FileRun,
+  RunStatus,
+} from "./types";
 
 export interface FileCardDto {
   schema_version: string;
@@ -22,6 +28,25 @@ export interface PageDto<T> {
 // (stale = superseded, not a hard failure — shown as skipped.)
 export function mapRunStatus(status: string): RunStatus {
   return status === "stale" ? "skipped" : (status as RunStatus);
+}
+
+export interface PayloadDetailDto {
+  schema_version: string;
+  run_id: string;
+  payload_id: string;
+  kind: string;
+  registered: boolean;
+  summary: Record<string, unknown>;
+  reason_code: string | null;
+}
+
+// Resolve a chunk payload reference to its type so the inspector can route it to
+// the table/image/transcript view. Detail views themselves are wired later.
+export function mapPayloadRef(dto: PayloadDetailDto): FileChunkPayloadRef {
+  const type: FileChunkPayloadRef["type"] =
+    dto.kind === "image" || dto.kind === "transcript" ? dto.kind : "table";
+  const label = typeof dto.summary?.label === "string" ? dto.summary.label : dto.payload_id;
+  return { type, id: dto.payload_id, label };
 }
 
 export interface ChunkPreviewDto {

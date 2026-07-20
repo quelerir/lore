@@ -4,14 +4,16 @@ import {
   mapChunkDetail,
   mapChunkPreview,
   mapFileCard,
+  mapPayloadRef,
   mapRun,
   type ChunkDetailDto,
   type ChunkPreviewDto,
   type FileCardDto,
   type PageDto,
+  type PayloadDetailDto,
   type RunDetailDto,
 } from "./mappers";
-import type { FileChunk, FileRun } from "./types";
+import type { FileChunk, FileChunkPayloadRef, FileRun } from "./types";
 
 // Talks to the real read-only audit API. Chunk/payload hydration lands next.
 export class ApiFilesProvider implements FilesProvider {
@@ -46,6 +48,16 @@ export class ApiFilesProvider implements FilesProvider {
     const dto = await auditGet<ChunkDetailDto>(
       `/runs/${encodeURIComponent(runId)}/chunks/${encodeURIComponent(chunkId)}`,
     );
-    return mapChunkDetail(dto);
+    const chunk = mapChunkDetail(dto);
+    const payloads = await Promise.all(
+      dto.payload_refs.map((id) =>
+        auditGet<PayloadDetailDto>(
+          `/runs/${encodeURIComponent(runId)}/payloads/${encodeURIComponent(id)}`,
+        )
+          .then(mapPayloadRef)
+          .catch((): FileChunkPayloadRef | null => null),
+      ),
+    );
+    return { ...chunk, payloads: payloads.filter((ref): ref is FileChunkPayloadRef => ref !== null) };
   }
 }
