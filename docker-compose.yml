@@ -11,11 +11,11 @@ services:
       - "${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
     depends_on:
-      backend:
+      chat:
         condition: service_healthy
 
-  backend:
-    build: ./backend
+  chat:
+    build: ./lore-core/services/lore-chat
     # Весь пользовательский конфиг приходит из .env (шаблон — .env.example,
     # `cp .env.example .env`). required:false: без .env compose не падает на
     # разборе — контейнер стартует, а config.py даёт понятную ошибку валидации.
@@ -65,7 +65,7 @@ services:
       POSTGRES_DB: ${CHAINLIT_DB_NAME:-chainlit}
     restart: unless-stopped
     volumes:
-      - ./backend/init/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - ./lore-core/services/lore-chat/init/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
       - chainlit-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${CHAINLIT_DB_USER:-chainlit}"]
