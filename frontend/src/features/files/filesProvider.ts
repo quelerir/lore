@@ -2,6 +2,7 @@
 // source (local mock vs the real /api/v1/audit backend) can be swapped without
 // touching FilesPage. Selected at build time via VITE_FILES_PROVIDER=api|mock.
 import type { FileRecord } from "./types";
+import { ApiFilesProvider } from "./apiFilesProvider";
 import { MockFilesProvider } from "./mockFilesProvider";
 
 export interface ListFilesParams {
@@ -23,7 +24,7 @@ export interface FilesProvider {
 
 const providerType = import.meta.env.VITE_FILES_PROVIDER ?? "mock";
 
-// The real (api) provider is wired in a later slice; default to mock until then.
-export const filesProvider: FilesProvider = new MockFilesProvider();
+export const filesProvider: FilesProvider =
+  providerType === "api" ? new ApiFilesProvider() : new MockFilesProvider();
 
 export const activeFilesProviderKind = providerType;
