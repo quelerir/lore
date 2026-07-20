@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 
 import config
 from evals.dataset import EvalCase, load_cases, to_examples
+from evals.evaluators import executes_ok, has_rows, status_ok
 from evals.models import build_eval_model
 
 _CASE = {
@@ -78,3 +79,30 @@ def test_real_dataset_loads_and_is_complete():
         assert c.question.strip()
         assert c.reference_answer.strip()
         assert c.desc_full.strip()
+
+
+_OK_OUT = {
+    "status": "ok",
+    "rows_used": 3,
+    "sql_attempts": [{"sql": "SELECT 1", "ok": True, "error": None, "row_count": 3}],
+}
+_FAIL_OUT = {
+    "status": "error",
+    "rows_used": 0,
+    "sql_attempts": [{"sql": "SELECT x", "ok": False, "error": "boom", "row_count": 0}],
+}
+
+
+def test_executes_ok():
+    assert executes_ok(_OK_OUT) == {"key": "executes_ok", "score": 1}
+    assert executes_ok(_FAIL_OUT) == {"key": "executes_ok", "score": 0}
+
+
+def test_status_ok():
+    assert status_ok(_OK_OUT)["score"] == 1
+    assert status_ok(_FAIL_OUT)["score"] == 0
+
+
+def test_has_rows():
+    assert has_rows(_OK_OUT)["score"] == 1
+    assert has_rows(_FAIL_OUT)["score"] == 0
