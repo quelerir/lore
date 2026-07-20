@@ -1,15 +1,24 @@
 """Юниты eval-харнесса: без сети и без LangSmith, только фейки."""
 
+import asyncio
 import json
 from pathlib import Path
 
 import pytest
+from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
 import config
 from evals.dataset import EvalCase, load_cases, to_examples
-from evals.evaluators import executes_ok, has_rows, status_ok
+from evals.evaluators import (
+    JudgeCorrectness,
+    executes_ok,
+    has_rows,
+    make_answer_correct,
+    status_ok,
+)
 from evals.models import build_eval_model
+from fakes import ScriptedChatModel, StructuredScriptedChatModel
 
 _CASE = {
     "question": "Какие ФИО у юристов?",
@@ -106,3 +115,30 @@ def test_status_ok():
 def test_has_rows():
     assert has_rows(_OK_OUT)["score"] == 1
     assert has_rows(_FAIL_OUT)["score"] == 0
+
+
+def _judge_call(judge):
+    ev = make_answer_correct(judge)
+    return asyncio.run(ev(
+        inputs={"question": "ФИО юристов?"},
+        outputs={"answer": "Суворова Юлия Александровна"},
+        reference_outputs={"reference_answer": "Суворова Юлия Александровна"},
+    ))
+
+
+def test_answer_correct_structured_true():
+    judge = StructuredScriptedChatModel(
+        responses=[JudgeCorrectness(correct=True, reason="совпало")]
+    )
+    res = _judge_call(judge)
+    assert res["key"] == "answer_correct"
+    assert res["score"] == 1
+    assert res["comment"] == "совпало"
+
+
+def test_answer_correct_text_fallback_false():
+    # ScriptedChatModel.with_structured_output кидает NotImplementedError →
+    # текстовый фолбэк; без слова "correct" вердикт отрицательный.
+    judge = ScriptedChatModel(responses=[AIMessage("incorrect: не совпало")])
+    res = _judge_call(judge)
+    assert res["score"] == 0
