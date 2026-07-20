@@ -19,12 +19,14 @@ import {
   Table2,
   UserRound,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { getCurrentUser, loginWithPopup, logout, type AuthUser } from "../../auth/authClient";
 import styles from "./FilesPage.module.css";
 import { filesProvider } from "./filesProvider";
 import {
   clearAllComments,
   deleteComment,
-  getReviewerName,
   listComments,
   setReviewerName,
   upsertComment,
@@ -74,11 +76,14 @@ const inspectorTabs: Array<{ id: InspectorTab; label: string }> = [
   { id: "diagnostics", label: "Диагностика" },
 ];
 
-const formatRunTime = (value: string) =>
-  new Intl.DateTimeFormat("ru-RU", {
+const formatRunTime = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—"; // e.g. a not-yet-hydrated card run
+  return new Intl.DateTimeFormat("ru-RU", {
     dateStyle: "short",
     timeStyle: "short",
-  }).format(new Date(value));
+  }).format(date);
+};
 
 const formatStatus = (status: FileRun["status"]) => {
   switch (status) {
@@ -127,7 +132,7 @@ const formatChunkMetaLabel = (chunk: FileChunk) => {
   }
 
   parts.push(`${chunk.type} ${chunk.ordinal}`);
-  parts.push(`${chunk.tokenCount} токенов`);
+  if (chunk.tokenCount > 0) parts.push(`${chunk.tokenCount} токенов`);
 
   return parts.join(" · ");
 };
@@ -259,8 +264,6 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
   const [compareRunId, setCompareRunId] = useState<string | null>(initialUrlState.compareRunId);
   const [comments, setComments] = useState<ReviewComment[]>([]);
   const [reviewerName, setReviewerNameState] = useState("");
-  const [reviewerDraft, setReviewerDraft] = useState("");
-  const [needsReviewerModal, setNeedsReviewerModal] = useState(false);
   const [commentDraft, setCommentDraft] = useState<CommentDraft>({
     verdict: "question",
     categories: "",
@@ -275,10 +278,17 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
   const [isReviewDrawerOpen, setIsReviewDrawerOpen] = useState(false);
   const [isChunkMetaVisible, setIsChunkMetaVisible] = useState(true);
   const [allFiles, setAllFiles] = useState<FileRecord[]>([]);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
+  // Load files only once we know there's a session; the audit API 401s otherwise.
   useEffect(() => {
-    void filesProvider.listFiles().then((result) => setAllFiles(result.files));
-  }, []);
+    if (!currentUser) return;
+    void filesProvider
+      .listFiles()
+      .then((result) => setAllFiles(result.files))
+      .catch(() => setAllFiles([]));
+  }, [currentUser]);
 
   // Lazily load the selected file's runs (real API returns them thin; the mock
   // returns them fully hydrated). Merge into the file tree; retry on failure.
@@ -323,48 +333,35 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       .catch(() => hydratedRunsRef.current.delete(runId));
   }, [allFiles, selectedFileId, selectedRunId]);
 
-  // Lazily load the selected chunk's full detail (display/full/vector text).
-  const hydratedChunksRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    const fileId = selectedFileId;
-    const runId = selectedRunId;
-    const chunkId = selectedChunkId;
-    if (!fileId || !runId || !chunkId || hydratedChunksRef.current.has(chunkId)) return;
-    const chunk = allFiles
-      .find((f) => f.id === fileId)
-      ?.runs.find((r) => r.id === runId)
-      ?.chunks.find((c) => c.id === chunkId);
-    if (!chunk || chunk.fullText) return;
-    hydratedChunksRef.current.add(chunkId);
-    void filesProvider
-      .hydrateChunkDetail(runId, chunkId)
-      .then((detail) => {
-        setAllFiles((prev) =>
-          prev.map((file) =>
-            file.id !== fileId
-              ? file
-              : {
-                  ...file,
-                  runs: file.runs.map((r) =>
-                    r.id !== runId
-                      ? r
-                      : { ...r, chunks: r.chunks.map((c) => (c.id === chunkId ? detail : c)) },
-                  ),
-                },
-          ),
-        );
-      })
-      .catch(() => hydratedChunksRef.current.delete(chunkId));
-  }, [allFiles, selectedFileId, selectedRunId, selectedChunkId]);
-
   useEffect(() => {
     void listComments().then(setComments);
-    void getReviewerName().then((name) => {
-      setReviewerNameState(name);
-      setReviewerDraft(name);
-      setNeedsReviewerModal(!name);
+    // Reviewer identity comes from the authenticated session (JWT), not a prompt.
+    void getCurrentUser().then((user) => {
+      setCurrentUser(user);
+      setAuthChecked(true);
+      if (user) {
+        setReviewerNameState(user.identifier);
+        void setReviewerName(user.identifier);
+      }
     });
   }, []);
+
+  const handleLogin = async () => {
+    try {
+      const user = await loginWithPopup();
+      setCurrentUser(user);
+      setReviewerNameState(user.identifier);
+      void setReviewerName(user.identifier);
+      window.location.reload(); // re-init everything with the fresh session cookie
+    } catch {
+      // popup closed / timed out — leave the login CTA in place
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.reload();
+  };
 
   const filteredFiles = useMemo(() => {
     return allFiles.filter((file) => {
@@ -501,13 +498,6 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       comment.runId === selectedRun?.id &&
       comment.objectId === selectedChunk?.id,
   );
-
-  const handleSaveReviewer = async () => {
-    if (!reviewerDraft.trim()) return;
-    await setReviewerName(reviewerDraft.trim());
-    setReviewerNameState(reviewerDraft.trim());
-    setNeedsReviewerModal(false);
-  };
 
   const handleAddComment = async () => {
     if (!selectedFile || !selectedRun || !selectedChunk || !reviewerName || !commentDraft.text.trim()) {
@@ -781,16 +771,20 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
 
         <div className={styles.textMetaRow}>
           <span>{selectedChunk.charCount} символов</span>
-          <span>{selectedChunk.tokenCount} токенов</span>
+          {selectedChunk.tokenCount > 0 ? <span>{selectedChunk.tokenCount} токенов</span> : null}
           <span>{selectedChunk.hash}</span>
           <span>{selectedChunk.coordinates}</span>
         </div>
 
         {diffTarget === "none" ? (
           <div className={styles.textCard}>
-            <pre className={styles.preformattedText}>
-              {renderHighlightedText(textMode === "raw" ? currentText : simpleMarkdown(currentText))}
-            </pre>
+            {textMode === "raw" ? (
+              <pre className={styles.preformattedText}>{renderHighlightedText(currentText)}</pre>
+            ) : (
+              <div className={styles.markdownBody}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentText}</ReactMarkdown>
+              </div>
+            )}
           </div>
         ) : diffMode === "side-by-side" ? (
           <div className={styles.diffColumns}>
@@ -835,6 +829,20 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
           <div>
             <h1 className={styles.title}>Lore File Viewer</h1>
           </div>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          {currentUser ? (
+            <>
+              <span style={{ fontSize: 14, opacity: 0.85 }}>{currentUser.identifier}</span>
+              <button className={styles.primaryButton} type="button" onClick={() => void handleLogout()}>
+                Выйти
+              </button>
+            </>
+          ) : (
+            <button className={styles.primaryButton} type="button" onClick={() => void handleLogin()}>
+              Войти
+            </button>
+          )}
         </div>
       </header>
 
@@ -1316,19 +1324,13 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
         </div>
       ) : null}
 
-      {needsReviewerModal ? (
+      {authChecked && !currentUser ? (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
-            <h2>Имя ревьюера</h2>
-            <p>При первом открытии укажите имя, под которым будут сохраняться локальные комментарии.</p>
-            <input
-              value={reviewerDraft}
-              onChange={(event) => setReviewerDraft(event.target.value)}
-              placeholder="Например, Aleksey"
-              autoFocus
-            />
-            <button className={styles.primaryButton} onClick={() => void handleSaveReviewer()} type="button">
-              Сохранить
+            <h2>Требуется вход</h2>
+            <p>Сессия отсутствует или истекла. Войдите, чтобы просматривать файлы.</p>
+            <button className={styles.primaryButton} onClick={() => void handleLogin()} type="button">
+              Войти
             </button>
           </div>
         </div>

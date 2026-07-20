@@ -22,10 +22,8 @@ export interface FilesProvider {
   listFiles(params?: ListFilesParams): Promise<ListFilesResult>;
   /** Load a file's runs on selection (metadata only; chunks hydrate later). */
   hydrateFileRuns(logicalFileKey: string): Promise<FileRun[]>;
-  /** Load a run's chunk list on selection (previews; text fills on chunk select). */
+  /** Load a run's chunks on selection — eagerly, with text and payload types. */
   hydrateRunChunks(runId: string): Promise<FileChunk[]>;
-  /** Load one chunk's full detail (display/full/vector text) on selection. */
-  hydrateChunkDetail(runId: string, chunkId: string): Promise<FileChunk>;
 }
 
 const providerType = import.meta.env.VITE_FILES_PROVIDER ?? "mock";

@@ -15,7 +15,24 @@ import {
 } from "./mappers";
 import type { FileChunk, FileChunkPayloadRef, FileRun } from "./types";
 
-// Talks to the real read-only audit API. Chunk/payload hydration lands next.
+// Bound how much of a very large run we eagerly pull, to stay kind to the backend.
+const MAX_CHUNKS = 500;
+const CONCURRENCY = 8;
+
+// Map with a bounded number of in-flight requests (waves of `size`).
+async function mapPooled<T, R>(
+  items: T[],
+  size: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...(await Promise.all(items.slice(i, i + size).map(fn))));
+  }
+  return out;
+}
+
+// Talks to the real read-only audit API.
 export class ApiFilesProvider implements FilesProvider {
   async listFiles(params: ListFilesParams = {}): Promise<ListFilesResult> {
     const page = await auditGet<PageDto<FileCardDto>>("/files", {
@@ -37,27 +54,51 @@ export class ApiFilesProvider implements FilesProvider {
     return page.items.map(mapRun);
   }
 
+  // Eagerly loads a run's chunks WITH text and payload types, so the user sees
+  // everything at once (no per-chunk click). The batch endpoint returns previews
+  // only, so text comes from the per-chunk detail endpoint, fetched with bounded
+  // concurrency. Capped at MAX_CHUNKS for huge runs; a failed chunk degrades to
+  // its preview rather than dropping out of the list.
   async hydrateRunChunks(runId: string): Promise<FileChunk[]> {
-    const page = await auditGet<PageDto<ChunkPreviewDto>>(
-      `/runs/${encodeURIComponent(runId)}/chunks`,
-    );
-    return page.items.map(mapChunkPreview);
-  }
+    const encodedRun = encodeURIComponent(runId);
 
-  async hydrateChunkDetail(runId: string, chunkId: string): Promise<FileChunk> {
-    const dto = await auditGet<ChunkDetailDto>(
-      `/runs/${encodeURIComponent(runId)}/chunks/${encodeURIComponent(chunkId)}`,
-    );
-    const chunk = mapChunkDetail(dto);
-    const payloads = await Promise.all(
-      dto.payload_refs.map((id) =>
-        auditGet<PayloadDetailDto>(
-          `/runs/${encodeURIComponent(runId)}/payloads/${encodeURIComponent(id)}`,
-        )
-          .then(mapPayloadRef)
-          .catch((): FileChunkPayloadRef | null => null),
-      ),
-    );
-    return { ...chunk, payloads: payloads.filter((ref): ref is FileChunkPayloadRef => ref !== null) };
+    const previews: ChunkPreviewDto[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await auditGet<PageDto<ChunkPreviewDto>>(
+        `/runs/${encodedRun}/chunks`,
+        { cursor },
+      );
+      previews.push(...page.items);
+      cursor = page.next_cursor ?? undefined;
+    } while (cursor && previews.length < MAX_CHUNKS);
+
+    const chunks = await mapPooled(previews.slice(0, MAX_CHUNKS), CONCURRENCY, async (preview) => {
+      try {
+        const dto = await auditGet<ChunkDetailDto>(
+          `/runs/${encodedRun}/chunks/${encodeURIComponent(preview.chunk_id)}`,
+        );
+        const chunk = mapChunkDetail(dto);
+        if (dto.payload_refs.length === 0) return chunk;
+        const payloads = await Promise.all(
+          dto.payload_refs.map((id) =>
+            auditGet<PayloadDetailDto>(
+              `/runs/${encodedRun}/payloads/${encodeURIComponent(id)}`,
+            )
+              .then(mapPayloadRef)
+              .catch((): FileChunkPayloadRef | null => null),
+          ),
+        );
+        return {
+          ...chunk,
+          payloads: payloads.filter((ref): ref is FileChunkPayloadRef => ref !== null),
+        };
+      } catch {
+        return mapChunkPreview(preview); // metadata-only fallback keeps the chunk listed
+      }
+    });
+
+    chunks.sort((a, b) => a.ordinal - b.ordinal);
+    return chunks;
   }
 }

@@ -49,3 +49,23 @@ export async function auditGet<T>(
 
   return (await response.json()) as T;
 }
+
+export async function auditPost<T>(path: string, body: unknown): Promise<T> {
+  const url = new URL(AUDIT_BASE + path, window.location.origin);
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    let code = "read_failed";
+    try {
+      code = ((await response.json()) as { code?: string }).code ?? code;
+    } catch {
+      // non-JSON error body
+    }
+    throw new AuditApiError(code, response.status);
+  }
+  return (await response.json()) as T;
+}

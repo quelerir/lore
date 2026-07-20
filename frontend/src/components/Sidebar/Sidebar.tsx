@@ -1,5 +1,6 @@
 import { FolderOpen, MessageSquareText, PanelLeft, PenSquare, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import AuthBar from "../../auth/AuthBar";
 import type { Chat } from "../../types/chat";
 import ChatList from "../ChatList/ChatList";
 import styles from "./Sidebar.module.css";
@@ -147,6 +148,8 @@ export default function Sidebar({
           onRenameChat={onRenameChat}
           onDeleteChat={onDeleteChat}
         />
+
+        <AuthBar />
       </aside>
     </>
   );

@@ -25,10 +25,4 @@ export class MockFilesProvider implements FilesProvider {
   async hydrateRunChunks(runId: string): Promise<FileChunk[]> {
     return this.findRun(runId)?.chunks ?? [];
   }
-
-  async hydrateChunkDetail(runId: string, chunkId: string): Promise<FileChunk> {
-    const chunk = this.findRun(runId)?.chunks.find((c) => c.id === chunkId);
-    if (!chunk) throw new Error(`mock chunk not found: ${chunkId}`);
-    return chunk;
-  }
 }

@@ -33,6 +33,7 @@ def build_audit_pool(dsn: str, *, max_size: int = 8) -> AuditConnectionPool:
     """
     pool = ConnectionPool(
         conninfo=dsn,
+        min_size=0,  # open connections lazily so startup never blocks on the DB
         max_size=max_size,
         open=True,
         kwargs={"prepare_threshold": None, "autocommit": False},

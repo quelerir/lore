@@ -15,6 +15,7 @@ by the audit safe-error handlers (which remap every `StarletteHTTPException` to
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 from chainlit.auth import decode_jwt
@@ -43,6 +44,10 @@ def _extract_token(request: Request) -> str | None:
 
 def require_audit_identity(request: Request) -> dict[str, str]:
     """Authorize via Chainlit session (cookie/header) or a datacraft HS256 ticket."""
+    # DEV ONLY: local demo bypass, off by default. Never set in production.
+    if os.environ.get("AUDIT_DEV_ALLOW_ANON") in ("1", "true", "yes"):
+        return {"identifier": "dev", "username": "dev"}
+
     token = _extract_token(request)
     if not token:
         raise AuditAuthError("no session or ticket")
