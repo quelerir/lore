@@ -25,11 +25,13 @@ def _fake_subapp() -> FastAPI:
 
 def test_mount_guards_with_auth(monkeypatch):
     app = FastAPI()
+    class _User:
+        identifier = "u"
+
     monkeypatch.setattr("audit.mount.build_audit_app", lambda s: _fake_subapp())
     monkeypatch.setattr("audit.mount.get_settings", lambda: object())
-    monkeypatch.setattr(
-        "audit.auth_dep.verify_ticket", lambda t: {"sub": "u", "username": "u"}
-    )
+    # Simulate a valid Chainlit session token (cookie or Bearer header).
+    monkeypatch.setattr("audit.auth_dep.decode_jwt", lambda t: _User())
     assert attach_audit_router(app) is True
 
     client = TestClient(app)

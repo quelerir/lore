@@ -155,25 +155,40 @@ class _AuditPool:
   без них `/payloads/{id}/image` → `capability_unavailable` (фронт сохраняет метаданные картинки).
   Конфиг `AUDIT_S3_*` — все поля опциональны; отсутствие = ридер не создаётся.
 
-### 4.5. Auth — переиспользуем механизм фронта
+### 4.5. Auth — валидируем сессию Chainlit (тот же путь, что фронт)
 
-Фронт уже шлёт `Authorization: Bearer <datacraft HS256 ticket>`, который на чате валидирует
-`@cl.header_auth_callback` → `verify_ticket`. Для audit-роутера — **та же зависимость**:
+**Важно:** браузерный фронт логинится через OAuth/authentik и носит **сессионную cookie Chainlit**
+(`access_token`, `credentials:include`), а НЕ Bearer-тикет. Поэтому audit-guard валидирует именно
+сессию Chainlit, принимая обе поддерживаемые бэкендом кредненшелы:
+
+- **Сессия Chainlit** — токен из cookie `access_token` (или Bearer-заголовка), проверяется
+  `chainlit.auth.decode_jwt`. Это путь реального фронта.
+- **datacraft HS256-тикет** — Bearer-заголовок, проверяется `verify_ticket` (embed/header-auth путь,
+  `@cl.header_auth_callback`). Фолбэк.
 
 ```python
-def require_audit_identity(authorization: str = Header(...)) -> dict[str, str]:
-    token = authorization.removeprefix("Bearer ").strip()
+def require_audit_identity(request: Request) -> dict[str, str]:
+    token = _extract_token(request)            # Bearer-заголовок или cookie access_token
+    if not token:
+        raise AuditAuthError("no session or ticket")
     try:
-        return verify_ticket(token)          # тот же CHAINLIT_JWT_SECRET/AUDIENCE/ISSUER
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401)  # вне безопасного конверта audit — это транспортный слой
+        return {"username": decode_jwt(token).identifier, ...}   # сессия Chainlit
+    except Exception:
+        pass
+    try:
+        claims = verify_ticket(token)                            # datacraft-тикет
+    except Exception:
+        raise AuditAuthError("invalid session or ticket") from None
+    return {"username": claims["username"], "sub": claims["sub"], ...}
 ```
 
-- Вешаем как `dependencies=[Depends(require_audit_identity)]` на `include_router`.
+- Вешаем как `dependencies=[Depends(require_audit_identity)]`.
+- Ошибка — через `AuditAuthError` (не `HTTPException`), иначе safe-handler ремапит её в
+  `invalid_request/400`. Выделенный handler даёт чистый **401**.
+- **CORS не нужен отдельно** — у Chainlit уже висит `CORSMiddleware` (`allow_origins`), он
+  оборачивает весь ASGI-стек, включая mount; чат уже ходит cross-origin, origin сконфигурен.
 - Тенант-фильтрации нет (по решению): любой залогиненный видит все файлы. `membership`-проверки
   модуля (run/chunk-scoped) остаются как есть.
-- 401 отдаём до входа в роутер аудита, поэтому он вне `audit-http/error/v1`-конверта — это
-  ожидаемо (транспортная авторизация, не доменная ошибка чтения).
 
 ### 4.6. Конфиг, курсоры, лимиты, ошибки
 
