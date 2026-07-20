@@ -20,7 +20,7 @@ import {
   UserRound,
 } from "lucide-react";
 import styles from "./FilesPage.module.css";
-import { mockFiles } from "./mockData";
+import { filesProvider } from "./filesProvider";
 import {
   clearAllComments,
   deleteComment,
@@ -274,6 +274,11 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
   const [diffMode, setDiffMode] = useState<"side-by-side" | "unified">("side-by-side");
   const [isReviewDrawerOpen, setIsReviewDrawerOpen] = useState(false);
   const [isChunkMetaVisible, setIsChunkMetaVisible] = useState(true);
+  const [allFiles, setAllFiles] = useState<FileRecord[]>([]);
+
+  useEffect(() => {
+    void filesProvider.listFiles().then((result) => setAllFiles(result.files));
+  }, []);
 
   useEffect(() => {
     void listComments().then(setComments);
@@ -285,7 +290,7 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
   }, []);
 
   const filteredFiles = useMemo(() => {
-    return mockFiles.filter((file) => {
+    return allFiles.filter((file) => {
       const latestRun = file.runs[0];
       const matchesSearch =
         !search ||
@@ -295,7 +300,7 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       const matchesType = fileTypeFilter === "all" || file.type === fileTypeFilter;
       return matchesSearch && matchesStatus && matchesType;
     });
-  }, [fileTypeFilter, search, statusFilter]);
+  }, [allFiles, fileTypeFilter, search, statusFilter]);
 
   useEffect(() => {
     if (!filteredFiles.length) return;
