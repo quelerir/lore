@@ -1,0 +1,312 @@
+import type { FileRecord } from "./types";
+
+const boardSummaryRun = {
+  id: "run-board-2026-07-15",
+  label: "Запуск 15.07.2026 09:42",
+  processedAt: "2026-07-15T09:42:00+03:00",
+  status: "success",
+  pipeline: "board-brief-v3",
+  autoAuditStatus: "attention",
+  sourceUrl: "/storage/board-summary-2026-07.pdf",
+  originalUrl: "https://origin.example.com/board-summary",
+  versionMismatch: false,
+  warnings: ["TRUNCATED_TABLE_SAMPLE"],
+  errors: [],
+  chunks: [
+    {
+      id: "chunk-board-1",
+      ordinal: 1,
+      type: "heading",
+      coordinates: "p.1 / x:42 y:108 w:510 h:84",
+      section: "Executive summary",
+      displayText: "# Подготовка board summary\n- Рост MRR +12%\n- Решение по перераспределению бюджета",
+      fullText:
+        "Подготовка board summary. Рост MRR на 12 процентов квартал к кварталу. Требуется решение по перераспределению бюджета между brand и performance.",
+      vectorText:
+        "Board summary: MRR grew 12 percent QoQ. Decision required on reallocating budget between brand and performance channels.",
+      charCount: 154,
+      tokenCount: 42,
+      hash: "dsp-1f90c1",
+      contentSignature: "sig-board-001",
+      warnings: [],
+      findings: ["Автоматическая проверка считает формулировку решения слишком общей."],
+      payloads: [],
+      metadata: {
+        page: "1",
+        block: "header",
+        breadcrumbs: "Board summary / Executive summary",
+      },
+      diagnostics: [{ severity: "info", code: "NORMALIZED", message: "Markdown generated from PDF outline." }],
+    },
+    {
+      id: "chunk-board-2",
+      ordinal: 2,
+      type: "table",
+      coordinates: "p.2 / x:36 y:220 w:690 h:240",
+      section: "Budget split",
+      displayText:
+        "Таблица бюджета по каналам с прогнозом ROI и чувствительностью к снижению spend.",
+      fullText:
+        "Таблица бюджета: Brand 1.2M, Performance 2.8M, ROI Brand 1.6, ROI Performance 2.4, sensitivity medium/high.",
+      vectorText:
+        "Budget table. Brand spend 1.2M with ROI 1.6. Performance spend 2.8M with ROI 2.4. Sensitivity medium to high.",
+      charCount: 131,
+      tokenCount: 37,
+      hash: "tbl-991ab3",
+      contentSignature: "sig-board-002",
+      warnings: ["Сэмпл таблицы обрезан серверным лимитом."],
+      findings: [],
+      payloads: [{ type: "table", id: "table-board-1", label: "Budget split table" }],
+      metadata: {
+        page: "2",
+        block: "table",
+        breadcrumbs: "Board summary / Budget split",
+      },
+      diagnostics: [
+        { severity: "warning", code: "TRUNCATED", message: "Row sample truncated after 50 rows." },
+      ],
+    },
+    {
+      id: "chunk-board-3",
+      ordinal: 3,
+      type: "figure",
+      coordinates: "p.3 / x:44 y:192 w:662 h:312",
+      section: "Revenue bridge",
+      displayText: "Диаграмма Revenue bridge с просадкой в SMB и ростом enterprise.",
+      fullText:
+        "Revenue bridge chart: SMB contraction offset by enterprise expansion and pricing uplift.",
+      vectorText:
+        "Revenue bridge figure showing SMB contraction offset by enterprise expansion and pricing uplift.",
+      charCount: 98,
+      tokenCount: 25,
+      hash: "img-234caa",
+      contentSignature: "sig-board-003",
+      warnings: [],
+      findings: ["Изображение требует ручной проверки подписи оси Y."],
+      payloads: [{ type: "image", id: "image-board-1", label: "Revenue bridge" }],
+      metadata: {
+        page: "3",
+        block: "figure",
+        breadcrumbs: "Board summary / Revenue bridge",
+      },
+      diagnostics: [
+        { severity: "info", code: "IMAGE_CLASSIFIED", message: "Classified as chart/figure." },
+      ],
+    },
+  ],
+  tables: [
+    {
+      id: "table-board-1",
+      summary: "Бюджет каналов, ROI и сценарии сокращения spend.",
+      coordinates: "p.2 / table #1",
+      schema: [
+        { name: "channel", type: "string" },
+        { name: "spend", type: "number" },
+        { name: "roi", type: "number" },
+        { name: "sensitivity", type: "string" },
+      ],
+      rowCount: 4,
+      columnCount: 4,
+      samples: [
+        { channel: "Brand", spend: 1200000, roi: 1.6, sensitivity: "medium" },
+        { channel: "Performance", spend: 2800000, roi: 2.4, sensitivity: "high" },
+        { channel: "Partner", spend: 600000, roi: 1.9, sensitivity: "low" },
+      ],
+      contentId: "cnt-table-board-1",
+      usages: ["Board summary / Budget split"],
+      relatedChunkIds: ["chunk-board-2"],
+    },
+  ],
+  images: [
+    {
+      id: "image-board-1",
+      title: "Revenue bridge",
+      description: "Столбчатая диаграмма с вкладом SMB, enterprise и pricing uplift.",
+      mimeType: "image/png",
+      dimensions: "1600×900",
+      fileSize: "284 KB",
+      hash: "img-234caa",
+      coordinates: "p.3 / fig.1",
+      classification: "chart",
+      warnings: ["Подпись одной оси распознана неуверенно."],
+      usages: ["Board summary / Revenue bridge"],
+      relatedChunkIds: ["chunk-board-3"],
+      unavailable: true,
+    },
+  ],
+  transcripts: [],
+} satisfies FileRecord["runs"][number];
+
+const boardSummaryPreviousRun = {
+  ...boardSummaryRun,
+  id: "run-board-2026-07-10",
+  label: "Запуск 10.07.2026 18:05",
+  processedAt: "2026-07-10T18:05:00+03:00",
+  autoAuditStatus: "clean",
+  warnings: [],
+  chunks: boardSummaryRun.chunks.map((chunk) =>
+    chunk.id === "chunk-board-1"
+      ? {
+          ...chunk,
+          id: "chunk-board-prev-1",
+          displayText: "# Подготовка board summary\n- Рост MRR +11%\n- Решение по бюджету ожидается",
+          fullText:
+            "Подготовка board summary. Рост MRR на 11 процентов квартал к кварталу. Решение по бюджету ожидается после финализации прогноза.",
+          vectorText:
+            "Board summary: MRR grew 11 percent QoQ. Budget decision pending until forecast is finalized.",
+          hash: "dsp-prev-1",
+          contentSignature: "sig-board-001",
+        }
+      : {
+          ...chunk,
+          id: `${chunk.id}-prev`,
+          hash: `${chunk.hash}-prev`,
+          contentSignature: `${chunk.contentSignature}-prev`,
+        },
+  ),
+} satisfies FileRecord["runs"][number];
+
+export const mockFiles: FileRecord[] = [
+  {
+    id: "file-board-summary",
+    name: "board_summary_q3.pdf",
+    type: "pdf",
+    pipeline: "board-brief-v3",
+    runs: [boardSummaryRun, boardSummaryPreviousRun],
+  },
+  {
+    id: "file-ops-workbook",
+    name: "ops_health_workbook.xlsx",
+    type: "xlsx",
+    pipeline: "spreadsheet-normalizer",
+    runs: [
+      {
+        id: "run-ops-2026-07-14",
+        label: "Запуск 14.07.2026 14:12",
+        processedAt: "2026-07-14T14:12:00+03:00",
+        status: "active",
+        pipeline: "spreadsheet-normalizer",
+        autoAuditStatus: "missing",
+        sourceUrl: "/storage/ops-health-workbook.xlsx",
+        warnings: ["Часть листов еще обрабатывается."],
+        errors: [],
+        chunks: [
+          {
+            id: "chunk-ops-1",
+            ordinal: 1,
+            type: "sheet-summary",
+            coordinates: "Sheet KPI / rows 1-18",
+            section: "KPI",
+            displayText: "KPI summary по воронке, SLA и backlog.",
+            fullText: "KPI summary by funnel, SLA, backlog and team load.",
+            vectorText:
+              "Operational KPI summary covering funnel, SLA compliance, backlog and team load.",
+            charCount: 82,
+            tokenCount: 22,
+            hash: "ops-1",
+            contentSignature: "sig-ops-1",
+            warnings: ["run_status=active"],
+            findings: [],
+            payloads: [{ type: "table", id: "table-ops-1", label: "KPI grid" }],
+            metadata: { sheet: "KPI", breadcrumbs: "Workbook / KPI" },
+            diagnostics: [{ severity: "warning", code: "RUN_ACTIVE", message: "Processing is still active." }],
+          },
+        ],
+        tables: [
+          {
+            id: "table-ops-1",
+            summary: "Сводная таблица KPI по неделям.",
+            coordinates: "Sheet KPI / A1:F42",
+            schema: [
+              { name: "week", type: "string" },
+              { name: "sla", type: "number" },
+              { name: "backlog", type: "number" },
+            ],
+            rowCount: 42,
+            columnCount: 6,
+            samples: [
+              { week: "2026-W26", sla: 0.94, backlog: 18 },
+              { week: "2026-W27", sla: 0.91, backlog: 24 },
+            ],
+            contentId: "cnt-table-ops-1",
+            usages: ["Workbook / KPI"],
+            relatedChunkIds: ["chunk-ops-1"],
+          },
+        ],
+        images: [],
+        transcripts: [],
+      },
+    ],
+  },
+  {
+    id: "file-sales-call",
+    name: "sales_call_2026_07_11.mp3",
+    type: "audio",
+    pipeline: "transcript-splitter",
+    runs: [
+      {
+        id: "run-call-2026-07-11",
+        label: "Запуск 11.07.2026 21:08",
+        processedAt: "2026-07-11T21:08:00+03:00",
+        status: "failed",
+        pipeline: "transcript-splitter",
+        autoAuditStatus: "attention",
+        sourceUrl: "/storage/sales-call-2026-07-11.mp3",
+        originalUrl: "https://origin.example.com/calls/7182",
+        versionMismatch: true,
+        warnings: ["Источник обновился после выбранного запуска."],
+        errors: ["UPSTREAM_TIMEOUT"],
+        chunks: [
+          {
+            id: "chunk-call-1",
+            ordinal: 1,
+            type: "transcript",
+            coordinates: "00:00-02:15",
+            section: "Intro",
+            displayText: "**A:** Добрый день...\n**B:** Да, слышу вас.",
+            fullText: "A: Добрый день. B: Да, слышу вас.",
+            vectorText: "Conversation intro between speaker A and speaker B.",
+            charCount: 74,
+            tokenCount: 21,
+            hash: "call-1",
+            contentSignature: "sig-call-1",
+            warnings: ["SPEAKER_UNCERTAIN"],
+            findings: ["Неоднозначное определение второго спикера."],
+            payloads: [{ type: "transcript", id: "transcript-call-1", label: "Call transcript" }],
+            metadata: { speakerCount: "2", breadcrumbs: "Call / Intro" },
+            diagnostics: [
+              { severity: "error", code: "UPSTREAM_TIMEOUT", message: "Transcript fetch timed out." },
+            ],
+          },
+        ],
+        tables: [],
+        images: [],
+        transcripts: [
+          {
+            id: "transcript-call-1",
+            title: "Sales call transcript",
+            blocks: [
+              {
+                id: "blk-1",
+                speaker: "A",
+                timeRange: "00:00-00:18",
+                display: "**A:** Добрый день, спасибо, что нашли время.",
+                fulltext: "A: Добрый день, спасибо, что нашли время.",
+                vectortext: "Speaker A greets and thanks the listener for joining.",
+              },
+              {
+                id: "blk-2",
+                speaker: "Неизвестный",
+                timeRange: "00:19-00:31",
+                display: "**?** Да, слышу вас, давайте начнем.",
+                fulltext: "?: Да, слышу вас, давайте начнем.",
+                vectortext: "Uncertain speaker confirms they can hear and suggests starting.",
+              },
+            ],
+            relatedChunkIds: ["chunk-call-1"],
+          },
+        ],
+      },
+    ],
+  },
+];

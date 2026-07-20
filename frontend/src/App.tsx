@@ -31,6 +31,12 @@ type ChatModalState =
   | { type: "delete"; chatId: string }
   | null;
 
+type ChatHistoryGroup = {
+  label: string;
+  chats: Chat[];
+  order: number;
+};
+
 const readPersistedState = (): PersistedChatState | null => {
   try {
     const rawState = window.localStorage.getItem(STORAGE_KEY);
@@ -55,12 +61,36 @@ const writePersistedState = (state: PersistedChatState) => {
   }
 };
 
+const parseTimeWeight = (time: string) => {
+  if (time === "Только что") return 10_000;
+
+  const match = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return -1;
+
+  const [, hours, minutes] = match;
+  return Number(hours) * 60 + Number(minutes);
+};
+
+const getHistoryGroupMeta = (time: string) => {
+  if (time === "Вчера") {
+    return { label: "Вчера", order: 1 };
+  }
+
+  if (time === "Только что" || /^\d{1,2}:\d{2}$/.test(time)) {
+    return { label: "Сегодня", order: 0 };
+  }
+
+  return { label: "Ранее", order: 2 };
+};
+
 function AppContent() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [messagesByChat, setMessagesByChat] = useState<Record<string, Message[]>>({});
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [composerValue, setComposerValue] = useState("");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [chatModal, setChatModal] = useState<ChatModalState>(null);
@@ -69,6 +99,34 @@ function AppContent() {
     () => chats.find((chat) => chat.id === activeChatId) ?? null,
     [activeChatId, chats],
   );
+  const historyGroups = useMemo(() => {
+    const groups = chats.reduce<Map<string, ChatHistoryGroup>>((accumulator, chat) => {
+      const groupMeta = getHistoryGroupMeta(chat.time);
+      const existingGroup = accumulator.get(groupMeta.label);
+
+      if (existingGroup) {
+        existingGroup.chats.push(chat);
+        return accumulator;
+      }
+
+      accumulator.set(groupMeta.label, {
+        label: groupMeta.label,
+        chats: [chat],
+        order: groupMeta.order,
+      });
+
+      return accumulator;
+    }, new Map());
+
+    return [...groups.values()]
+      .sort((left, right) => left.order - right.order)
+      .map((group) => ({
+        ...group,
+        chats: [...group.chats].sort(
+          (left, right) => parseTimeWeight(right.time) - parseTimeWeight(left.time),
+        ),
+      }));
+  }, [chats]);
   const activeMessages = activeChatId ? messagesByChat[activeChatId] ?? [] : [];
   const modalChat =
     chatModal ? chats.find((chat) => chat.id === chatModal.chatId) ?? null : null;
@@ -140,6 +198,7 @@ function AppContent() {
   const handleSelectChat = (chatId: string) => {
     setActiveChatId(chatId);
     setIsMobileSidebarOpen(false);
+    setIsHistoryPopoverOpen(false);
   };
 
   const handleRenameChat = (chatId: string) => {
@@ -367,17 +426,68 @@ function AppContent() {
           chats={chats}
           activeChatId={activeChatId}
           isMobileOpen={isMobileSidebarOpen}
+          isCollapsed={isSidebarCollapsed}
           onSelectChat={handleSelectChat}
           onRenameChat={handleRenameChat}
           onDeleteChat={handleDeleteChat}
           onCreateChat={handleCreateChat}
           onCloseMobileMenu={() => setIsMobileSidebarOpen(false)}
+          onToggleCollapse={() => {
+            setIsSidebarCollapsed((prev) => !prev);
+            setIsHistoryPopoverOpen(false);
+          }}
+          onOpenHistoryPopover={() => setIsHistoryPopoverOpen((prev) => !prev)}
         />
 
         <main className={styles.content}>
+          {isHistoryPopoverOpen ? (
+            <button
+              className={styles.historyPopoverBackdrop}
+              type="button"
+              aria-label="Закрыть историю чатов"
+              onClick={() => setIsHistoryPopoverOpen(false)}
+            />
+          ) : null}
+
+          {isSidebarCollapsed && isHistoryPopoverOpen ? (
+            <div className={styles.historyPopover}>
+              <div className={styles.historyPopoverHeader}>Недавние чаты</div>
+              <div className={styles.historyPopoverList}>
+                {historyGroups.map((group) => (
+                  <section key={group.label} className={styles.historyPopoverGroup}>
+                    <div className={styles.historyPopoverGroupLabel}>{group.label}</div>
+                    <div className={styles.historyPopoverGroupItems}>
+                      {group.chats.map((chat) => (
+                        <button
+                          key={chat.id}
+                          type="button"
+                          className={`${styles.historyPopoverItem} ${
+                            chat.id === activeChatId ? styles.historyPopoverItemActive : ""
+                          }`}
+                          onClick={() => handleSelectChat(chat.id)}
+                        >
+                          {chat.title}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <ChatHeader
             title={activeChat?.title ?? "Lore"}
-            onOpenSidebar={() => setIsMobileSidebarOpen(true)}
+            onOpenSidebar={() => {
+              if (window.innerWidth <= 960) {
+                setIsMobileSidebarOpen(true);
+                return;
+              }
+
+              setIsSidebarCollapsed(false);
+              setIsHistoryPopoverOpen(false);
+            }}
+            showSidebarButton={isSidebarCollapsed}
           />
 
           {!isHydrated || !activeChatId ? (
@@ -397,9 +507,6 @@ function AppContent() {
                 onCopy={handleCopy}
                 onRegenerate={handleRegenerate}
               />
-              <p className={styles.disclaimer}>
-                Lore может допускать ошибки. Рекомендуем проверять важную информацию.
-              </p>
               <ChatComposer
                 value={composerValue}
                 onChange={setComposerValue}
@@ -475,6 +582,7 @@ function AppContent() {
           </div>
         </div>
       ) : null}
+
     </div>
   );
 }

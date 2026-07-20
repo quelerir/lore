@@ -1,24 +1,24 @@
 .wrapper {
-  padding: 0 18px 18px;
+  padding: 0 24px 28px;
 }
 
 .form {
-  width: min(680px, 100%);
+  width: min(736px, 100%);
   margin: 0 auto;
   background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  border-radius: 26px;
-  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
-  padding: 12px 12px 10px;
+  border: 1px solid rgba(239, 243, 247, 0.98);
+  border-radius: 18px;
+  box-shadow: 0 20px 48px rgba(205, 214, 224, 0.36);
+  padding: 14px 16px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  column-gap: 10px;
+  align-items: center;
+  column-gap: 12px;
 }
 
 .textarea {
   width: 100%;
-  min-height: 34px;
+  min-height: 28px;
   max-height: 180px;
   border: none;
   resize: none;
@@ -27,22 +27,22 @@
   background: transparent;
   color: #263244;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.45;
-  padding: 6px 4px 5px 2px;
-  align-self: end;
+  padding: 0;
+  align-self: center;
 }
 
 .textarea::placeholder {
-  color: #94a3b8;
+  color: #8e9aae;
 }
 
 .iconButton {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  background: #ffffff;
+  border: none;
+  background: transparent;
   color: #64748b;
   display: inline-flex;
   align-items: center;
@@ -55,8 +55,7 @@
 }
 
 .iconButton:hover {
-  background: #eef2f7;
-  border-color: rgba(190, 200, 214, 0.95);
+  background: #f3f5f7;
 }
 
 .sendButton {
@@ -64,6 +63,9 @@
   border: none;
   background: #2b3443;
   color: white;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
 }
 
 .sendButton:hover:not(:disabled) {
@@ -86,9 +88,8 @@
 
   .form {
     width: 100%;
-    border-radius: 22px;
-    padding: 14px;
-    column-gap: 10px;
+    border-radius: 18px;
+    padding: 12px 14px;
   }
 
   .textarea {
