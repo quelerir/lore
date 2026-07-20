@@ -98,6 +98,11 @@ class Settings(BaseSettings):
         default=2, validation_alias="SQL_CANDIDATES_PER_ROUND"
     )
 
+    # --- Eval-харнесс: фиксированная модель-судья корректности ответа ---
+    eval_judge_model: str = Field(
+        default="anthropic/claude-sonnet-4.6", validation_alias="EVAL_JUDGE_MODEL"
+    )
+
     # --- Toast БД для SQL-инструмента (компоненты; фича-флаг) ---
     toast_db_host: str | None = Field(default=None, validation_alias="TOAST_DB_HOST")
     toast_db_port: int = Field(default=5432, validation_alias="TOAST_DB_PORT")
