@@ -3,8 +3,7 @@ from audit.assembly import build_audit_router, build_audit_service
 
 class _S:
     audit_db_dsn = None
-    audit_cursor_key = None
-    audit_manifest_target_cap = 100
+    jwt_secret = "test-secret"
 
 
 def test_service_is_none_without_db_or_key():

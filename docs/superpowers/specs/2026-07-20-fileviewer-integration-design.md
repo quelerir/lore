@@ -136,8 +136,8 @@ class _AuditPool:
     def acquire(self): return self._pool.connection()  # context manager → psycopg conn
 ```
 
-- Конфиг: новые `AUDIT_DB_*` в `config.py` c фолбэком на `TOAST_DB_*` (та же инстанция).
-  Отдельный DSN — на случай выделенной реплики/пользователя read-only.
+- Конфиг: **без новых переменных** — `audit_db_dsn` возвращает `toast_dsn` (та же инстанция,
+  схема `lore_core` зашита в SQL). Отдельный DSN добавим только если аудит переедет на реплику.
 - Новая зависимость: `psycopg[binary,pool]==3.3.4` рядом с asyncpg.
 
 ### 4.4. Ридеры и capabilities (S3 — опционально)
@@ -177,10 +177,11 @@ def require_audit_identity(authorization: str = Header(...)) -> dict[str, str]:
 
 ### 4.6. Конфиг, курсоры, лимиты, ошибки
 
-- **Cursor key:** `AUDIT_CURSOR_KEY` — HMAC ≥16 байт, **стабильный между рестартами** (иначе
-  выданные курсоры инвалидируются). Из env/секрета; в dev — дефолт в `.env.example`.
-- **`AuditHttpLimits`:** дефолты модуля; при необходимости пара полей (`page_size_*`,
-  `max_text_bytes`, `timeout_ms`) выносится в `Settings`.
+- **Cursor key:** HMAC ≥16 байт, **стабильный между рестартами** (иначе выданные курсоры
+  инвалидируются). **Без отдельной переменной** — выводим детерминированно из существующего
+  `jwt_secret`: `sha256(b"audit-cursor-v1|" + jwt_secret)` (32 байта, отдельный от JWT-секрета
+  за счёт domain-separation).
+- **`AuditHttpLimits`:** дефолты модуля (`manifest_target_cap=100` и пр.) — без выноса в env.
 - **Middleware `AuditHttpMiddleware`:** капы path≤2КБ/query≤8КБ/body≤1МБ до роутинга + access-log
   с `correlation_id`. Сохраняем.
 - **Ошибки:** единый конверт `audit-http/error/v1` через `install_safe_error_handlers`.
@@ -196,11 +197,12 @@ def require_audit_identity(authorization: str = Header(...)) -> dict[str, str]:
 
 ## 6. Инфраструктура (docker-compose)
 
-- **БД:** отдельный сервис не нужен — `lore_core` в той же инстанции, что TOAST. Пробрасываем
-  `AUDIT_DB_*` (или переиспользуем `TOAST_DB_*`) в сервис `backend`.
+- **БД:** отдельный сервис не нужен — `lore_core` в той же инстанции, что TOAST; аудит берёт
+  `TOAST_DB_*`. Никаких новых env пробрасывать не надо.
 - **S3/MinIO:** добавляем сервис MinIO для dev **только когда включаем картинки** (этап 3).
-  Прод — реальный S3 через `AUDIT_S3_*`.
-- **Env:** `AUDIT_CURSOR_KEY`, `AUDIT_DB_*` (опц.), `AUDIT_S3_*` (опц.) — в `.env.example`.
+  Прод — реальный S3 через `AUDIT_S3_*` (единственные новые env, и только на этапе 3).
+- **Env этапа 1:** новых переменных нет — аудит включается, как только настроены `TOAST_DB_*`
+  и `CHAINLIT_JWT_SECRET` (из него выводится ключ курсоров).
 
 ## 7. Совместимость с фронтом и известные разрывы контракта
 
@@ -268,22 +270,26 @@ latest_status, run_count, latest_run_id}`; `FileListQuery` серверно ум
 
 ```
 backend/
-  app.py                 + монтаж audit-роутера (подход A) + require_audit_identity
-  config.py              + AUDIT_DB_* / AUDIT_S3_* / AUDIT_CURSOR_KEY
+  app.py                 + attach_audit_router(chainlit.server.app) — no-op, если не настроено
+  config.py              + audit_db_dsn (→ toast_dsn); новых env нет
   audit/                 ← вендоренный read-side
     __init__.py          (минимальный, свой)
     http_api/            routes, contracts, limits, middleware, errors, factory, __init__
     read_service.py, read_repositories.py, read_adapters.py, read_cursor.py, read_contracts.py
     contracts.py, registration.py, validation.py, engine_contracts.py
     image_safety.py, postgres_connections.py
-    pool.py              ← новый: _AuditPool + фабрика psycopg-пула (prepare_threshold=None)
-    s3_image_reader.py   ← новый: boto3-адаптер под RegisteredImageReader (этап 3)
+    pool.py              ← новый: AuditConnectionPool + build_audit_pool (prepare_threshold=None)
+    auth_dep.py          ← новый: require_audit_identity + AuditAuthError → 401
+    assembly.py          ← новый: build_audit_service/_app (ключ курсора из jwt_secret)
+    mount.py             ← новый: attach_audit_router — изолированный sub-app под /api/v1/audit
+    s3_image_reader.py   ← новый, этап 3: boto3-адаптер под RegisteredImageReader
     _vendor/
-      run_status.py      RunStatus + redact_value
+      run_status.py         RunStatus
+      redaction.py          redact_value + helpers
       storage_contracts.py  ImageToastStorageResult, TableToastStorageResult
   tests/
-    test_audit_*.py      ← перенесённые + smoke
-docker-compose.yml       + (этап 3) minio; проброс AUDIT_* env
+    test_audit_*.py      ← перенесённые (routes/security/contracts) + unit + opt-in integration
+docker-compose.yml       + (этап 3) minio + AUDIT_S3_* env
 ```
 
 ## 12. Риски

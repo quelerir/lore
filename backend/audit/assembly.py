@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 from fastapi import Depends, FastAPI
@@ -18,20 +19,28 @@ from audit.read_repositories import PostgresAuditReadRepository
 from audit.read_service import AuditReadService
 
 
+def _derive_cursor_key(jwt_secret: str) -> bytes:
+    """Stable HMAC key for pagination cursors, derived from the existing JWT secret.
+
+    Avoids provisioning a separate secret: the domain-separated hash yields a
+    distinct 32-byte key (never equal to the JWT secret) that is stable across
+    restarts, which the cursor codec requires.
+    """
+    return hashlib.sha256(b"audit-cursor-v1|" + jwt_secret.encode("utf-8")).digest()
+
+
 def build_audit_service(
     settings: Any,
 ) -> tuple[AuditReadService, AuditConnectionPool] | None:
-    """Return (service, pool) or None when the audit DB/cursor key is not configured."""
+    """Return (service, pool) or None when the audit DB (Toast instance) is unset."""
     dsn = settings.audit_db_dsn
-    key = settings.audit_cursor_key
-    if not dsn or not key:
+    if not dsn:
         return None
     pool = build_audit_pool(dsn)
-    codec = CursorCodec(key.encode("utf-8"))
+    codec = CursorCodec(_derive_cursor_key(settings.jwt_secret))
     repository = PostgresAuditReadRepository(pool, codec)
     service = AuditReadService(
         repository,
-        manifest_target_cap=settings.audit_manifest_target_cap,
         table_reader=PostgresRegisteredTableReader(pool, codec),
         # image_reader deferred to the S3 phase; source_reader deferred until a
         # source-object loader exists. Both capabilities degrade gracefully.

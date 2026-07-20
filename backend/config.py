@@ -123,22 +123,6 @@ class Settings(BaseSettings):
     )
     toast_db_name: str | None = Field(default=None, validation_alias="TOAST_DB_NAME")
 
-    # --- Audit read API (FileViewer): read-only фасад над схемой lore_core ---
-    audit_cursor_key: str | None = Field(
-        default=None, validation_alias="AUDIT_CURSOR_KEY"
-    )
-    audit_manifest_target_cap: int = Field(
-        default=100, validation_alias="AUDIT_MANIFEST_TARGET_CAP"
-    )
-    # AUDIT_DB_* переопределяют общий Toast-инстанс, когда БД аудита отличается.
-    audit_db_host: str | None = Field(default=None, validation_alias="AUDIT_DB_HOST")
-    audit_db_port: int | None = Field(default=None, validation_alias="AUDIT_DB_PORT")
-    audit_db_user: str | None = Field(default=None, validation_alias="AUDIT_DB_USER")
-    audit_db_password: str | None = Field(
-        default=None, validation_alias="AUDIT_DB_PASSWORD"
-    )
-    audit_db_name: str | None = Field(default=None, validation_alias="AUDIT_DB_NAME")
-
     # --- OAuth generic: CLIENT_ID читает app.py, остальное — Chainlit ---
     oauth_generic_client_id: str | None = Field(
         default=None, validation_alias="OAUTH_GENERIC_CLIENT_ID"
@@ -189,15 +173,8 @@ class Settings(BaseSettings):
 
     @property
     def audit_db_dsn(self) -> str | None:
-        """psycopg DSN для схемы lore_core. Фолбэк на Toast-инстанс (та же БД)."""
-        host = self.audit_db_host or self.toast_db_host
-        user = self.audit_db_user or self.toast_db_user
-        password = self.audit_db_password or self.toast_db_password
-        name = self.audit_db_name or self.toast_db_name
-        if not (host and user and password and name):
-            return None
-        port = self.audit_db_port or self.toast_db_port
-        return build_dsn("postgresql", user, password, host, port, name)
+        """psycopg DSN для схемы lore_core — та же инстанция, что Toast."""
+        return self.toast_dsn
 
 
 @lru_cache
