@@ -1,6 +1,7 @@
 """Юниты eval-харнесса: без сети и без LangSmith, только фейки."""
 
 import json
+from pathlib import Path
 
 import pytest
 from langchain_openai import ChatOpenAI
@@ -62,3 +63,18 @@ def test_to_examples_shape():
         "question", "chunk_id", "table", "desc_vector", "desc_full",
     }
     assert ex[0]["outputs"] == {"reference_answer": "Суворова Юлия Александровна"}
+
+
+DATASET_PATH = (
+    Path(__file__).resolve().parent.parent / "evals" / "datasets" / "sql_cases.json"
+)
+
+
+def test_real_dataset_loads_and_is_complete():
+    cases = load_cases(DATASET_PATH)
+    assert len(cases) == 5
+    for c in cases:
+        assert c.table.startswith("toast_tbl_")
+        assert c.question.strip()
+        assert c.reference_answer.strip()
+        assert c.desc_full.strip()
