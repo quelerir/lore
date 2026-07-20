@@ -1,4 +1,4 @@
-import { PenSquare, X } from "lucide-react";
+import { FolderSearch, PenSquare, X } from "lucide-react";
 import type { Chat } from "../../types/chat";
 import ChatList from "../ChatList/ChatList";
 import styles from "./Sidebar.module.css";
@@ -47,6 +47,11 @@ export default function Sidebar({
           <PenSquare size={18} />
           <span>Новый чат</span>
         </button>
+
+        <a className={styles.navLinkButton} href="/files">
+          <FolderSearch size={18} />
+          <span>Файлы</span>
+        </a>
 
         <ChatList
           chats={chats}
