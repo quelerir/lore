@@ -34,7 +34,7 @@
 Нюанс реализации: в pyproject нет `[build-system]`, поэтому uv считает проект
 virtual и не устанавливает сами модули — pytest получил `pythonpath = ["."]`,
 а venv вынесен в `/opt/venv`, чтобы bind-mount `/app` его не прятал.
-`backend/Dockerfile` ставит зависимости через `pip install -e .` по
+`lore-core/services/lore-chat/Dockerfile` ставит зависимости через `pip install -e .` по
 pyproject, где версии почти не ограничены (`deepagents`, `langchain-ollama`
 вообще без границ). Каждый build может притащить другие версии — вплоть до
 ломающих (экосистема langchain это любит). При этом точный срез уже

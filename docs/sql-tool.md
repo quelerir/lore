@@ -1,7 +1,7 @@
 # SQL-инструмент (toast): что решает и как устроен
 
 Полное описание инструмента ответов на вопросы по toast-таблицам:
-`backend/toast/`: граф (`sql_graph.py`), типы (`models.py`), промпты
+`lore-core/services/lore-chat/toast/`: граф (`sql_graph.py`), типы (`models.py`), промпты
 (`prompts.py`), LLM-обвязка (`llm.py`), guardrails, исполнитель + обвязки
 (Studio, eval, демо-режим). Документ отвечает на три вопроса: какую задачу решаем, как
 устроен каждый узел и почему именно так.
@@ -279,7 +279,7 @@ Postgres её отвергнет.
 
 ## 9. Конфигурация
 
-Все параметры — в `backend/config.py` (pydantic-settings), env один на весь
+Все параметры — в `lore-core/services/lore-chat/config.py` (pydantic-settings), env один на весь
 стек (корневой `.env`: его читают и docker-compose, и LangGraph Studio).
 Пустые значения env считаются незаданными (`env_ignore_empty` — compose
 передаёт `${VAR:-}` как пустую строку).

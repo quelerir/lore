@@ -1,7 +1,7 @@
 # Ревью sql-tool.md: оптимальность, альтернативы, дыры
 
 Анализ документа `docs/sql-tool.md`, сверенный с реализацией
-(`backend/toast/sql_graph.py`, `sql_guardrails.py`, `executor.py`,
+(`lore-core/services/lore-chat/toast/sql_graph.py`, `sql_guardrails.py`, `executor.py`,
 `sql_tool.py`). Дата ревью: 2026-07-17.
 
 **Общий вердикт.** Архитектура добротная и честно обоснованная:

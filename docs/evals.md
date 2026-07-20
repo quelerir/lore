@@ -46,7 +46,7 @@ eval-скрипт достаёт их из `.env` через config и сам п
 
 ## Датасет
 
-`backend/evals/datasets/sql_cases.json` — 5 кейсов из
+`lore-core/services/lore-chat/evals/datasets/sql_cases.json` — 5 кейсов из
 `problem-questions-report.html`. Поля `inputs` совпадают с `SqlToolInput`,
 `outputs.reference_answer` — эталон для судьи. Первый прогон заливает датасет в
 LangSmith; повторные переиспользуют по имени.
