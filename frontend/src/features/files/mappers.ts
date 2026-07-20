@@ -1,5 +1,5 @@
 // Map real audit-read DTOs to the FileViewer's UI types (see types.ts).
-import type { FileRecord, RunStatus } from "./types";
+import type { FileRecord, FileRun, RunStatus } from "./types";
 
 export interface FileCardDto {
   schema_version: string;
@@ -22,6 +22,47 @@ export interface PageDto<T> {
 // (stale = superseded, not a hard failure — shown as skipped.)
 export function mapRunStatus(status: string): RunStatus {
   return status === "stale" ? "skipped" : (status as RunStatus);
+}
+
+export interface RunDetailDto {
+  schema_version: string;
+  run_id: string;
+  logical_file_key: string;
+  status: string;
+  source_content_hash: string;
+  config_hash: string;
+  claimed_at: string;
+  finished_at: string | null;
+  chunk_count: number;
+  payload_count: number;
+  warning_count: number;
+  error_count: number;
+}
+
+function formatRunLabel(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Запуск";
+  return `Запуск ${date.toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })}`;
+}
+
+// Run metadata only; chunks/tables/images/transcripts are hydrated lazily in a
+// later slice (empty here). Message-level warnings/errors come from diagnostics.
+export function mapRun(dto: RunDetailDto): FileRun {
+  return {
+    id: dto.run_id,
+    label: formatRunLabel(dto.claimed_at),
+    processedAt: dto.claimed_at,
+    status: mapRunStatus(dto.status),
+    pipeline: "",
+    autoAuditStatus: "missing",
+    sourceUrl: "",
+    warnings: [],
+    errors: [],
+    chunks: [],
+    tables: [],
+    images: [],
+    transcripts: [],
+  };
 }
 
 // A file list card carries no run/chunk detail. We synthesise a single

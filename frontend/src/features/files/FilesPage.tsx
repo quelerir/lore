@@ -280,6 +280,25 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     void filesProvider.listFiles().then((result) => setAllFiles(result.files));
   }, []);
 
+  // Lazily load the selected file's runs (real API returns them thin; the mock
+  // returns them fully hydrated). Merge into the file tree; retry on failure.
+  const hydratedFilesRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const fileId = selectedFileId;
+    if (!fileId || hydratedFilesRef.current.has(fileId)) return;
+    hydratedFilesRef.current.add(fileId);
+    void filesProvider
+      .hydrateFileRuns(fileId)
+      .then((runs) => {
+        setAllFiles((prev) =>
+          prev.map((file) => (file.id === fileId ? { ...file, runs } : file)),
+        );
+      })
+      .catch(() => {
+        hydratedFilesRef.current.delete(fileId);
+      });
+  }, [selectedFileId]);
+
   useEffect(() => {
     void listComments().then(setComments);
     void getReviewerName().then((name) => {
@@ -315,12 +334,14 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     const selectedRun =
       selectedFile.runs.find((run) => run.id === selectedRunId) ?? selectedFile.runs[0];
 
-    if (selectedRun.id !== selectedRunId) {
+    if (selectedRun && selectedRun.id !== selectedRunId) {
       setSelectedRunId(selectedRun.id);
     }
 
     const selectedChunk =
-      selectedRun.chunks.find((chunk) => chunk.id === selectedChunkId) ?? selectedRun.chunks[0] ?? null;
+      selectedRun?.chunks.find((chunk) => chunk.id === selectedChunkId) ??
+      selectedRun?.chunks[0] ??
+      null;
 
     if (selectedChunk?.id !== selectedChunkId) {
       setSelectedChunkId(selectedChunk?.id ?? null);

@@ -1,9 +1,15 @@
 import { auditGet } from "./auditClient";
 import type { FilesProvider, ListFilesParams, ListFilesResult } from "./filesProvider";
-import { mapFileCard, type FileCardDto, type PageDto } from "./mappers";
+import {
+  mapFileCard,
+  mapRun,
+  type FileCardDto,
+  type PageDto,
+  type RunDetailDto,
+} from "./mappers";
+import type { FileRun } from "./types";
 
-// Talks to the real read-only audit API. This slice covers the file list; run and
-// chunk hydration land in the next slice.
+// Talks to the real read-only audit API. Chunk/payload hydration lands next.
 export class ApiFilesProvider implements FilesProvider {
   async listFiles(params: ListFilesParams = {}): Promise<ListFilesResult> {
     const page = await auditGet<PageDto<FileCardDto>>("/files", {
@@ -16,5 +22,12 @@ export class ApiFilesProvider implements FilesProvider {
       nextCursor: page.next_cursor,
       truncated: page.truncated,
     };
+  }
+
+  async hydrateFileRuns(logicalFileKey: string): Promise<FileRun[]> {
+    const page = await auditGet<PageDto<RunDetailDto>>("/runs", {
+      logical_file_key: logicalFileKey,
+    });
+    return page.items.map(mapRun);
   }
 }
