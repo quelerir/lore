@@ -5,6 +5,8 @@ services:
       args:
         # URL Chainlit, каким его видит браузер пользователя.
         VITE_CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL:-http://localhost:8000}
+        # Источник данных FileViewer: api — реальный /api/v1/audit, mock — демо-данные.
+        VITE_FILES_PROVIDER: ${FILES_PROVIDER:-mock}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
