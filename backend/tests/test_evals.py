@@ -18,7 +18,9 @@ from evals.evaluators import (
     status_ok,
 )
 from evals.models import build_eval_model
+from evals.run_sql_eval import make_target, parse_args
 from fakes import ScriptedChatModel, StructuredScriptedChatModel
+from graph_utils import LEGAL, FakeExecutor, _rows, _sample
 
 _CASE = {
     "question": "Какие ФИО у юристов?",
@@ -178,3 +180,33 @@ def test_ensure_dataset_skips_when_present():
     ensure_dataset(client, "sql-eval", [EvalCase(**_CASE)])
     assert client.created_dataset is False
     assert client.created_examples is None
+
+
+def test_parse_args_splits_models():
+    ns = parse_args(["--models", "openai/gpt-4o, anthropic/claude-sonnet-4.6"])
+    assert ns.models == ["openai/gpt-4o", "anthropic/claude-sonnet-4.6"]
+
+
+def test_make_target_runs_graph_offline(monkeypatch):
+    settings = _settings(monkeypatch)
+    # Текстовый happy-path как в test_round1_sufficient_ok: generate (JSON-массив
+    # из двух SELECT) → судья "SUFFICIENT" → summarize. Исполнитель: сэмпл + два
+    # кандидата раунда.
+    model = ScriptedChatModel(responses=[
+        AIMessage(content='["SELECT column_1 FROM %s", "SELECT column_2 FROM %s"]'
+                  % (LEGAL, LEGAL)),
+        AIMessage(content="SUFFICIENT"),
+        AIMessage(content="Юрист: Каневский Георгий."),
+    ])
+    executor = FakeExecutor(results=[_sample(), _rows(1), _rows(1)])
+    target = make_target(model, executor, settings)
+    out = asyncio.run(target({
+        "question": "ФИО юристов?",
+        "chunk_id": "c1",
+        "table": LEGAL,
+        "desc_vector": "юристы",
+        "desc_full": "Таблица юристов",
+    }))
+    assert out["status"] == "ok"
+    assert "Каневский" in out["answer"]
+    assert "sql_attempts" in out
