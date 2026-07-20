@@ -1,5 +1,5 @@
 // Map real audit-read DTOs to the FileViewer's UI types (see types.ts).
-import type { FileRecord, FileRun, RunStatus } from "./types";
+import type { FileChunk, FileRecord, FileRun, RunStatus } from "./types";
 
 export interface FileCardDto {
   schema_version: string;
@@ -22,6 +22,87 @@ export interface PageDto<T> {
 // (stale = superseded, not a hard failure — shown as skipped.)
 export function mapRunStatus(status: string): RunStatus {
   return status === "stale" ? "skipped" : (status as RunStatus);
+}
+
+export interface ChunkPreviewDto {
+  schema_version: string;
+  chunk_id: string;
+  run_id: string;
+  ordinal: number;
+  pipeline_type: string;
+  chunk_type: string;
+  content_signature: string;
+}
+
+export interface TextWindowDto {
+  text: string;
+  truncated: boolean;
+  returned_bytes: number;
+  full_bytes: number;
+}
+
+export interface ChunkDetailDto {
+  schema_version: string;
+  preview: ChunkPreviewDto;
+  display_text: TextWindowDto;
+  full_text: TextWindowDto;
+  vector_text: TextWindowDto;
+  coordinates: Record<string, unknown>;
+  payload_refs: string[];
+}
+
+function formatCoordinates(coordinates: Record<string, unknown>): string {
+  if (!coordinates || Object.keys(coordinates).length === 0) return "";
+  return Object.entries(coordinates)
+    .map(([key, value]) => `${key}:${typeof value === "object" ? JSON.stringify(value) : value}`)
+    .join(" ");
+}
+
+// Chunk list preview: metadata only (no text yet — filled by mapChunkDetail on
+// selection). payloads/diagnostics are populated by later slices.
+export function mapChunkPreview(dto: ChunkPreviewDto): FileChunk {
+  return {
+    id: dto.chunk_id,
+    ordinal: dto.ordinal,
+    type: dto.chunk_type,
+    coordinates: "",
+    section: "",
+    displayText: "",
+    fullText: "",
+    vectorText: "",
+    charCount: 0,
+    tokenCount: 0,
+    hash: dto.content_signature,
+    contentSignature: dto.content_signature,
+    warnings: [],
+    findings: [],
+    payloads: [],
+    metadata: {},
+    diagnostics: [],
+  };
+}
+
+export function mapChunkDetail(dto: ChunkDetailDto): FileChunk {
+  const preview = dto.preview;
+  return {
+    id: preview.chunk_id,
+    ordinal: preview.ordinal,
+    type: preview.chunk_type,
+    coordinates: formatCoordinates(dto.coordinates),
+    section: "",
+    displayText: dto.display_text.text,
+    fullText: dto.full_text.text,
+    vectorText: dto.vector_text.text,
+    charCount: dto.full_text.text.length,
+    tokenCount: 0,
+    hash: preview.content_signature,
+    contentSignature: preview.content_signature,
+    warnings: [],
+    findings: [],
+    payloads: [],
+    metadata: {},
+    diagnostics: [],
+  };
 }
 
 export interface RunDetailDto {

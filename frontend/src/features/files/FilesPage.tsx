@@ -299,6 +299,64 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       });
   }, [selectedFileId]);
 
+  // Lazily load the selected run's chunk previews. Mock runs already carry
+  // chunks, so the length guard skips them.
+  const hydratedRunsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const fileId = selectedFileId;
+    const runId = selectedRunId;
+    if (!fileId || !runId || hydratedRunsRef.current.has(runId)) return;
+    const run = allFiles.find((f) => f.id === fileId)?.runs.find((r) => r.id === runId);
+    if (!run || run.chunks.length > 0) return;
+    hydratedRunsRef.current.add(runId);
+    void filesProvider
+      .hydrateRunChunks(runId)
+      .then((chunks) => {
+        setAllFiles((prev) =>
+          prev.map((file) =>
+            file.id !== fileId
+              ? file
+              : { ...file, runs: file.runs.map((r) => (r.id === runId ? { ...r, chunks } : r)) },
+          ),
+        );
+      })
+      .catch(() => hydratedRunsRef.current.delete(runId));
+  }, [allFiles, selectedFileId, selectedRunId]);
+
+  // Lazily load the selected chunk's full detail (display/full/vector text).
+  const hydratedChunksRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const fileId = selectedFileId;
+    const runId = selectedRunId;
+    const chunkId = selectedChunkId;
+    if (!fileId || !runId || !chunkId || hydratedChunksRef.current.has(chunkId)) return;
+    const chunk = allFiles
+      .find((f) => f.id === fileId)
+      ?.runs.find((r) => r.id === runId)
+      ?.chunks.find((c) => c.id === chunkId);
+    if (!chunk || chunk.fullText) return;
+    hydratedChunksRef.current.add(chunkId);
+    void filesProvider
+      .hydrateChunkDetail(runId, chunkId)
+      .then((detail) => {
+        setAllFiles((prev) =>
+          prev.map((file) =>
+            file.id !== fileId
+              ? file
+              : {
+                  ...file,
+                  runs: file.runs.map((r) =>
+                    r.id !== runId
+                      ? r
+                      : { ...r, chunks: r.chunks.map((c) => (c.id === chunkId ? detail : c)) },
+                  ),
+                },
+          ),
+        );
+      })
+      .catch(() => hydratedChunksRef.current.delete(chunkId));
+  }, [allFiles, selectedFileId, selectedRunId, selectedChunkId]);
+
   useEffect(() => {
     void listComments().then(setComments);
     void getReviewerName().then((name) => {

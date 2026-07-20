@@ -1,7 +1,7 @@
 // Data seam for the FileViewer. The UI consumes files through a provider so the
 // source (local mock vs the real /api/v1/audit backend) can be swapped without
 // touching FilesPage. Selected at build time via VITE_FILES_PROVIDER=api|mock.
-import type { FileRecord, FileRun } from "./types";
+import type { FileChunk, FileRecord, FileRun } from "./types";
 import { ApiFilesProvider } from "./apiFilesProvider";
 import { MockFilesProvider } from "./mockFilesProvider";
 
@@ -22,6 +22,10 @@ export interface FilesProvider {
   listFiles(params?: ListFilesParams): Promise<ListFilesResult>;
   /** Load a file's runs on selection (metadata only; chunks hydrate later). */
   hydrateFileRuns(logicalFileKey: string): Promise<FileRun[]>;
+  /** Load a run's chunk list on selection (previews; text fills on chunk select). */
+  hydrateRunChunks(runId: string): Promise<FileChunk[]>;
+  /** Load one chunk's full detail (display/full/vector text) on selection. */
+  hydrateChunkDetail(runId: string, chunkId: string): Promise<FileChunk>;
 }
 
 const providerType = import.meta.env.VITE_FILES_PROVIDER ?? "mock";
