@@ -9,7 +9,7 @@ from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
 import config
-from evals.dataset import EvalCase, load_cases, to_examples
+from evals.dataset import EvalCase, ensure_dataset, load_cases, to_examples
 from evals.evaluators import (
     JudgeCorrectness,
     executes_ok,
@@ -142,3 +142,39 @@ def test_answer_correct_text_fallback_false():
     judge = ScriptedChatModel(responses=[AIMessage("incorrect: не совпало")])
     res = _judge_call(judge)
     assert res["score"] == 0
+
+
+class _FakeDataset:
+    id = "ds-1"
+
+
+class _FakeClient:
+    def __init__(self, exists):
+        self._exists = exists
+        self.created_examples = None
+        self.created_dataset = False
+
+    def has_dataset(self, dataset_name):
+        return self._exists
+
+    def create_dataset(self, dataset_name):
+        self.created_dataset = True
+        return _FakeDataset()
+
+    def create_examples(self, dataset_id, examples):
+        self.created_examples = examples
+
+
+def test_ensure_dataset_creates_when_absent():
+    client = _FakeClient(exists=False)
+    name = ensure_dataset(client, "sql-eval", [EvalCase(**_CASE)])
+    assert name == "sql-eval"
+    assert client.created_dataset is True
+    assert len(client.created_examples) == 1
+
+
+def test_ensure_dataset_skips_when_present():
+    client = _FakeClient(exists=True)
+    ensure_dataset(client, "sql-eval", [EvalCase(**_CASE)])
+    assert client.created_dataset is False
+    assert client.created_examples is None

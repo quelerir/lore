@@ -36,3 +36,16 @@ def to_examples(cases: list[EvalCase]) -> list[dict]:
         }
         for c in cases
     ]
+
+
+def ensure_dataset(client, name: str, cases: list[EvalCase]) -> str:
+    """Идемпотентно завести датасет в LangSmith. Существует — не трогаем.
+
+    Первая заливка создаёт датасет и примеры; повторные прогоны просто
+    переиспользуют его по имени (чтобы не плодить дубли примеров).
+    """
+    if client.has_dataset(dataset_name=name):
+        return name
+    dataset = client.create_dataset(dataset_name=name)
+    client.create_examples(dataset_id=dataset.id, examples=to_examples(cases))
+    return name
