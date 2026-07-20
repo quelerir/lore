@@ -54,10 +54,12 @@ def _project_many(result: tuple[Any, ...]) -> list[dict[str, Any]]:
 def create_audit_router(
     service: AuditReadService,
     limits: AuditHttpLimits,
+    *,
+    prefix: str = "/api/v1/audit",
 ) -> APIRouter:
     """Create the exact injected audit read router without starting resources."""
 
-    router = APIRouter(prefix="/api/v1/audit")
+    router = APIRouter(prefix=prefix)
 
     @router.get("/files")
     def list_files(query: Annotated[FileListQuery, Query()]) -> dict[str, Any]:

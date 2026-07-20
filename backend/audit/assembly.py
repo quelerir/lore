@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from fastapi import Depends, FastAPI
+
+from audit.auth_dep import install_audit_auth_handler, require_audit_identity
+from audit.http_api.errors import install_safe_error_handlers
 from audit.http_api.limits import AuditHttpLimits
+from audit.http_api.middleware import AuditHttpMiddleware
 from audit.http_api.routes import create_audit_router
 from audit.pool import AuditConnectionPool, build_audit_pool
 from audit.read_adapters import PostgresRegisteredTableReader
@@ -35,9 +40,31 @@ def build_audit_service(
 
 
 def build_audit_router(settings: Any):
-    """Return a mounted audit router, or None when audit is not configured."""
+    """Return the audit router (default /api/v1/audit prefix), or None if unconfigured."""
     built = build_audit_service(settings)
     if built is None:
         return None
     service, _pool = built
     return create_audit_router(service, AuditHttpLimits())
+
+
+def build_audit_app(settings: Any) -> FastAPI | None:
+    """Build an isolated ASGI sub-app for the audit API, or None if unconfigured.
+
+    Isolation is deliberate: the audit safe-error handlers and middleware live on
+    this sub-app only, so mounting it never touches the host (Chainlit) app's own
+    error handling. The router is prefix-less; the mount point supplies the path.
+    """
+    built = build_audit_service(settings)
+    if built is None:
+        return None
+    service, _pool = built
+    app = FastAPI(docs_url=None, redoc_url=None, openapi_url="/openapi.json")
+    app.include_router(
+        create_audit_router(service, AuditHttpLimits(), prefix=""),
+        dependencies=[Depends(require_audit_identity)],
+    )
+    install_safe_error_handlers(app)
+    install_audit_auth_handler(app)
+    app.add_middleware(AuditHttpMiddleware)
+    return app

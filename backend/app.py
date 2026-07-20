@@ -15,13 +15,21 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
+from chainlit.server import app as _chainlit_app
+
 from agents import PROFILE_TO_MODE, Mode, build_agent
+from audit.mount import attach_audit_router
 from auth import verify_ticket
 from config import get_settings
 
 # Сколько последних сообщений истории отдаём агенту: без предела длинный
 # диалог рано или поздно упирается в контекст модели.
 MAX_HISTORY_MESSAGES = 40
+
+# Read-only audit API (/api/v1/audit) mounted as an ISOLATED sub-app on the
+# Chainlit FastAPI server. No-op when AUDIT_* is unconfigured, so the chat runs
+# unchanged. Isolation keeps the audit error envelope off the chat's routes.
+attach_audit_router(_chainlit_app)
 
 # ---------------------------------------------------------------------------
 # Data layer – SQLAlchemyDataLayer subclass that forces NullPool.
