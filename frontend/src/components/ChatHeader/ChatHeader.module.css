@@ -1,78 +1,37 @@
 .header {
-  min-height: 82px;
+  min-height: 56px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 26px;
-  border-bottom: 1px solid rgba(236, 240, 244, 0.95);
-  background: rgba(255, 255, 255, 0.94);
+  gap: 10px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(228, 233, 239, 0.95);
+  background: rgba(255, 255, 255, 0.86);
 }
 
 .menuButton {
   width: 30px;
   height: 30px;
-  border: none;
+  border: 1px solid rgba(228, 233, 239, 0.95);
   border-radius: 10px;
-  background: transparent;
+  background: rgba(248, 250, 252, 0.92);
   color: #64748b;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  position: relative;
-}
-
-.menuButton:hover {
-  background: #f3f6fa;
-  color: #111827;
-}
-
-.menuButton::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0;
-  pointer-events: none;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: #111827;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
-  transition: opacity 140ms ease;
-  z-index: 50;
-}
-
-.menuButton:hover::after {
-  opacity: 1;
 }
 
 .menuButton {
   display: none;
 }
 
-.menuButtonVisible {
-  display: inline-flex;
-}
-
 .title {
   margin: 0;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   color: #1f2937;
   letter-spacing: -0.03em;
-}
-
-.titleRow {
   flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
 }
 
 @media (max-width: 960px) {

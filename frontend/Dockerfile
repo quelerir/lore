@@ -9,13 +9,10 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 
 # Vite inlines VITE_* variables at build time, so they arrive as build args.
-ARG VITE_CHAT_PROVIDER=mock
 ARG VITE_CHAINLIT_URL=http://localhost:8000
-# FileViewer data source: "api" reads the real /api/v1/audit backend, "mock" the
-# bundled demo data.
+# FileViewer data source: "api" reads the real /api/v1/audit backend, else mock.
 ARG VITE_FILES_PROVIDER=mock
-ENV VITE_CHAT_PROVIDER=${VITE_CHAT_PROVIDER} \
-    VITE_CHAINLIT_URL=${VITE_CHAINLIT_URL} \
+ENV VITE_CHAINLIT_URL=${VITE_CHAINLIT_URL} \
     VITE_FILES_PROVIDER=${VITE_FILES_PROVIDER}
 
 RUN npm run build

@@ -1,5 +1,3 @@
-// Auth against the Chainlit backend: session lives in a same-site cookie set by
-// the authentik OAuth flow. Restored after the main-branch frontend dropped it.
 export type AuthUser = {
   identifier: string;
   metadata?: Record<string, unknown>;

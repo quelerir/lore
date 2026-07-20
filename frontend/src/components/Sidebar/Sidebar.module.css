@@ -14,92 +14,16 @@
 }
 
 .sidebar {
-  width: 320px;
-  min-width: 320px;
-  background: rgba(255, 255, 255, 0.96);
-  border-right: 1px solid rgba(232, 236, 241, 0.95);
+  width: 268px;
+  min-width: 268px;
+  background: rgba(255, 255, 255, 0.92);
+  border-right: 1px solid rgba(214, 221, 229, 0.9);
   display: flex;
   flex-direction: column;
-  padding: 18px 18px 16px;
-  gap: 14px;
+  padding: 14px 12px 12px;
+  gap: 10px;
   position: relative;
   z-index: 30;
-}
-
-.sidebarRail {
-  width: 56px;
-  min-width: 56px;
-  background: rgba(255, 255, 255, 0.96);
-  border-right: 1px solid rgba(232, 236, 241, 0.95);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 18px 8px;
-  position: relative;
-  z-index: 30;
-}
-
-.railButton {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  color: #334155;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition:
-    background 140ms ease,
-    color 140ms ease;
-  position: relative;
-}
-
-.railButton:hover {
-  background: #f3f6fa;
-  color: #111827;
-}
-
-.railButton::after,
-.panelButton::after,
-.newChatButton::after,
-.sectionLink::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0;
-  pointer-events: none;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: #111827;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
-  transition: opacity 140ms ease;
-  z-index: 50;
-}
-
-.railButton:hover::after,
-.panelButton:hover::after,
-.newChatButton:hover::after,
-.sectionLink:hover::after {
-  opacity: 1;
-}
-
-.sidebarCollapsed {
-  width: 0;
-  min-width: 0;
-  padding: 0;
-  gap: 0;
-  border-right: none;
-  overflow: hidden;
 }
 
 .headerRow {
@@ -109,139 +33,120 @@
   gap: 12px;
 }
 
-.brandBlock {
-  min-width: 0;
-}
-
 .title {
   margin: 0;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  color: #1f2937;
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.primaryLinks {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 10px;
-}
-
-.panelButton,
-.closeButton {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease;
-  position: relative;
-}
-
-.panelButton:hover,
-.closeButton:hover {
-  background: #f3f6fa;
-  color: #111827;
-}
-
-.newChatButton {
-  height: 42px;
-  border: none;
-  border-radius: 14px;
-  background: transparent;
-  color: #111827;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 0 10px;
-  transition:
-    background 140ms ease,
-    color 140ms ease,
-    border-radius 140ms ease;
-  position: relative;
-}
-
-.newChatButton:hover {
-  background: #f3f6fa;
-  color: #111827;
+  letter-spacing: -0.04em;
 }
 
 .closeButton {
   display: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(214, 221, 229, 0.9);
+  border-radius: 12px;
+  background: white;
+  color: #1f2937;
 }
 
-.sectionLink {
-  height: 42px;
-  border-radius: 14px;
-  color: #111827;
-  font-size: 15px;
+.newChatButton {
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #334155;
+  font-size: 13px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
-  padding: 0 10px;
-  text-decoration: none;
-  transition:
-    background 140ms ease,
-    color 140ms ease,
-    border-radius 140ms ease;
-  position: relative;
+  gap: 6px;
+  padding: 0 12px;
 }
 
-.sectionLink:hover {
-  background: #f3f6fa;
+.newChatButton:hover {
+  background: #eef2f7;
+}
+
+.modeSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(214, 221, 229, 0.9);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.modeButton,
+.modeActive {
+  height: 30px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.modeActive {
+  background: white;
   color: #111827;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
 }
 
-.searchField {
-  height: 40px;
-  border: 1px solid rgba(216, 223, 232, 0.96);
-  border-radius: 14px;
-  background: #ffffff;
+.errorText {
+  margin: 0;
+  padding: 6px 12px;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.userFooter {
+  margin-top: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 14px;
-  color: #b0bac9;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(214, 221, 229, 0.9);
+  color: #334155;
 }
 
-.searchField input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  outline: none;
+.userInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutButton {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(214, 221, 229, 0.9);
+  border-radius: 10px;
+  background: white;
   color: #1f2937;
-  font: inherit;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.searchField input::placeholder {
-  color: #b0bac9;
+.logoutButton:hover {
+  background: #eef2f7;
 }
 
 @media (max-width: 960px) {
-  .sidebarRail {
-    display: none;
-  }
-
   .sidebar {
     position: fixed;
     top: 0;
@@ -249,8 +154,8 @@
     bottom: 0;
     transform: translateX(-100%);
     transition: transform 220ms ease;
-    max-width: min(88vw, 320px);
-    min-width: min(88vw, 320px);
+    max-width: min(88vw, 268px);
+    min-width: min(88vw, 268px);
   }
 
   .sidebarOpen {
@@ -261,9 +166,5 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .panelButton {
-    display: none;
   }
 }
