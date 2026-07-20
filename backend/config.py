@@ -139,8 +139,19 @@ class Settings(BaseSettings):
     oauth_generic_scopes: str | None = None
     oauth_generic_user_identifier: str | None = None
 
-    # LANGSMITH_ENDPOINT / LANGSMITH_API_KEY / LANGSMITH_TRACING читает сам
-    # langsmith SDK из окружения — здесь не дублируем (нужны только eval-скрипту).
+    # --- LangSmith self-hosted (eval-харнесс) ---
+    # langsmith SDK читает эти переменные из ОКРУЖЕНИЯ процесса, а не из .env.
+    # Держим их в реестре, чтобы eval-скрипт достал значения из .env и сам
+    # пробросил в окружение (иначе запрос уходит в публичный api.smith.*).
+    langsmith_endpoint: str | None = Field(
+        default=None, validation_alias="LANGSMITH_ENDPOINT"
+    )
+    langsmith_api_key: str | None = Field(
+        default=None, validation_alias="LANGSMITH_API_KEY"
+    )
+    langsmith_tracing: str | None = Field(
+        default=None, validation_alias="LANGSMITH_TRACING"
+    )
 
     @property
     def database_url(self) -> str:

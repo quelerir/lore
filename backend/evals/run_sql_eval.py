@@ -11,6 +11,7 @@ LANGSMITH_API_KEY (self-hosted). Латентность и токены LangSmit
 
 import argparse
 import asyncio
+import os
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -39,6 +40,31 @@ def make_target(model, executor, settings) -> Callable[[dict], Awaitable[dict]]:
     return target
 
 
+def build_client(settings) -> Client:
+    """LangSmith-клиент для self-hosted инстанса.
+
+    Значения берём из .env (через config) и, если заданы, дублируем в окружение
+    — трейсинг узлов графа во время aevaluate читает их именно оттуда. Без
+    явного endpoint запрос ушёл бы в публичный api.smith.langchain.com и упал
+    бы на «Invalid token», поэтому падаем рано и внятно.
+    """
+    endpoint = settings.langsmith_endpoint or os.environ.get("LANGSMITH_ENDPOINT")
+    api_key = settings.langsmith_api_key or os.environ.get("LANGSMITH_API_KEY")
+    if not api_key:
+        raise SystemExit("LANGSMITH_API_KEY обязателен (ключ self-hosted инстанса)")
+    if not endpoint:
+        raise SystemExit(
+            "LANGSMITH_ENDPOINT не задан — иначе запрос уйдёт в публичный "
+            "api.smith.langchain.com. Укажи URL self-hosted инстанса в .env."
+        )
+    os.environ.setdefault("LANGSMITH_ENDPOINT", endpoint)
+    os.environ.setdefault("LANGSMITH_API_KEY", api_key)
+    tracing = settings.langsmith_tracing or os.environ.get("LANGSMITH_TRACING")
+    if tracing:
+        os.environ.setdefault("LANGSMITH_TRACING", tracing)
+    return Client(api_url=endpoint, api_key=api_key)
+
+
 def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Eval SQL-инструмента по моделям")
     p.add_argument("--models", required=True,
@@ -64,7 +90,7 @@ async def main(argv=None) -> None:
     if args.limit is not None:
         cases = cases[: args.limit]
 
-    client = Client()  # LANGSMITH_ENDPOINT / LANGSMITH_API_KEY из окружения
+    client = build_client(settings)
     ensure_dataset(client, args.dataset_name, cases)
 
     executor = PgExecutor(settings.toast_dsn)

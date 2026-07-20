@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,7 @@ from evals.evaluators import (
     status_ok,
 )
 from evals.models import build_eval_model
-from evals.run_sql_eval import make_target, parse_args
+from evals.run_sql_eval import build_client, make_target, parse_args
 from fakes import ScriptedChatModel, StructuredScriptedChatModel
 from graph_utils import LEGAL, FakeExecutor, _rows, _sample
 
@@ -185,6 +186,38 @@ def test_ensure_dataset_skips_when_present():
 def test_parse_args_splits_models():
     ns = parse_args(["--models", "openai/gpt-4o, anthropic/claude-sonnet-4.6"])
     assert ns.models == ["openai/gpt-4o", "anthropic/claude-sonnet-4.6"]
+
+
+def _langsmith_settings(monkeypatch, endpoint=None, api_key=None):
+    for var in ("LANGSMITH_ENDPOINT", "LANGSMITH_API_KEY", "LANGSMITH_TRACING"):
+        monkeypatch.delenv(var, raising=False)
+    if endpoint is not None:
+        monkeypatch.setenv("LANGSMITH_ENDPOINT", endpoint)
+    if api_key is not None:
+        monkeypatch.setenv("LANGSMITH_API_KEY", api_key)
+    config.get_settings.cache_clear()
+    return config.get_settings()
+
+
+def test_build_client_requires_api_key(monkeypatch):
+    settings = _langsmith_settings(monkeypatch, endpoint="https://ls.local/api")
+    with pytest.raises(SystemExit, match="LANGSMITH_API_KEY"):
+        build_client(settings)
+
+
+def test_build_client_requires_endpoint(monkeypatch):
+    settings = _langsmith_settings(monkeypatch, api_key="ls-key")
+    with pytest.raises(SystemExit, match="LANGSMITH_ENDPOINT"):
+        build_client(settings)
+
+
+def test_build_client_exports_env_and_returns_client(monkeypatch):
+    settings = _langsmith_settings(
+        monkeypatch, endpoint="https://ls.local/api", api_key="ls-key"
+    )
+    client = build_client(settings)
+    assert client.api_url == "https://ls.local/api"
+    assert os.environ["LANGSMITH_ENDPOINT"] == "https://ls.local/api"
 
 
 def test_make_target_runs_graph_offline(monkeypatch):
