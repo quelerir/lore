@@ -12,10 +12,27 @@
 - `LANGSMITH_TRACING=true` — включает трейсинг узлов графа.
 - `EVAL_JUDGE_MODEL` — фиксированная модель-судья (по умолчанию `anthropic/claude-sonnet-4.6`).
 
+## Конфигурация вне docker compose
+
+Eval-скрипт запускается локально, вне compose. `config.py` читает `.env` и
+`.env.local` из **корня репозитория** (абсолютные пути, не зависят от каталога
+запуска); реальные переменные окружения важнее файлов.
+
+`Settings` требует и Chainlit/JWT-поля (нужны приложению), поэтому для
+самостоятельного запуска проще всего собрать полный `.env.local` из шаблона:
+
+    cp .env.example .env.local
+    # затем впиши OPENROUTER_API_KEY, TOAST_DB_*, LANGSMITH_* — остальное уже с dev-заглушками
+
+`LANGSMITH_*` читает сам langsmith SDK из окружения процесса. Если твой способ
+запуска не подхватывает `.env` в окружение автоматически — экспортни вручную:
+
+    set -a; source ../.env.local; set +a   # из каталога backend/
+
 ## Запуск
 
     cd backend
-    python -m evals.run_sql_eval --models "openai/gpt-4o, anthropic/claude-sonnet-4.6"
+    .venv/bin/python -m evals.run_sql_eval --models "openai/gpt-4o, anthropic/claude-sonnet-4.6"
 
 Флаги: `--judge-model`, `--dataset-name` (по умолчанию `sql-tool-eval`),
 `--limit N` (дымовой прогон), `--max-concurrency`.

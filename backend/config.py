@@ -8,10 +8,17 @@
 
 from enum import Enum
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import quote
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Корень репозитория (на уровень выше backend/) — чтобы .env читался независимо
+# от каталога запуска: скрипты вроде `python -m evals.run_sql_eval` стартуют из
+# backend/, а .env лежит в корне. В контейнере путь не существует — не беда,
+# pydantic молча игнорирует отсутствующие файлы, а env берётся из окружения.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def build_dsn(scheme: str, user: str, password: str,
@@ -37,8 +44,9 @@ class Settings(BaseSettings):
         # и из пяти пустых TOAST_DB_* собирается мусорный DSN.
         env_ignore_empty=True,
         # Порядок приоритета файлов (побеждает последний): .env → .env.local.
-        # Реальные переменные окружения (compose) важнее любого файла.
-        env_file=(".env", ".env.local"),
+        # Реальные переменные окружения (compose) важнее любого файла. Пути
+        # абсолютные (от корня репо), иначе из backend/ файлы не находятся.
+        env_file=(str(_REPO_ROOT / ".env"), str(_REPO_ROOT / ".env.local")),
         env_file_encoding="utf-8",
     )
 
