@@ -749,7 +749,7 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       <header className={styles.topbar}>
         <div className={styles.topbarLeft}>
           <div>
-            <h1 className={styles.title}>Lore Files Review</h1>
+            <h1 className={styles.title}>Lore File Viewer</h1>
           </div>
         </div>
       </header>

@@ -43,7 +43,7 @@ export default function ChatComposer({
         <textarea
           ref={textareaRef}
           className={styles.textarea}
-          placeholder="Задайте вопрос Lore"
+          placeholder="Спросите Lore"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
