@@ -51,7 +51,10 @@ class Settings(BaseSettings):
     )
 
     # --- Chainlit data layer (компоненты; DSN собирается свойством) ---
-    chainlit_db_host: str = Field(validation_alias="CHAINLIT_DB_HOST")
+    # host/port с дефолтами: в compose host явно задаёт сервис (chainlit-db),
+    # а standalone-скриптам (eval) незачем требовать значение, которого в
+    # .env-шаблоне нет — реальный запуск приложения всё равно переопределит.
+    chainlit_db_host: str = Field(default="localhost", validation_alias="CHAINLIT_DB_HOST")
     chainlit_db_port: int = Field(default=5432, validation_alias="CHAINLIT_DB_PORT")
     chainlit_db_user: str = Field(validation_alias="CHAINLIT_DB_USER")
     chainlit_db_password: str = Field(validation_alias="CHAINLIT_DB_PASSWORD")
