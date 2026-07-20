@@ -1,35 +1,34 @@
 import { ThreadPrimitive } from "@assistant-ui/react";
-import { useSessionUi } from "../../chat/sessionUi";
+import type { Message } from "../../types/chat";
 import AssistantMessage from "../AssistantMessage/AssistantMessage";
 import UserMessage from "../UserMessage/UserMessage";
 import styles from "./MessageList.module.css";
 
-export default function MessageList() {
-  const { switching } = useSessionUi();
+interface MessageListProps {
+  messages: Message[];
+  onCopy: (messageId: string, content: string) => Promise<boolean> | boolean;
+  onRegenerate: (messageId: string) => void;
+}
 
+export default function MessageList({
+  messages,
+  onCopy,
+  onRegenerate,
+}: MessageListProps) {
   return (
     <ThreadPrimitive.Viewport className={styles.viewport}>
       <div className={styles.inner}>
-        {switching ? (
-          // Во время переключения не мигаем пустым чатом / «Начните диалог» —
-          // показываем мягкий лоадер, пока не приедет нужный тред.
-          <div className={styles.loading} role="status" aria-label="Загрузка чата">
-            <span />
-            <span />
-            <span />
-          </div>
-        ) : (
-          <>
-            <ThreadPrimitive.Empty>
-              <div className={styles.empty}>
-                <h3>Начните новый диалог</h3>
-                <p>Задайте вопрос внизу — ассистент ответит в этом окне.</p>
-              </div>
-            </ThreadPrimitive.Empty>
-            <ThreadPrimitive.Messages
-              components={{ UserMessage, AssistantMessage }}
+        {messages.map((message) =>
+          message.role === "assistant" ? (
+            <AssistantMessage
+              key={message.id}
+              message={message}
+              onCopy={() => onCopy(message.id, message.content)}
+              onRegenerate={() => onRegenerate(message.id)}
             />
-          </>
+          ) : (
+            <UserMessage key={message.id} message={message} />
+          ),
         )}
       </div>
     </ThreadPrimitive.Viewport>

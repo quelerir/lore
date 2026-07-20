@@ -1,6 +1,5 @@
-import { LogOut, PenSquare, UserRound, X } from "lucide-react";
-import type { AuthUser } from "../../auth/authClient";
-import type { ChatMode } from "../../chat/ChainlitRuntimeProvider";
+import { FolderOpen, MessageSquareText, PanelLeft, PenSquare, Search, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import type { Chat } from "../../types/chat";
 import ChatList from "../ChatList/ChatList";
 import styles from "./Sidebar.module.css";
@@ -9,104 +8,145 @@ interface SidebarProps {
   chats: Chat[];
   activeChatId: string | null;
   isMobileOpen: boolean;
-  user: AuthUser;
-  mode: ChatMode;
-  onModeChange: (mode: ChatMode) => void;
-  errorText?: string | null;
+  isCollapsed: boolean;
   onSelectChat: (chatId: string) => void;
   onRenameChat: (chatId: string) => void;
   onDeleteChat: (chatId: string) => void;
   onCreateChat: () => void;
   onCloseMobileMenu: () => void;
-  onLogout: () => void;
+  onToggleCollapse: () => void;
+  onOpenHistoryPopover: () => void;
 }
 
 export default function Sidebar({
   chats,
   activeChatId,
   isMobileOpen,
-  user,
-  mode,
-  onModeChange,
-  errorText,
+  isCollapsed,
   onSelectChat,
   onRenameChat,
   onDeleteChat,
   onCreateChat,
   onCloseMobileMenu,
-  onLogout,
+  onToggleCollapse,
+  onOpenHistoryPopover,
 }: SidebarProps) {
+  const [searchValue, setSearchValue] = useState("");
+  const filteredChats = useMemo(() => {
+    const normalizedQuery = searchValue.trim().toLowerCase();
+    if (!normalizedQuery) return chats;
+
+    return chats.filter((chat) =>
+      `${chat.title} ${chat.description}`.toLowerCase().includes(normalizedQuery),
+    );
+  }, [chats, searchValue]);
+
   return (
     <>
       <div
         className={`${styles.overlay} ${isMobileOpen ? styles.overlayVisible : ""}`}
         onClick={onCloseMobileMenu}
       />
-      <aside className={`${styles.sidebar} ${isMobileOpen ? styles.sidebarOpen : ""}`}>
+      {isCollapsed ? (
+        <aside className={styles.sidebarRail}>
+          <button
+            className={styles.railButton}
+            onClick={onCreateChat}
+            type="button"
+            aria-label="Новый чат"
+            title="Новый чат"
+            data-tooltip="Новый чат"
+          >
+            <PenSquare size={18} />
+          </button>
+
+          <a
+            className={styles.railButton}
+            href="/files"
+            aria-label="File Viewer"
+            title="File Viewer"
+            data-tooltip="File Viewer"
+          >
+            <FolderOpen size={18} />
+          </a>
+
+          <button
+            className={styles.railButton}
+            onClick={onOpenHistoryPopover}
+            type="button"
+            aria-label="Истории чатов"
+            title="Истории чатов"
+            data-tooltip="Истории чатов"
+          >
+            <MessageSquareText size={18} />
+          </button>
+        </aside>
+      ) : null}
+      <aside
+        className={`${styles.sidebar} ${isMobileOpen ? styles.sidebarOpen : ""} ${
+          isCollapsed ? styles.sidebarCollapsed : ""
+        }`}
+      >
         <div className={styles.headerRow}>
-          <h1 className={styles.title}>Lore</h1>
-          <button
-            className={styles.closeButton}
-            onClick={onCloseMobileMenu}
-            type="button"
-            aria-label="Закрыть меню"
-          >
-            <X size={18} />
-          </button>
+          <div className={styles.brandBlock}>
+            <h1 className={styles.title}>Lore</h1>
+          </div>
+
+          <div className={styles.headerActions}>
+            <button
+              className={styles.panelButton}
+              onClick={onToggleCollapse}
+              type="button"
+              aria-label="Свернуть боковую панель"
+              data-tooltip="Скрыть"
+            >
+              <PanelLeft size={18} />
+            </button>
+            <button
+              className={styles.closeButton}
+              onClick={onCloseMobileMenu}
+              type="button"
+              aria-label="Закрыть меню"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
-        <button className={styles.newChatButton} onClick={onCreateChat} type="button">
-          <PenSquare size={18} />
-          <span>Новый чат</span>
-        </button>
+        <div className={styles.primaryLinks}>
+          <button
+            className={styles.newChatButton}
+            onClick={onCreateChat}
+            type="button"
+            data-tooltip="Новый чат"
+          >
+            <PenSquare size={18} />
+            <span>Новый чат</span>
+          </button>
 
-        <div
-          className={styles.modeSwitch}
-          role="radiogroup"
-          aria-label="Режим ассистента"
-          title="Режим для нового чата; у существующего чата режим зафиксирован"
-        >
-          <button
-            type="button"
-            className={mode === "fast" ? styles.modeActive : styles.modeButton}
-            onClick={() => onModeChange("fast")}
-          >
-            Быстрый
-          </button>
-          <button
-            type="button"
-            className={mode === "deep" ? styles.modeActive : styles.modeButton}
-            onClick={() => onModeChange("deep")}
-          >
-            Умный
-          </button>
+          <a className={styles.sectionLink} href="/files" data-tooltip="File Viewer">
+            <FolderOpen size={18} />
+            <span>File Viewer</span>
+          </a>
         </div>
 
-        {errorText ? <p className={styles.errorText}>{errorText}</p> : null}
+        <label className={styles.searchField} aria-label="Поиск по чатам">
+          <Search size={18} />
+          <input
+            type="search"
+            placeholder="Поиск по чатам"
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+          />
+        </label>
 
         <ChatList
-          chats={chats}
+          chats={filteredChats}
           activeChatId={activeChatId}
           onSelectChat={onSelectChat}
           onRenameChat={onRenameChat}
           onDeleteChat={onDeleteChat}
         />
-
-        <div className={styles.userFooter}>
-          <div className={styles.userInfo}>
-            <UserRound size={18} />
-            <span className={styles.userName}>{user.identifier}</span>
-          </div>
-          <button
-            className={styles.logoutButton}
-            onClick={onLogout}
-            type="button"
-            aria-label="Выйти"
-            title="Выйти"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
       </aside>
     </>
   );

@@ -1,34 +1,64 @@
-import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
+import { ComposerPrimitive } from "@assistant-ui/react";
 import { ArrowUp, Square } from "lucide-react";
+import { KeyboardEvent, useEffect, useRef } from "react";
 import styles from "./ChatComposer.module.css";
 
-export default function ChatComposer() {
+interface ChatComposerProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  onStop: () => void;
+  isStreaming: boolean;
+}
+
+export default function ChatComposer({
+  value,
+  onChange,
+  onSubmit,
+  onStop,
+  isStreaming,
+}: ChatComposerProps) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    const nextHeight = Math.min(textarea.scrollHeight, 180);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > 180 ? "auto" : "hidden";
+  }, [value]);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      onSubmit();
+    }
+  };
+
   return (
     <div className={styles.wrapper}>
       <ComposerPrimitive.Root className={styles.form}>
-        <ComposerPrimitive.Input
+        <textarea
+          ref={textareaRef}
           className={styles.textarea}
-          placeholder="Задайте вопрос Lore"
+          placeholder="Спросите Lore"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={handleKeyDown}
           rows={1}
-          autoFocus
         />
 
-        <ThreadPrimitive.If running={false}>
-          <ComposerPrimitive.Send
-            className={`${styles.iconButton} ${styles.sendButton}`}
-            aria-label="Отправить сообщение"
-          >
-            <ArrowUp size={18} />
-          </ComposerPrimitive.Send>
-        </ThreadPrimitive.If>
-        <ThreadPrimitive.If running>
-          <ComposerPrimitive.Cancel
-            className={`${styles.iconButton} ${styles.sendButton}`}
-            aria-label="Остановить генерацию"
-          >
-            <Square size={12} fill="currentColor" />
-          </ComposerPrimitive.Cancel>
-        </ThreadPrimitive.If>
+        <button
+          className={`${styles.iconButton} ${styles.sendButton}`}
+          type="button"
+          onClick={isStreaming ? onStop : onSubmit}
+          disabled={!isStreaming && !value.trim()}
+          aria-label={isStreaming ? "Остановить генерацию" : "Отправить сообщение"}
+        >
+          {isStreaming ? <Square size={12} fill="currentColor" /> : <ArrowUp size={18} />}
+        </button>
       </ComposerPrimitive.Root>
     </div>
   );

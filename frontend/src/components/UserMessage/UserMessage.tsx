@@ -1,18 +1,15 @@
-import { useMessage } from "@assistant-ui/react";
+import type { Message } from "../../types/chat";
 import styles from "./UserMessage.module.css";
 
-export default function UserMessage() {
-  const text = useMessage((m) =>
-    m.content
-      .filter((part) => part.type === "text")
-      .map((part) => ("text" in part ? part.text : ""))
-      .join("\n"),
-  );
+interface UserMessageProps {
+  message: Message;
+}
 
+export default function UserMessage({ message }: UserMessageProps) {
   return (
     <div className={styles.row}>
       <div className={styles.bubble}>
-        <p>{text}</p>
+        <p>{message.content}</p>
       </div>
     </div>
   );
