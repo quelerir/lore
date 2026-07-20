@@ -3,24 +3,16 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import threading
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, replace
-from datetime import UTC, datetime
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 
 from audit.http_api.factory import create_audit_app
 from audit.http_api.middleware import AuditHttpMiddleware
 from audit.read_contracts import AuditReadError
-from audit.read_contracts import RunDetailRequest
-from audit.read_cursor import CursorCodec
-from audit.read_repositories import PostgresAuditReadRepository
 
 RUN_ID = "00000000-0000-0000-0000-000000000023"
 
