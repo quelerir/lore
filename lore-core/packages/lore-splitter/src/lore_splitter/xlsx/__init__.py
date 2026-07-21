@@ -1,24 +1,27 @@
 """XLSX workbook extraction public API."""
 
-# NOTE(task-1): trimmed — merged, regions, workbook impl modules arrive in later tasks.
-# Restore full exports when xlsx/merged.py, xlsx/regions.py, xlsx/workbook.py are added.
 from lore_splitter.xlsx.contracts import (
     CellRange,
     SheetExtraction,
+    SheetRegion,
     TableCandidate,
     WorkbookExtraction,
     WorkbookExtractionResult,
 )
+from lore_splitter.xlsx.merged import expand_merged_values, extract_merged_ranges
+from lore_splitter.xlsx.regions import detect_table_candidates
+from lore_splitter.xlsx.workbook import extract_workbooks, sha256_file
 
 __all__ = [
     "CellRange",
     "SheetExtraction",
+    "SheetRegion",
     "TableCandidate",
     "WorkbookExtraction",
     "WorkbookExtractionResult",
-    # trimmed: "detect_table_candidates",  # xlsx/regions.py
-    # trimmed: "expand_merged_values",     # xlsx/merged.py
-    # trimmed: "extract_workbooks",        # xlsx/workbook.py
-    # trimmed: "extract_merged_ranges",    # xlsx/merged.py
-    # trimmed: "sha256_file",              # xlsx/workbook.py
+    "detect_table_candidates",
+    "expand_merged_values",
+    "extract_workbooks",
+    "extract_merged_ranges",
+    "sha256_file",
 ]
