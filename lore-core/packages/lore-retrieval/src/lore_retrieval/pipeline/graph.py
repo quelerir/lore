@@ -34,6 +34,7 @@ from lore_retrieval.pipeline.table_lane import (
     run_sql_fanout,
     select_table_candidates,
 )
+from lore_retrieval.observability import NullTracer
 from lore_retrieval.projection_model import StructuralProjection
 
 
@@ -63,6 +64,7 @@ class RetrievalPipeline:
         text_by_id: dict[str, str],
         payload_by_chunk: dict[str, str],
         file_key_resolver=None,  # optional: async .resolve(run_ids) -> {run_id: logical_file_key}
+        tracer=None,  # optional observability seam; defaults to no-op
         index_version: str = "spike1",
         seed_count: int = 10,
         rerank_top_k: int = 12,
@@ -83,6 +85,7 @@ class RetrievalPipeline:
         self._text_by_id = text_by_id
         self._payload_by_chunk = payload_by_chunk
         self._file_key_resolver = file_key_resolver
+        self._tracer = tracer or NullTracer()
         self._index_version = index_version
         self._seed_count = seed_count
         self._rerank_top_k = rerank_top_k
@@ -98,6 +101,10 @@ class RetrievalPipeline:
             self._table_lane(question, degradations),
         )
         decision = await arbitrate_and_answer(self._chat_model, question, groups, sql_results)
+        self._tracer.record(
+            "arbitration",
+            {"note": decision.note, "used_sql": len(decision.used_sql_payload_ids)},
+        )
         citations = await self._cite(decision, resolution.resolved)
         return PipelineResult(
             decision=decision,
@@ -118,7 +125,7 @@ class RetrievalPipeline:
         file_key_by_run = (
             await self._file_key_resolver.resolve(run_ids) if self._file_key_resolver else {}
         )
-        return build_citations(
+        citations = build_citations(
             decision.answer,
             decision.evidence_map,
             envelope_by_chunk,
@@ -126,18 +133,23 @@ class RetrievalPipeline:
             preview_chars=self._citation_preview_chars,
             limit=self._citation_limit,
         )
+        self._tracer.record("cite", {"citations": len(citations)})
+        return citations
 
     async def _text_lane(self, question: str, degradations: list[str]):
         fanout = await fan_out_and_fuse(self._chunk_search, question, index_version=self._index_version)
+        self._tracer.record("text_fanout", {"fused": len(fanout.fused)})
 
         # Structural expansion is discovery — degrade gracefully if it fails.
         try:
             expanded = await expand_from_fanout(
                 self._graph_expansion, fanout, seed_count=self._seed_count
             )
+            self._tracer.record("text_expansion", {"expanded": len(expanded)})
         except Exception:
             expanded = []
             degradations.append("structural_expansion_failed")
+            self._tracer.record("text_expansion", {"expanded": 0, "degraded": True})
 
         candidate_ids = _dedup(
             [cid for cid, _ in fanout.fused] + [c.chunk_id for c in expanded]
@@ -145,9 +157,14 @@ class RetrievalPipeline:
         reranked = await rerank_stage(
             self._reranker, question, candidate_ids, self._text_by_id, top_k=self._rerank_top_k
         )
+        self._tracer.record("text_rerank", {"candidates": len(reranked)})
 
         resolution = await resolve_evidence(
             self._resolver, [cid for cid, _ in reranked], index_version=self._index_version
+        )
+        self._tracer.record(
+            "text_resolve",
+            {"resolved": len(resolution.resolved), "rejected": len(resolution.rejected)},
         )
         valid = {e.chunk_id for e in resolution.resolved}
         reranked_valid = [(cid, score) for cid, score in reranked if cid in valid]
@@ -155,6 +172,7 @@ class RetrievalPipeline:
         groups = build_context_groups(
             reranked_valid, self._projection, self._positions, self._text_by_id
         )
+        self._tracer.record("grouping", {"groups": len(groups)})
         return groups, resolution
 
     async def _table_lane(
@@ -170,8 +188,11 @@ class RetrievalPipeline:
             candidates = select_table_candidates(
                 reranked, self._payload_by_chunk, floor=self._table_floor, max_k=self._max_sql
             )
+            self._tracer.record("table_discover", {"candidates": len(candidates)})
             sql_results = await run_sql_fanout(self._sql_runner, candidates, question)
+            self._tracer.record("table_sql", {"calls": len(sql_results)})
             return candidates, sql_results
         except Exception:
             degradations.append("table_lane_unavailable")
+            self._tracer.record("table_sql", {"calls": 0, "degraded": True})
             return [], []
