@@ -54,6 +54,44 @@ class ResolutionResult(BaseModel):
     rejected: list[tuple[str, str]]  # (chunk_id, reason): missing|wrong_version|superseded|hash_mismatch
 
 
+class TableCandidate(BaseModel):
+    """A discovered table, deduped to one physical payload. ``payload_id`` is the
+    trusted locator; the physical table name is resolved only by the registry in
+    the SQL runner, never from Neo4j text."""
+
+    chunk_id: str
+    payload_id: str
+    score: float
+    feasible: bool = True
+    reason: str | None = None
+
+
+class SQLStatus(str, Enum):
+    success = "success"
+    empty = "empty"
+    not_applicable = "not_applicable"
+    unsupported = "unsupported"
+    ambiguity = "ambiguity"
+    validation_error = "validation_error"
+    execution_error = "execution_error"
+    timeout = "timeout"
+
+
+class SqlRequest(BaseModel):
+    question: str
+    payload_id: str
+    chunk_id: str
+
+
+class SQLResult(BaseModel):
+    payload_id: str
+    chunk_id: str
+    status: SQLStatus
+    rows: list[dict] = []
+    answer_summary: str | None = None
+    error: str | None = None
+
+
 class ContextGroup(BaseModel):
     """A coherent local window of source context (small-to-big / parent-child).
     Retains every canonical member ``chunk_id``; ``citations`` target the

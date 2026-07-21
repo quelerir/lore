@@ -7,7 +7,12 @@ orchestration depends only on these Protocols, so backends swap by injection.
 """
 from typing import Protocol, runtime_checkable
 
-from lore_retrieval.contracts import ResolutionResult, RetrievalCandidate
+from lore_retrieval.contracts import (
+    ResolutionResult,
+    RetrievalCandidate,
+    SqlRequest,
+    SQLResult,
+)
 
 
 @runtime_checkable
@@ -62,3 +67,21 @@ class CanonicalEvidenceResolver(Protocol):
     """
 
     async def resolve(self, chunk_ids: list[str], *, index_version: str) -> ResolutionResult: ...
+
+
+@runtime_checkable
+class TableSearchBackend(Protocol):
+    """Table-lane dense + lexical search over TableChunk nodes only. Runs on
+    every query in parallel with the text lane."""
+
+    async def table_vector_search(self, query: str, top_k: int) -> list[tuple[str, float]]: ...
+    async def table_fulltext_search(self, query: str, top_k: int) -> list[tuple[str, float]]: ...
+
+
+@runtime_checkable
+class SqlRunner(Protocol):
+    """Executes one read-only SQL request against exactly one registered payload
+    and returns a typed outcome. Physical table names come only from the trusted
+    registry inside this runner."""
+
+    async def run(self, request: SqlRequest) -> SQLResult: ...

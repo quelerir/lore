@@ -11,6 +11,9 @@ from lore_retrieval.contracts import (
     ResolutionResult,
     RetrievalCandidate,
     Route,
+    SqlRequest,
+    SQLResult,
+    SQLStatus,
 )
 from lore_retrieval.projection_model import StructuralProjection
 from lore_retrieval.source import SourceChunk
@@ -20,6 +23,30 @@ _TOKEN = re.compile(r"\w+", re.UNICODE)
 
 def _tokens(text: str) -> list[str]:
     return [t.lower() for t in _TOKEN.findall(text)]
+
+
+def _rank_fulltext(chunks: list[SourceChunk], query: str, top_k: int) -> list[tuple[str, float]]:
+    q = _tokens(query)
+    scored = [
+        (c.chunk_id, float(sum(_tokens(c.fulltext).count(t) for t in q)))
+        for c in chunks
+    ]
+    scored = [(cid, s) for cid, s in scored if s > 0]
+    scored.sort(key=lambda kv: (-kv[1], kv[0]))
+    return scored[:top_k]
+
+
+def _rank_vector(chunks: list[SourceChunk], query: str, top_k: int) -> list[tuple[str, float]]:
+    q = set(_tokens(query))
+    scored: list[tuple[str, float]] = []
+    for c in chunks:
+        toks = set(_tokens(c.vector_text))
+        if toks and q:
+            jaccard = len(q & toks) / len(q | toks)
+            if jaccard > 0:
+                scored.append((c.chunk_id, jaccard))
+    scored.sort(key=lambda kv: (-kv[1], kv[0]))
+    return scored[:top_k]
 
 
 class InMemoryChunkSearchBackend:
@@ -39,28 +66,16 @@ class InMemoryChunkSearchBackend:
         self._table = [c for c in chunks if c.is_table]
 
     async def fulltext_search(self, query: str, top_k: int) -> list[tuple[str, float]]:
-        q = _tokens(query)
-        scored: list[tuple[str, float]] = []
-        for c in self._text:
-            toks = _tokens(c.fulltext)
-            score = sum(toks.count(t) for t in q)
-            if score > 0:
-                scored.append((c.chunk_id, float(score)))
-        scored.sort(key=lambda kv: (-kv[1], kv[0]))
-        return scored[:top_k]
+        return _rank_fulltext(self._text, query, top_k)
 
     async def vector_search(self, query: str, top_k: int) -> list[tuple[str, float]]:
-        q = set(_tokens(query))
-        scored: list[tuple[str, float]] = []
-        for c in self._text:
-            toks = set(_tokens(c.vector_text))
-            if not toks or not q:
-                continue
-            jaccard = len(q & toks) / len(q | toks)
-            if jaccard > 0:
-                scored.append((c.chunk_id, jaccard))
-        scored.sort(key=lambda kv: (-kv[1], kv[0]))
-        return scored[:top_k]
+        return _rank_vector(self._text, query, top_k)
+
+    async def table_fulltext_search(self, query: str, top_k: int) -> list[tuple[str, float]]:
+        return _rank_fulltext(self._table, query, top_k)
+
+    async def table_vector_search(self, query: str, top_k: int) -> list[tuple[str, float]]:
+        return _rank_vector(self._table, query, top_k)
 
 
 class InMemoryGraphExpansion:
@@ -200,3 +215,24 @@ class InMemoryEvidenceResolver:
                     )
                 )
         return ResolutionResult(resolved=resolved, rejected=rejected)
+
+
+class FakeSqlRunner:
+    """Offline stand-in for the SQL module. Maps a payload_id to a canned typed
+    outcome; unknown payloads return not_applicable. Records the requests it saw
+    so tests can assert the fan-out ran exactly the selected payloads."""
+
+    def __init__(self, outcomes: dict[str, SQLResult]) -> None:
+        self._outcomes = outcomes
+        self.seen: list[str] = []
+
+    async def run(self, request: SqlRequest) -> SQLResult:
+        self.seen.append(request.payload_id)
+        canned = self._outcomes.get(request.payload_id)
+        if canned is not None:
+            return canned
+        return SQLResult(
+            payload_id=request.payload_id,
+            chunk_id=request.chunk_id,
+            status=SQLStatus.not_applicable,
+        )
