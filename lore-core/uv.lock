@@ -14,6 +14,7 @@ members = [
     "datacraft-chainlit",
     "lore-audit-api",
     "lore-audit-core",
+    "lore-core-domain",
 ]
 
 [[package]]
@@ -1425,11 +1426,20 @@ name = "lore-audit-core"
 version = "0.1.0"
 source = { editable = "packages/lore-audit-core" }
 dependencies = [
+    { name = "lore-core-domain" },
     { name = "psycopg", extra = ["binary", "pool"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "psycopg", extras = ["binary", "pool"], specifier = "==3.3.4" }]
+requires-dist = [
+    { name = "lore-core-domain", editable = "packages/lore-core-domain" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = "==3.3.4" },
+]
+
+[[package]]
+name = "lore-core-domain"
+version = "0.1.0"
+source = { editable = "packages/lore-core-domain" }
 
 [[package]]
 name = "markupsafe"

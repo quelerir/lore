@@ -1,12 +1,12 @@
 [project]
-name = "lore-audit-core"
+name = "lore-core-domain"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = ["lore-core-domain", "psycopg[binary,pool]==3.3.4"]
+dependencies = []
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lore_audit"]
+packages = ["src/lore_core_domain"]

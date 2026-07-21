@@ -1,11 +1,2 @@
-from __future__ import annotations
-
-from enum import StrEnum
-
-
-class RunStatus(StrEnum):
-    ACTIVE = "active"
-    SUCCESS = "success"
-    SKIPPED = "skipped"
-    FAILED = "failed"
-    STALE = "stale"
+from lore_core_domain.run_status import *  # noqa: F401,F403
+from lore_core_domain.run_status import RunStatus  # noqa: F401

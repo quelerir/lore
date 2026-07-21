@@ -2,5 +2,6 @@
 members = ["packages/*", "services/*"]
 
 [tool.uv.sources]
+lore-core-domain = { workspace = true }
 lore-audit-core = { workspace = true }
 lore-audit-api = { workspace = true }
