@@ -16,6 +16,8 @@ dependencies = [
     "sqlglot>=30.12.0",
     "langsmith>=0.2",
     "psycopg[binary,pool]==3.3.4",
+    "lore-audit-core",
+    "lore-audit-api",
 ]
 
 [tool.setuptools]
