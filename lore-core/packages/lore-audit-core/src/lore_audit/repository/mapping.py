@@ -16,7 +16,7 @@ from lore_audit.read_contracts import (
     SemanticPreflightCounts,
 )
 from lore_audit.read_cursor import CursorCodec, TextWindowBuilder
-from lore_audit.run_status import RunStatus
+from lore_core_domain.run_status import RunStatus
 from lore_audit.read_contracts import AuditReadError, ChunkDetail, ChunkDetailRequest
 
 

@@ -36,7 +36,7 @@ from lore_audit.read_contracts import (
     TableFilter,
     TablePageRequest,
 )
-from lore_audit.run_status import RunStatus
+from lore_core_domain.run_status import RunStatus
 
 RUN_ID = "00000000-0000-0000-0000-000000000023"
 

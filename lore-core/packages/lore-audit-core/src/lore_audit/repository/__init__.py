@@ -48,7 +48,7 @@ from lore_audit.postgres_connections import acquire_postgres_connection
 from lore_audit.read_cursor import CursorCodec, TextWindowBuilder
 from lore_audit.registration import parse_payload_registration
 from lore_audit.validation import safe_json_to_dict
-from lore_audit.run_status import RunStatus
+from lore_core_domain.run_status import RunStatus
 from lore_audit.repository.queries import (
     _CHUNK_COLUMNS,
     _DIAGNOSTIC_SORT,

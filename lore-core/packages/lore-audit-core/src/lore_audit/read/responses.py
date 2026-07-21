@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, ClassVar
 
-from lore_audit.run_status import RunStatus
+from lore_core_domain.run_status import RunStatus
 from lore_audit.validation import (
     canonicalize_safe_json,
     safe_json_to_dict,

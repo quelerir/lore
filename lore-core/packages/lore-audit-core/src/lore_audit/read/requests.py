@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, ClassVar
 
-from lore_audit.run_status import RunStatus
+from lore_core_domain.run_status import RunStatus
 from lore_audit.validation import canonicalize_safe_json
 from lore_audit.read.enums import _BYTE_CAP, _COUNT_CAP
 

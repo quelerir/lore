@@ -1395,6 +1395,7 @@ source = { editable = "services/lore-audit-api" }
 dependencies = [
     { name = "fastapi" },
     { name = "lore-audit-core" },
+    { name = "lore-core-domain" },
     { name = "psycopg", extra = ["binary", "pool"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -1411,6 +1412,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.117" },
     { name = "lore-audit-core", editable = "packages/lore-audit-core" },
+    { name = "lore-core-domain", editable = "packages/lore-core-domain" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = "==3.3.4" },
     { name = "pydantic", specifier = ">=2.12" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },

@@ -36,7 +36,7 @@ from lore_audit.read_contracts import (
     TablePageRequest,
     TableSampleRequest,
 )
-from lore_audit.run_status import RunStatus
+from lore_core_domain.run_status import RunStatus
 
 
 def _bounded_utf8(value: str, *, maximum: int, empty: bool = False) -> str:

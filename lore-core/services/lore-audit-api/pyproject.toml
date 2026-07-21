@@ -3,6 +3,7 @@ name = "lore-audit-api"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
+    "lore-core-domain",
     "lore-audit-core",
     "fastapi>=0.117",
     "pydantic>=2.12",

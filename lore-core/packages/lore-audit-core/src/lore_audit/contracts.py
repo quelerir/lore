@@ -8,7 +8,7 @@ from datetime import datetime
 from types import MappingProxyType
 from typing import Any
 
-from lore_audit.run_status import RunStatus
+from lore_core_domain.run_status import RunStatus
 
 from lore_audit.validation import (
     build_diagnostic_key,

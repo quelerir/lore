@@ -5,7 +5,7 @@ def test_audit_package_imports_without_airflow():
     import lore_audit.read_repositories
     import lore_audit.read_adapters
     import lore_audit.read_cursor
-    from lore_audit.run_status import RunStatus
+    from lore_core_domain.run_status import RunStatus
 
     import audit_mount
     import audit_auth
