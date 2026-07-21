@@ -135,13 +135,16 @@ class InMemoryGraphExpansion:
                     if neighbour is not None:
                         emit(neighbour, Route.next_neighbor, self._chunk_section.get(neighbour))
 
+            if sec_id is None:
+                continue
+
             # in-section siblings, bounded
             for sib in self._section_chunks.get(sec_id, [])[:max_siblings + 1]:
                 if sib != seed:
                     emit(sib, Route.section_child, sec_id)
 
             # one-level parent ascent, bounded
-            section = self._section_by_id.get(sec_id) if sec_id else None
+            section = self._section_by_id.get(sec_id)
             if parent_ascent > 0 and section and section.parent_section_id:
                 pid = section.parent_section_id
                 for c in self._section_chunks.get(pid, [])[:max_siblings]:

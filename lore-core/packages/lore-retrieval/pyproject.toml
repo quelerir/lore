@@ -15,12 +15,22 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "ruff>=0.15"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "ruff>=0.15", "mypy>=1.13"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
+
+[tool.mypy]
+python_version = "3.13"
+mypy_path = "src"
+packages = ["lore_retrieval"]
+ignore_missing_imports = true       # neo4j / asyncpg / langchain / httpx stubs absent
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
