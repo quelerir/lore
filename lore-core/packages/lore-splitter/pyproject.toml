@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "lore-core-domain",
+    "lore-audit-core",
     "defusedxml==0.7.1",
     "markitdown[docx,pptx,pdf]==0.1.6",
     "openpyxl==3.1.5",
@@ -20,3 +21,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lore_splitter"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

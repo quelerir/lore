@@ -297,7 +297,7 @@ def test_document_output_bundle_serializes_paths_kind_and_metadata_payloads() ->
 def test_markdown_package_exports_only_stable_contract_symbols() -> None:
     import lore_splitter.markdown as markdown
 
-    # NOTE(task-1): __all__ is trimmed to contracts-only; impl symbols restored in later tasks.
+    # NOTE(task-1): contracts-only. NOTE(task-2): profile/toast impl added for storage tests.
     assert set(markdown.__all__) == {
         "ColumnProfile",
         "DocumentOutputBundle",
@@ -307,7 +307,12 @@ def test_markdown_package_exports_only_stable_contract_symbols() -> None:
         "TableDataExtractionResult",
         "TableProfile",
         "ToastDecision",
+        "ToastThresholds",
         "WorkbookOutputBundle",
         "XlsxTableLocation",
+        "classify_table",
+        "content_signature",
+        "profile_table",
+        "toast_id",
     }
     assert not any(name.startswith("_") for name in markdown.__all__)

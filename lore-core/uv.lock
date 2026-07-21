@@ -1523,6 +1523,7 @@ version = "0.1.0"
 source = { editable = "packages/lore-splitter" }
 dependencies = [
     { name = "defusedxml" },
+    { name = "lore-audit-core" },
     { name = "lore-core-domain" },
     { name = "markitdown", extra = ["docx", "pdf", "pptx"] },
     { name = "openpyxl" },
@@ -1536,6 +1537,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "defusedxml", specifier = "==0.7.1" },
+    { name = "lore-audit-core", editable = "packages/lore-audit-core" },
     { name = "lore-core-domain", editable = "packages/lore-core-domain" },
     { name = "markitdown", extras = ["docx", "pptx", "pdf"], specifier = "==0.1.6" },
     { name = "openpyxl", specifier = "==3.1.5" },
