@@ -15,6 +15,7 @@ members = [
     "lore-audit-api",
     "lore-audit-core",
     "lore-core-domain",
+    "lore-splitter",
 ]
 
 [[package]]
@@ -1442,6 +1443,17 @@ requires-dist = [
 name = "lore-core-domain"
 version = "0.1.0"
 source = { editable = "packages/lore-core-domain" }
+
+[[package]]
+name = "lore-splitter"
+version = "0.1.0"
+source = { editable = "packages/lore-splitter" }
+dependencies = [
+    { name = "lore-core-domain" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "lore-core-domain", editable = "packages/lore-core-domain" }]
 
 [[package]]
 name = "markupsafe"
