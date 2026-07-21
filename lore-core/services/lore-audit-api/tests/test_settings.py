@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from lore_audit_api.settings import AuditApiSettings
 

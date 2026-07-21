@@ -15,9 +15,9 @@ from lore_audit.read import (
     RunComparison,
     SemanticPreflightCounts,
 )
-from lore_audit.read_cursor import CursorCodec, TextWindowBuilder
+from lore_audit.read_cursor import TextWindowBuilder
 from lore_core_domain.run_status import RunStatus
-from lore_audit.read import AuditReadError, ChunkDetail, ChunkDetailRequest
+from lore_audit.read import ChunkDetail, ChunkDetailRequest
 
 
 def map_file(row: Any) -> FileCard:

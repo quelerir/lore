@@ -8,19 +8,6 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from lore_audit_api.factory import create_audit_app
-from lore_audit_api.http.limits import AuditHttpLimits
-
-
-def _allow_anon() -> dict[str, str]:
-    """Injected auth dependency stand-in that authorizes every request."""
-    return {"identifier": "test", "username": "test"}
-
-
-def _app(service: object, limits: AuditHttpLimits | None = None):
-    return create_audit_app(
-        service=service, limits=limits, auth_dependency=_allow_anon
-    )
 from lore_audit.read import (
     Availability,
     ChunkBatchRequest,
@@ -49,6 +36,19 @@ from lore_audit.read import (
     TableProfileRequest,
     TableSampleRequest,
 )
+from lore_audit_api.factory import create_audit_app
+from lore_audit_api.http.limits import AuditHttpLimits
+
+
+def _allow_anon() -> dict[str, str]:
+    """Injected auth dependency stand-in that authorizes every request."""
+    return {"identifier": "test", "username": "test"}
+
+
+def _app(service: object, limits: AuditHttpLimits | None = None):
+    return create_audit_app(
+        service=service, limits=limits, auth_dependency=_allow_anon
+    )
 
 RUN_A = "00000000-0000-0000-0000-000000000001"
 RUN_B = "00000000-0000-0000-0000-000000000002"
