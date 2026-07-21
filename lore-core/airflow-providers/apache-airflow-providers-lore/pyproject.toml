@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "apache-airflow-providers-lore"
+version = "0.1.0"
+description = "Apache Airflow provider for Lore Splitter operators"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [{ name = "Adventum", email = "n.sushchenko@adventum.ru" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "PyYAML==6.0.3",
+    "lore-splitter",
+    "lore-audit-core",
+]
+
+[project.optional-dependencies]
+airflow = ["apache-airflow>=3.1.7,<4.0.0"]
+postgres = ["psycopg==3.3.4"]
+
+[project.entry-points.apache_airflow_provider]
+provider_info = "airflow.providers.lore.get_provider_info:get_provider_info"
+
+[project.urls]
+Homepage = "https://github.com/adventum/agent-lore"
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[tool.uv.sources]
+lore-splitter = { path = "../../packages/lore-splitter", editable = true }
+lore-audit-core = { path = "../../packages/lore-audit-core", editable = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["airflow"]

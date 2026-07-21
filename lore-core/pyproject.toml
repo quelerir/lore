@@ -1,5 +1,6 @@
 [tool.uv.workspace]
 members = ["packages/*", "services/*"]
+exclude = ["airflow-providers/*"]
 
 [tool.uv.sources]
 lore-core-domain = { workspace = true }
