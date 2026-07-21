@@ -18,7 +18,7 @@ from pydantic import (
     model_validator,
 )
 
-from audit.http_api.limits import AuditHttpLimits
+from lore_audit_api.http.limits import AuditHttpLimits
 from lore_audit.read_contracts import (
     AuditReadError,
     ChunkBatchRequest,

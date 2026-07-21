@@ -1,4 +1,4 @@
-from audit.pool import AuditConnectionPool
+from lore_audit_api.pool import AuditConnectionPool
 
 
 class _FakeCtx:

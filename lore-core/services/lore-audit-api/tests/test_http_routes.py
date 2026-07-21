@@ -8,8 +8,19 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from audit.http_api.factory import create_audit_app
-from audit.http_api.limits import AuditHttpLimits
+from lore_audit_api.factory import create_audit_app
+from lore_audit_api.http.limits import AuditHttpLimits
+
+
+def _allow_anon() -> dict[str, str]:
+    """Injected auth dependency stand-in that authorizes every request."""
+    return {"identifier": "test", "username": "test"}
+
+
+def _app(service: object, limits: AuditHttpLimits | None = None):
+    return create_audit_app(
+        service=service, limits=limits, auth_dependency=_allow_anon
+    )
 from lore_audit.read_contracts import (
     Availability,
     ChunkBatchRequest,
@@ -85,7 +96,7 @@ class RecordingService:
 
 def _client(results: dict[str, object] | None = None) -> tuple[TestClient, RecordingService]:
     service = RecordingService(results)
-    return TestClient(create_audit_app(service, LIMITS)), service
+    return TestClient(_app(service, LIMITS)), service
 
 
 def _bounds(*, page_size: int = 11, max_text_bytes: int = 4096):
@@ -387,8 +398,8 @@ def _property_names(value: object) -> set[str]:
 
 
 def test_openapi_is_exact_deterministic_and_read_only() -> None:
-    first = create_audit_app(RecordingService(), LIMITS).openapi()
-    second = create_audit_app(RecordingService(), LIMITS).openapi()
+    first = _app(RecordingService(), LIMITS).openapi()
+    second = _app(RecordingService(), LIMITS).openapi()
     rendered = json.dumps(first, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     rerendered = json.dumps(second, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
 
@@ -437,7 +448,8 @@ def test_openapi_is_exact_deterministic_and_read_only() -> None:
 
 
 def test_http_subpackage_exports_only_the_explicit_factory_surface() -> None:
-    from audit import http_api
+    import lore_audit_api
+    from lore_audit_api import http
 
-    assert http_api.create_audit_app is create_audit_app
-    assert callable(http_api.create_audit_router)
+    assert lore_audit_api.create_audit_app is create_audit_app
+    assert callable(http.create_audit_router)

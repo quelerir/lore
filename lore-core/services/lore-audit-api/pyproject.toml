@@ -6,9 +6,19 @@ dependencies = [
     "lore-audit-core",
     "fastapi>=0.117",
     "pydantic>=2.12",
+    "pydantic-settings>=2.14.2",
+    "pyjwt>=2.8",
     "uvicorn>=0.34",
     "psycopg[binary,pool]==3.3.4",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [build-system]
 requires = ["hatchling"]

@@ -12,7 +12,7 @@ import os
 
 import pytest
 
-from audit.pool import build_audit_pool
+from lore_audit_api.pool import build_audit_pool
 
 DSN = os.environ.get("AUDIT_TEST_DSN")
 

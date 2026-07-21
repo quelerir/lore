@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHttpException
 
-from audit.http_api.contracts import AuditHttpErrorEnvelope
+from lore_audit_api.http.contracts import AuditHttpErrorEnvelope
 from lore_audit.read_contracts import AuditReadError
 
 if TYPE_CHECKING:

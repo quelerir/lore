@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from audit.http_api.contracts import (
+from lore_audit_api.http.contracts import (
     ChunkBatchBody,
     ChunkDetailQuery,
     ChunkNeighborsQuery,
@@ -23,8 +23,8 @@ from audit.http_api.contracts import (
     TablePageBody,
     TableSampleBody,
 )
-from audit.http_api.limits import AuditHttpLimits
-from audit.http_api.errors import (
+from lore_audit_api.http.limits import AuditHttpLimits
+from lore_audit_api.http.errors import (
     install_safe_error_handlers,
     normalize_http_error,
 )

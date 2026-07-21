@@ -10,9 +10,24 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-from audit.http_api.factory import create_audit_app
-from audit.http_api.middleware import AuditHttpMiddleware
+from lore_audit_api.factory import create_audit_app as _create_audit_app
+from lore_audit_api.http.middleware import AuditHttpMiddleware
 from lore_audit.read_contracts import AuditReadError
+
+
+def _allow_anon() -> dict[str, str]:
+    """Injected auth dependency stand-in that authorizes every request."""
+    return {"identifier": "test", "username": "test"}
+
+
+def create_audit_app(service, limits=None, *, shutdown=None):
+    """Adapter to the keyword-only injected-auth factory signature."""
+    return _create_audit_app(
+        service=service,
+        limits=limits,
+        auth_dependency=_allow_anon,
+        shutdown=shutdown,
+    )
 
 RUN_ID = "00000000-0000-0000-0000-000000000023"
 

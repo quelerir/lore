@@ -8,7 +8,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Query, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from audit.http_api.contracts import (
+from lore_audit_api.http.contracts import (
     ChunkBatchBody,
     ChunkDetailQuery,
     ChunkNeighborsQuery,
@@ -27,7 +27,7 @@ from audit.http_api.contracts import (
     TablePageBody,
     TableSampleBody,
 )
-from audit.http_api.limits import AuditHttpLimits
+from lore_audit_api.http.limits import AuditHttpLimits
 from lore_audit.image_safety import validate_safe_raster_payload
 from lore_audit.read_contracts import (
     AuditReadError,
