@@ -77,6 +77,27 @@ class SQLStatus(str, Enum):
     timeout = "timeout"
 
 
+class TableProfile(BaseModel):
+    """Bounded description of a registered table: purpose, columns, types, and a
+    few sample values. It cannot enumerate every row — a query value absent from
+    samples must not reject an otherwise-expressible schema."""
+
+    payload_id: str
+    purpose: str = ""
+    columns: list[str] = []
+    column_types: dict[str, str] = {}
+    sample_values: dict[str, list] = {}
+
+
+class QueryRequirements(BaseModel):
+    """A lightweight extraction of what the question needs. Helps assess schema
+    feasibility; it is not a pre-retrieval SQL gate and cannot pick a table."""
+
+    concepts: list[str] = []
+    filters: list[str] = []
+    measures: list[str] = []
+
+
 class SqlRequest(BaseModel):
     question: str
     payload_id: str
