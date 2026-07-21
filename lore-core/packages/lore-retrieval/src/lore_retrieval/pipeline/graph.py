@@ -12,7 +12,7 @@ is identical whether called directly or from a graph node.
 """
 import asyncio
 
-from lore_retrieval.contracts import ContextGroup, PipelineResult, SQLResult, TableCandidate
+from lore_retrieval.contracts import PipelineResult, SQLResult, TableCandidate
 from lore_retrieval.interfaces import (
     ChatModel,
     ChunkSearchBackend,
@@ -23,6 +23,7 @@ from lore_retrieval.interfaces import (
     TableSearchBackend,
 )
 from lore_retrieval.pipeline.arbitration import arbitrate_and_answer
+from lore_retrieval.pipeline.citation import build_citations
 from lore_retrieval.pipeline.expansion import expand_from_fanout
 from lore_retrieval.pipeline.fanout import fan_out_and_fuse
 from lore_retrieval.pipeline.grouping import build_context_groups
@@ -61,11 +62,14 @@ class RetrievalPipeline:
         positions: dict[str, int],
         text_by_id: dict[str, str],
         payload_by_chunk: dict[str, str],
+        file_key_resolver=None,  # optional: async .resolve(run_ids) -> {run_id: logical_file_key}
         index_version: str = "spike1",
         seed_count: int = 10,
         rerank_top_k: int = 12,
         table_floor: float = 0.0,
         max_sql: int = 5,
+        citation_limit: int = 8,
+        citation_preview_chars: int = 160,
     ) -> None:
         self._chunk_search = chunk_search
         self._graph_expansion = graph_expansion
@@ -78,31 +82,52 @@ class RetrievalPipeline:
         self._positions = positions
         self._text_by_id = text_by_id
         self._payload_by_chunk = payload_by_chunk
+        self._file_key_resolver = file_key_resolver
         self._index_version = index_version
         self._seed_count = seed_count
         self._rerank_top_k = rerank_top_k
         self._table_floor = table_floor
         self._max_sql = max_sql
+        self._citation_limit = citation_limit
+        self._citation_preview_chars = citation_preview_chars
 
     async def answer(self, question: str) -> PipelineResult:
         degradations: list[str] = []
-        (groups, rejected), (table_candidates, sql_results) = await asyncio.gather(
+        (groups, resolution), (table_candidates, sql_results) = await asyncio.gather(
             self._text_lane(question, degradations),
             self._table_lane(question, degradations),
         )
         decision = await arbitrate_and_answer(self._chat_model, question, groups, sql_results)
+        citations = await self._cite(decision, resolution.resolved)
         return PipelineResult(
             decision=decision,
             groups=groups,
             sql_results=sql_results,
             table_candidates=table_candidates,
-            rejected_evidence=rejected,
+            citations=citations,
+            rejected_evidence=resolution.rejected,
             degradations=degradations,
         )
 
-    async def _text_lane(
-        self, question: str, degradations: list[str]
-    ) -> tuple[list[ContextGroup], list[tuple[str, str]]]:
+    async def _cite(self, decision, envelopes):
+        """Dedicated cite step: resolve the model's [n] markers into Citations."""
+        if not decision.evidence_map:
+            return []
+        envelope_by_chunk = {e.chunk_id: e for e in envelopes}
+        run_ids = list({e.run_id for e in envelopes})
+        file_key_by_run = (
+            await self._file_key_resolver.resolve(run_ids) if self._file_key_resolver else {}
+        )
+        return build_citations(
+            decision.answer,
+            decision.evidence_map,
+            envelope_by_chunk,
+            file_key_by_run,
+            preview_chars=self._citation_preview_chars,
+            limit=self._citation_limit,
+        )
+
+    async def _text_lane(self, question: str, degradations: list[str]):
         fanout = await fan_out_and_fuse(self._chunk_search, question, index_version=self._index_version)
 
         # Structural expansion is discovery — degrade gracefully if it fails.
@@ -130,7 +155,7 @@ class RetrievalPipeline:
         groups = build_context_groups(
             reranked_valid, self._projection, self._positions, self._text_by_id
         )
-        return groups, resolution.rejected
+        return groups, resolution
 
     async def _table_lane(
         self, question: str, degradations: list[str]
