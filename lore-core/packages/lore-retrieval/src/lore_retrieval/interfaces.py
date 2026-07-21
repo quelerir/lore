@@ -7,6 +7,8 @@ orchestration depends only on these Protocols, so backends swap by injection.
 """
 from typing import Protocol, runtime_checkable
 
+from lore_retrieval.contracts import RetrievalCandidate
+
 
 @runtime_checkable
 class ChunkSearchBackend(Protocol):
@@ -18,3 +20,35 @@ class ChunkSearchBackend(Protocol):
 
     async def vector_search(self, query: str, top_k: int) -> list[tuple[str, float]]: ...
     async def fulltext_search(self, query: str, top_k: int) -> list[tuple[str, float]]: ...
+
+
+@runtime_checkable
+class GraphExpansionBackend(Protocol):
+    """Bounded structural expansion from seed chunks.
+
+    For each seed, discover the containing section's siblings, direct NEXT
+    neighbours, and (at most one level up) the parent section's chunks. Every
+    returned candidate carries a structural route and a bounded path summary.
+    All caps are enforced; no route returns unbounded nodes.
+    """
+
+    async def expand(
+        self,
+        seed_chunk_ids: list[str],
+        *,
+        max_next: int = 1,
+        max_siblings: int = 3,
+        parent_ascent: int = 1,
+    ) -> list[RetrievalCandidate]: ...
+
+
+@runtime_checkable
+class Reranker(Protocol):
+    """Cross-encoder rerank of ``(chunk_id, text)`` docs against the query.
+
+    Returns ``(chunk_id, score)`` ranked best-first, bounded by ``top_k``.
+    """
+
+    async def rerank(
+        self, query: str, docs: list[tuple[str, str]], top_k: int
+    ) -> list[tuple[str, float]]: ...
