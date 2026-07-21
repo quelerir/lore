@@ -16,13 +16,15 @@ from tests.test_xlsx_fixtures import (
     _write_manifest,
 )
 
+_TESTS_DIR = Path(__file__).parent
+
 
 def test_dry_run_pipeline_writes_artifacts_and_compact_summary(tmp_path) -> None:
     from lore_splitter.pipeline import PipelineConfig, run
 
     config = PipelineConfig(
-        manifest_path=Path("tests/fixtures/xlsx_manifest.jsonl"),
-        input_root=Path("tests/fixtures"),
+        manifest_path=_TESTS_DIR / "fixtures" / "xlsx_manifest.jsonl",
+        input_root=_TESTS_DIR / "fixtures",
         output_dir=tmp_path,
         storage_mode="dry_run",
         embedding_byte_budget=2048,
@@ -84,8 +86,8 @@ def test_pipeline_config_thresholds_affect_metadata_and_toast_decisions(tmp_path
     from lore_splitter.pipeline import PipelineConfig, run
 
     config = PipelineConfig(
-        manifest_path=Path("tests/fixtures/xlsx_manifest.jsonl"),
-        input_root=Path("tests/fixtures"),
+        manifest_path=_TESTS_DIR / "fixtures" / "xlsx_manifest.jsonl",
+        input_root=_TESTS_DIR / "fixtures",
         output_dir=tmp_path,
         storage_mode="dry_run",
         embedding_byte_budget=4096,
@@ -132,8 +134,8 @@ def test_storage_backed_pipeline_uses_supplied_store_for_toast_tables(tmp_path) 
 
     store = FakeTableToastStore()
     config = PipelineConfig(
-        manifest_path=Path("tests/fixtures/xlsx_manifest.jsonl"),
-        input_root=Path("tests/fixtures"),
+        manifest_path=_TESTS_DIR / "fixtures" / "xlsx_manifest.jsonl",
+        input_root=_TESTS_DIR / "fixtures",
         output_dir=tmp_path,
         storage_mode="postgres",
         table_store=store,
@@ -184,8 +186,8 @@ def test_failed_storage_result_raises_after_writing_partial_diagnostics(tmp_path
 
     store = FailingStore()
     config = PipelineConfig(
-        manifest_path=Path("tests/fixtures/xlsx_manifest.jsonl"),
-        input_root=Path("tests/fixtures"),
+        manifest_path=_TESTS_DIR / "fixtures" / "xlsx_manifest.jsonl",
+        input_root=_TESTS_DIR / "fixtures",
         output_dir=tmp_path,
         storage_mode="postgres",
         table_store=store,
@@ -331,8 +333,8 @@ def test_runner_veri_02_repeated_runs_write_identical_toast_ids_and_references(
 
     first = run(
         PipelineConfig(
-            manifest_path=Path("tests/fixtures/xlsx_manifest.jsonl"),
-            input_root=Path("tests/fixtures"),
+            manifest_path=_TESTS_DIR / "fixtures" / "xlsx_manifest.jsonl",
+            input_root=_TESTS_DIR / "fixtures",
             output_dir=tmp_path / "first",
             storage_mode="dry_run",
             toast_min_rows=1,
@@ -342,8 +344,8 @@ def test_runner_veri_02_repeated_runs_write_identical_toast_ids_and_references(
     )
     second = run(
         PipelineConfig(
-            manifest_path=Path("tests/fixtures/xlsx_manifest.jsonl"),
-            input_root=Path("tests/fixtures"),
+            manifest_path=_TESTS_DIR / "fixtures" / "xlsx_manifest.jsonl",
+            input_root=_TESTS_DIR / "fixtures",
             output_dir=tmp_path / "second",
             storage_mode="dry_run",
             toast_min_rows=1,
@@ -362,8 +364,8 @@ def test_runner_veri_03_metadata_threshold_reads_generated_embedding_files(
     from lore_splitter.pipeline import PipelineConfig, run
 
     config = PipelineConfig(
-        manifest_path=Path("tests/fixtures/xlsx_manifest.jsonl"),
-        input_root=Path("tests/fixtures"),
+        manifest_path=_TESTS_DIR / "fixtures" / "xlsx_manifest.jsonl",
+        input_root=_TESTS_DIR / "fixtures",
         output_dir=tmp_path,
         storage_mode="dry_run",
         embedding_byte_budget=2048,
@@ -388,8 +390,8 @@ def test_runner_veri_04_mixed_manifest_skips_unsupported_and_keeps_xlsx_output(
 
     result = run(
         PipelineConfig(
-            manifest_path=Path("tests/fixtures/xlsx_manifest.jsonl"),
-            input_root=Path("tests/fixtures"),
+            manifest_path=_TESTS_DIR / "fixtures" / "xlsx_manifest.jsonl",
+            input_root=_TESTS_DIR / "fixtures",
             output_dir=tmp_path,
             storage_mode="dry_run",
             toast_min_rows=2,
@@ -510,7 +512,7 @@ def test_mixed_document_workbook_pipeline_writes_unified_output_bundles(tmp_path
     _write_sparse_sheet_workbook(workbook_path)
     markdown_path.parent.mkdir(parents=True, exist_ok=True)
     markdown_path.write_text(
-        Path("tests/fixtures/documents/sample.md").read_text(encoding="utf-8"),
+        (_TESTS_DIR / "fixtures" / "documents" / "sample.md").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     document_fixtures = create_document_contract_fixtures(markdown_path.parent)
@@ -579,7 +581,7 @@ def test_markdown_document_pipeline_preserves_source_markdown_structure(tmp_path
     input_root = tmp_path / "fixtures"
     markdown_path = input_root / "staging" / "files" / "sample.md"
     markdown_path.parent.mkdir(parents=True, exist_ok=True)
-    expected_markdown = Path("tests/fixtures/documents/sample.md").read_text(encoding="utf-8")
+    expected_markdown = (_TESTS_DIR / "fixtures" / "documents" / "sample.md").read_text(encoding="utf-8")
     markdown_path.write_text(expected_markdown.replace("\n", "\r\n"), encoding="utf-8")
     manifest_path = _write_manifest(
         tmp_path,
@@ -1072,7 +1074,7 @@ def test_pipeline_object_store_failure_raises_with_partial_image_result(tmp_path
 def test_runner_veri_05_internal2_fixture_declares_222_records_and_3_22gb() -> None:
     rows = [
         json.loads(line)
-        for line in Path("tests/fixtures/internal2_manifest.jsonl").read_text().splitlines()
+        for line in (_TESTS_DIR / "fixtures" / "internal2_manifest.jsonl").read_text().splitlines()
         if line.strip()
     ]
     declared_bytes = sum(
