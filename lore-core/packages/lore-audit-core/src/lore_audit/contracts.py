@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import StrEnum
 from types import MappingProxyType
 from typing import Any
 
@@ -22,6 +21,7 @@ from lore_audit.validation import (
     validate_target_kind,
     utc_iso8601,
 )
+from lore_audit.enums import DiagnosticOrigin, LifecycleOutcome, RuleOutcome, Severity
 
 AUDIT_SNAPSHOT_SCHEMA_VERSION = "audit/snapshot/v1"
 RULE_RESULT_SCHEMA_VERSION = "audit/rule-result/v1"
@@ -42,31 +42,6 @@ def _require_non_negative(value: int, *, name: str) -> None:
         raise TypeError(f"{name} must be an integer")
     if value < 0:
         raise ValueError(f"{name} must be non-negative")
-
-
-class DiagnosticOrigin(StrEnum):
-    SPLITTER = "splitter"
-    AUDIT_RULE = "audit_rule"
-
-
-class Severity(StrEnum):
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
-    CRITICAL = "critical"
-
-
-class RuleOutcome(StrEnum):
-    PASS = "pass"
-    FINDING = "finding"
-    SUPPRESSED = "suppressed"
-    NOT_APPLICABLE = "not_applicable"
-
-
-class LifecycleOutcome(StrEnum):
-    COMPLETED = "completed"
-    FAILED = "failed"
-    NO_RUN = "no_run"
 
 
 @dataclass(frozen=True)
