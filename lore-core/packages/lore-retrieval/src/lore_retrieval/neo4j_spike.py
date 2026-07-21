@@ -113,6 +113,104 @@ async def fulltext_search(
         return [(r["chunk_id"], r["score"]) async for r in res]
 
 
+async def table_vector_search(
+    driver: AsyncDriver, database: str, index_version: str, query: str, embedder, top_k: int = 20
+) -> list[tuple[str, float]]:
+    _, table_label = _labels(index_version)
+    qvec = embedder.embed_query(query)
+    async with driver.session(database=database) as sess:
+        res = await sess.run(
+            "CALL db.index.vector.queryNodes($index, $k, $qvec) YIELD node, score "
+            "RETURN node.chunk_id AS chunk_id, score",
+            index=f"vec_{table_label}", k=top_k, qvec=qvec,
+        )
+        return [(r["chunk_id"], r["score"]) async for r in res]
+
+
+async def table_fulltext_search(
+    driver: AsyncDriver, database: str, index_version: str, query: str, top_k: int = 20
+) -> list[tuple[str, float]]:
+    _, table_label = _labels(index_version)
+    async with driver.session(database=database) as sess:
+        res = await sess.run(
+            "CALL db.index.fulltext.queryNodes($index, $q) YIELD node, score "
+            "RETURN node.chunk_id AS chunk_id, score ORDER BY score DESC LIMIT $k",
+            index=f"ft_{table_label}", q=query, k=top_k,
+        )
+        return [(r["chunk_id"], r["score"]) async for r in res]
+
+
+async def project_structure(
+    driver: AsyncDriver, database: str, index_version: str, projection
+) -> None:
+    """Write the P1 structural projection (Section nodes + HAS_SECTION/
+    HAS_SUBSECTION/HAS_CHUNK/NEXT) idempotently from a StructuralProjection.
+
+    UNVERIFIED against a live Neo4j — mock-tested only until an instance exists.
+    Chunk nodes are created by ``project_batch``; this links sections and order.
+    """
+    text_label, table_label = _labels(index_version)
+    sec_label = f"Section_{index_version.replace('-', '_')}"
+    async with driver.session(database=database) as sess:
+        sections = [
+            {
+                "section_id": s.section_id,
+                "document_id": s.document_id,
+                "heading_path": list(s.heading_path),
+                "depth": s.depth,
+                "position": s.position,
+                "parent_section_id": s.parent_section_id,
+                "chunk_ids": s.chunk_ids,
+            }
+            for s in projection.sections
+        ]
+        # Section nodes
+        await sess.run(
+            f"""
+            UNWIND $rows AS r
+            MERGE (s:{sec_label} {{section_id: r.section_id}})
+            SET s.document_id = r.document_id, s.heading_path = r.heading_path,
+                s.depth = r.depth, s.position = r.position
+            """,
+            rows=sections,
+        )
+        # HAS_SUBSECTION (parent section -> child section) or HAS_SECTION (document top-level)
+        await sess.run(
+            f"""
+            UNWIND $rows AS r
+            WITH r WHERE r.parent_section_id IS NOT NULL
+            MATCH (p:{sec_label} {{section_id: r.parent_section_id}})
+            MATCH (c:{sec_label} {{section_id: r.section_id}})
+            MERGE (p)-[:HAS_SUBSECTION]->(c)
+            """,
+            rows=sections,
+        )
+        # HAS_CHUNK (section -> its chunks), covering both retrieval-lane labels
+        for label in (text_label, table_label):
+            await sess.run(
+                f"""
+                UNWIND $rows AS r
+                UNWIND r.chunk_ids AS cid
+                MATCH (s:{sec_label} {{section_id: r.section_id}})
+                MATCH (c:{label} {{chunk_id: cid}})
+                MERGE (s)-[:HAS_CHUNK]->(c)
+                """,
+                rows=sections,
+            )
+        # NEXT (consecutive chunks within a document)
+        edges = [{"a": a, "b": b} for a, b in projection.next_edges]
+        for label in (text_label, table_label):
+            await sess.run(
+                f"""
+                UNWIND $edges AS e
+                MATCH (a:{label} {{chunk_id: e.a}})
+                MATCH (b:{label} {{chunk_id: e.b}})
+                MERGE (a)-[:NEXT]->(b)
+                """,
+                edges=edges,
+            )
+
+
 def rrf_fuse(
     routes: list[list[tuple[str, float]]], rrf_k: int = 60
 ) -> list[tuple[str, float]]:
