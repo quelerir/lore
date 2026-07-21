@@ -52,3 +52,23 @@ class EvidenceEnvelope(BaseModel):
 class ResolutionResult(BaseModel):
     resolved: list[EvidenceEnvelope]
     rejected: list[tuple[str, str]]  # (chunk_id, reason): missing|wrong_version|superseded|hash_mismatch
+
+
+class ContextGroup(BaseModel):
+    """A coherent local window of source context (small-to-big / parent-child).
+    Retains every canonical member ``chunk_id``; ``citations`` target the
+    original contributing chunks. Never spans documents; never the whole
+    document merely because two distant chunks matched."""
+
+    document_id: str
+    section_id: str
+    section_path: tuple[str, ...]
+    scope: str  # window | section | parent_section
+    chunk_ids: list[str]
+    start_position: int
+    end_position: int
+    text: str
+    retrieval_routes: list[str] = []
+    group_score: float
+    citations: list[str]
+    truncation_reason: str | None = None
