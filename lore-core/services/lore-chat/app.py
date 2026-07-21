@@ -18,7 +18,7 @@ from sqlalchemy.pool import NullPool
 from chainlit.server import app as _chainlit_app
 
 from agents import PROFILE_TO_MODE, Mode, build_agent
-from audit.mount import attach_audit_router
+from audit_mount import attach_audit_router
 from auth import verify_ticket
 from config import get_settings
 

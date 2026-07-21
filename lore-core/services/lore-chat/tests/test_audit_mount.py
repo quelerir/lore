@@ -1,38 +1,44 @@
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
+from lore_audit_api.http.auth import install_audit_auth_handler
+from lore_audit_api.http.errors import install_safe_error_handlers
 
-from audit.auth_dep import install_audit_auth_handler, require_audit_identity
-from audit.http_api.errors import install_safe_error_handlers
-from audit.mount import attach_audit_router
+import audit_mount
+from audit_auth import chat_auth_dependency
 
 
-def _fake_subapp() -> FastAPI:
-    """A stand-in for build_audit_app: prefix-less router + safe handlers + auth."""
+def _fake_audit_app() -> FastAPI:
+    """A stand-in for create_audit_app: single route + safe handlers + injected auth."""
     sub = FastAPI()
-    router = APIRouter()
 
-    @router.get("/ping")
+    @sub.get("/ping", dependencies=[Depends(chat_auth_dependency)])
     def ping():
         return {"ok": True}
 
-    sub.include_router(router, dependencies=[Depends(require_audit_identity)])
-    # Safe handlers register catch-alls for Exception/StarletteHTTPException; the
-    # auth handler must still win for AuditAuthError (more specific in the MRO).
+    # The real create_audit_app installs both; the auth handler must win for
+    # AuditAuthError (more specific in the MRO than the safe Exception catch-all).
     install_safe_error_handlers(sub)
     install_audit_auth_handler(sub)
     return sub
 
 
+class _Settings:
+    audit_db_dsn = "postgresql://u:p@db:5432/lore"
+    jwt_secret = "test-secret"
+
+
 def test_mount_guards_with_auth(monkeypatch):
     app = FastAPI()
+
     class _User:
         identifier = "u"
 
-    monkeypatch.setattr("audit.mount.build_audit_app", lambda s: _fake_subapp())
-    monkeypatch.setattr("audit.mount.get_settings", lambda: object())
+    monkeypatch.setattr(audit_mount, "get_settings", lambda: _Settings())
+    monkeypatch.setattr(audit_mount, "build_audit_service", lambda **kw: object())
+    monkeypatch.setattr(audit_mount, "create_audit_app", lambda **kw: _fake_audit_app())
     # Simulate a valid Chainlit session token (cookie or Bearer header).
-    monkeypatch.setattr("audit.auth_dep.decode_jwt", lambda t: _User())
-    assert attach_audit_router(app) is True
+    monkeypatch.setattr("audit_auth.decode_jwt", lambda t: _User())
+    assert audit_mount.attach_audit_router(app) is True
 
     client = TestClient(app)
     unauth = client.get("/api/v1/audit/ping")
@@ -45,7 +51,11 @@ def test_mount_guards_with_auth(monkeypatch):
 
 def test_mount_noop_when_unconfigured(monkeypatch):
     app = FastAPI()
-    monkeypatch.setattr("audit.mount.build_audit_app", lambda s: None)
-    monkeypatch.setattr("audit.mount.get_settings", lambda: object())
-    assert attach_audit_router(app) is False
+
+    class _Unconfigured:
+        audit_db_dsn = None
+        jwt_secret = "x"
+
+    monkeypatch.setattr(audit_mount, "get_settings", lambda: _Unconfigured())
+    assert audit_mount.attach_audit_router(app) is False
     assert TestClient(app).get("/api/v1/audit/ping").status_code == 404

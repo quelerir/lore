@@ -9,7 +9,7 @@ AUDIT_DEV_ALLOW_ANON=1 to skip auth locally. Never use in production.
 
 from fastapi import FastAPI
 
-from audit.mount import attach_audit_router
+from audit_mount import attach_audit_router
 
 app = FastAPI(title="Audit dev server")
 attached = attach_audit_router(app)

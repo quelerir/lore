@@ -1,4 +1,4 @@
-"""Auth for the audit router.
+"""Chat-side auth for the mounted audit router (cookie + ticket).
 
 Accepts the two credentials the backend already issues, so the existing frontend
 works unchanged:
@@ -8,29 +8,25 @@ works unchanged:
 2. A datacraft **HS256 ticket** as a Bearer header — the embedded/header-auth path
    (`@cl.header_auth_callback`). Validated via `verify_ticket`.
 
-Auth failures raise `AuditAuthError` (not `HTTPException`), so they are NOT swallowed
-by the audit safe-error handlers (which remap every `StarletteHTTPException` to
-`invalid_request`/400). A dedicated handler maps it to a clean 401.
+Auth failures raise `AuditAuthError` (the package's error type, so they are NOT
+swallowed by the audit safe-error handlers, and the package's dedicated 401
+handler — installed by `create_audit_app` — maps them to a clean 401). Only the
+identity-extraction dependency lives here; the error type and handler live in
+`lore_audit_api`, keeping chainlit out of the package.
 """
 
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
 from chainlit.auth import decode_jwt
 from chainlit.auth.cookie import get_token_from_cookies
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from lore_audit_api.http.auth import AuditAuthError
 
 from auth import verify_ticket
 
-if TYPE_CHECKING:
-    from fastapi import FastAPI
-
-
-class AuditAuthError(Exception):
-    """Raised when the audit request carries no valid session/ticket. Mapped to 401."""
+__all__ = ["AuditAuthError", "chat_auth_dependency"]
 
 
 def _extract_token(request: Request) -> str | None:
@@ -42,7 +38,7 @@ def _extract_token(request: Request) -> str | None:
     return get_token_from_cookies(request.cookies)
 
 
-def require_audit_identity(request: Request) -> dict[str, str]:
+def chat_auth_dependency(request: Request) -> dict[str, str]:
     """Authorize via Chainlit session (cookie/header) or a datacraft HS256 ticket."""
     # DEV ONLY: local demo bypass, off by default. Never set in production.
     if os.environ.get("AUDIT_DEV_ALLOW_ANON") in ("1", "true", "yes"):
@@ -69,21 +65,3 @@ def require_audit_identity(request: Request) -> dict[str, str]:
         "username": claims["username"],
         "sub": claims["sub"],
     }
-
-
-async def _audit_auth_error_handler(request: Request, exc: AuditAuthError) -> JSONResponse:
-    del request, exc
-    return JSONResponse(
-        status_code=401,
-        content={
-            "schema_version": "audit-http/error/v1",
-            "code": "unauthorized",
-            "message": "authentication required",
-            "resource": None,
-        },
-    )
-
-
-def install_audit_auth_handler(app: "FastAPI") -> None:
-    """Register the 401 handler. More specific than the safe Exception catch-all."""
-    app.add_exception_handler(AuditAuthError, _audit_auth_error_handler)
