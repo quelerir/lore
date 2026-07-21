@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any, Callable, Protocol, TypeVar
 
-from audit.read_contracts import (
+from lore_audit.read_contracts import (
     AuditReadError,
     Availability,
     ChunkBatchRequest,
@@ -47,7 +47,7 @@ from audit.read_contracts import (
     TableRowPage,
     TableSampleRequest,
 )
-from audit.read_repositories import (
+from lore_audit.read_repositories import (
     AuditCoreReadRepository,
     PayloadReadResult,
     RegisteredPayloadToken,

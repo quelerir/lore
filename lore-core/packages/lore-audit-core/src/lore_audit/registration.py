@@ -8,13 +8,13 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from audit.engine_contracts import (
+from lore_audit.engine_contracts import (
     PayloadResolutionFact,
     PhysicalResolution,
 )
-from audit.image_safety import validate_safe_raster_content_type
-from audit.validation import validate_target_id
-from audit._vendor.storage_contracts import (
+from lore_audit.image_safety import validate_safe_raster_content_type
+from lore_audit.validation import validate_target_id
+from lore_audit.storage_contracts import (
     ImageToastStorageResult,
     TableToastStorageResult,
 )

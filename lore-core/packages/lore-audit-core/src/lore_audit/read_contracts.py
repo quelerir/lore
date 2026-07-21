@@ -8,12 +8,12 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, ClassVar
 
-from audit.validation import (
+from lore_audit.validation import (
     canonicalize_safe_json,
     safe_json_to_dict,
     utc_iso8601,
 )
-from audit._vendor.run_status import RunStatus
+from lore_audit.run_status import RunStatus
 
 _ERROR_MESSAGES = {
     "invalid_request": "audit read request is invalid",

@@ -28,7 +28,7 @@ from audit.http_api.errors import (
     install_safe_error_handlers,
     normalize_http_error,
 )
-from audit.read_contracts import (
+from lore_audit.read_contracts import (
     AuditReadError,
     ChunkBatchRequest,
     FileListRequest,
@@ -36,7 +36,7 @@ from audit.read_contracts import (
     TableFilter,
     TablePageRequest,
 )
-from audit._vendor.run_status import RunStatus
+from lore_audit.run_status import RunStatus
 
 RUN_ID = "00000000-0000-0000-0000-000000000023"
 

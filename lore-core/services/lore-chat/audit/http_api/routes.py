@@ -28,8 +28,8 @@ from audit.http_api.contracts import (
     TableSampleBody,
 )
 from audit.http_api.limits import AuditHttpLimits
-from audit.image_safety import validate_safe_raster_payload
-from audit.read_contracts import (
+from lore_audit.image_safety import validate_safe_raster_payload
+from lore_audit.read_contracts import (
     AuditReadError,
     Availability,
     ChunkListRequest,
@@ -40,7 +40,7 @@ from audit.read_contracts import (
     RunDetailRequest,
     TableProfileRequest,
 )
-from audit.read_service import AuditReadService
+from lore_audit.read_service import AuditReadService
 
 
 def _project(result: Any) -> dict[str, Any]:

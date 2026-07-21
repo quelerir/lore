@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from audit.read_contracts import AuditReadError, ReadBounds
+from lore_audit.read_contracts import AuditReadError, ReadBounds
 
 
 @dataclass(frozen=True)

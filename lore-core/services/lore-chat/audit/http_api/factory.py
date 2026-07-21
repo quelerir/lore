@@ -11,7 +11,7 @@ from audit.http_api.errors import install_safe_error_handlers
 from audit.http_api.limits import AuditHttpLimits
 from audit.http_api.middleware import AuditHttpMiddleware
 from audit.http_api.routes import create_audit_router
-from audit.read_service import AuditReadService
+from lore_audit.read_service import AuditReadService
 
 
 def create_audit_app(

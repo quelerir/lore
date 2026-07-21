@@ -19,7 +19,7 @@ from pydantic import (
 )
 
 from audit.http_api.limits import AuditHttpLimits
-from audit.read_contracts import (
+from lore_audit.read_contracts import (
     AuditReadError,
     ChunkBatchRequest,
     ChunkDetailRequest,
@@ -36,7 +36,7 @@ from audit.read_contracts import (
     TablePageRequest,
     TableSampleRequest,
 )
-from audit._vendor.run_status import RunStatus
+from lore_audit.run_status import RunStatus
 
 
 def _bounded_utf8(value: str, *, maximum: int, empty: bool = False) -> str:

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from audit.http_api.factory import create_audit_app
 from audit.http_api.limits import AuditHttpLimits
-from audit.read_contracts import (
+from lore_audit.read_contracts import (
     Availability,
     ChunkBatchRequest,
     ChunkDetailRequest,

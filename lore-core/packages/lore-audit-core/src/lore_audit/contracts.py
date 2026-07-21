@@ -9,9 +9,9 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Any
 
-from audit._vendor.run_status import RunStatus
+from lore_audit.run_status import RunStatus
 
-from .validation import (
+from lore_audit.validation import (
     build_diagnostic_key,
     canonicalize_safe_json,
     safe_json_to_dict,

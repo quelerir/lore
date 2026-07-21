@@ -13,10 +13,10 @@ from audit.http_api.limits import AuditHttpLimits
 from audit.http_api.middleware import AuditHttpMiddleware
 from audit.http_api.routes import create_audit_router
 from audit.pool import AuditConnectionPool, build_audit_pool
-from audit.read_adapters import PostgresRegisteredTableReader
-from audit.read_cursor import CursorCodec
-from audit.read_repositories import PostgresAuditReadRepository
-from audit.read_service import AuditReadService
+from lore_audit.read_adapters import PostgresRegisteredTableReader
+from lore_audit.read_cursor import CursorCodec
+from lore_audit.read_repositories import PostgresAuditReadRepository
+from lore_audit.read_service import AuditReadService
 
 
 def _derive_cursor_key(jwt_secret: str) -> bytes:

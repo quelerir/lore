@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from datetime import datetime, timedelta
 from typing import Any
 
-from audit._vendor.redaction import redact_value
+from lore_audit.redaction import redact_value
 
 MAX_RULESET_VERSION_LENGTH = 128
 MAX_TARGET_KIND_LENGTH = 64

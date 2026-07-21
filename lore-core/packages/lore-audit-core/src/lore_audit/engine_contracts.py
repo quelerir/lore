@@ -7,8 +7,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from .contracts import AuditLifecycleResult, AuditSnapshot, LifecycleOutcome, RuleResult
-from .validation import canonicalize_safe_json, safe_json_to_dict, validate_target_id
+from lore_audit.contracts import AuditLifecycleResult, AuditSnapshot, LifecycleOutcome, RuleResult
+from lore_audit.validation import canonicalize_safe_json, safe_json_to_dict, validate_target_id
 
 AUDIT_V1 = "audit/v1"
 EMPTY_DOMAIN_TARGET_ID = "__audit_empty_domain__"

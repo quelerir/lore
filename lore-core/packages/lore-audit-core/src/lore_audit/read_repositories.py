@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, TypeVar
 from uuid import UUID
 
-from audit.read_contracts import (
+from lore_audit.read_contracts import (
     AuditReadError,
     Availability,
     ChunkBatchRequest,
@@ -38,11 +38,11 @@ from audit.read_contracts import (
     SemanticPreflightCounts,
     SourceContextRequest,
 )
-from audit.postgres_connections import acquire_postgres_connection
-from audit.read_cursor import CursorCodec, TextWindowBuilder
-from audit.registration import parse_payload_registration
-from audit.validation import safe_json_to_dict
-from audit._vendor.run_status import RunStatus
+from lore_audit.postgres_connections import acquire_postgres_connection
+from lore_audit.read_cursor import CursorCodec, TextWindowBuilder
+from lore_audit.registration import parse_payload_registration
+from lore_audit.validation import safe_json_to_dict
+from lore_audit.run_status import RunStatus
 
 
 T = TypeVar("T")

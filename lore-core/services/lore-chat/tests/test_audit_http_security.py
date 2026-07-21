@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from audit.http_api.factory import create_audit_app
 from audit.http_api.middleware import AuditHttpMiddleware
-from audit.read_contracts import AuditReadError
+from lore_audit.read_contracts import AuditReadError
 
 RUN_ID = "00000000-0000-0000-0000-000000000023"
 

@@ -11,7 +11,7 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from audit.read_contracts import (
+from lore_audit.read_contracts import (
     Availability,
     ImageDelivery,
     ImageDeliveryKind,
@@ -27,13 +27,13 @@ from audit.read_contracts import (
     TableRowPage,
     TableSampleRequest,
 )
-from audit.image_safety import (
+from lore_audit.image_safety import (
     validate_safe_raster_content_type,
     validate_safe_raster_payload,
 )
-from audit.postgres_connections import acquire_postgres_connection
-from audit.read_cursor import CursorCodec
-from audit.read_repositories import (
+from lore_audit.postgres_connections import acquire_postgres_connection
+from lore_audit.read_cursor import CursorCodec
+from lore_audit.read_repositories import (
     RegisteredPayloadToken,
     RegisteredSourceToken,
 )
