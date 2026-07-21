@@ -13,7 +13,9 @@ services:
         condition: service_healthy
 
   chat:
-    build: ./lore-core/services/lore-chat
+    build:
+      context: ./lore-core
+      dockerfile: services/lore-chat/Dockerfile
     # Весь пользовательский конфиг приходит из .env (шаблон — .env.example,
     # `cp .env.example .env`). required:false: без .env compose не падает на
     # разборе — контейнер стартует, а config.py даёт понятную ошибку валидации.
