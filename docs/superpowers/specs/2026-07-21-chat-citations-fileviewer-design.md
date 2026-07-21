@@ -118,9 +118,10 @@ the chunk (or shows `VS-BROKEN-LINK` if stale).
 
 ## Phasing
 
-- **A — pipeline (offline, now):** `Citation` contract, `build_citations`, deep-link builder,
-  `evidence_map` from arbitration, `run_id→logical_file_key` adapter (pure core + asyncpg wrapper),
-  `PipelineResult.citations`. TDD with fakes.
+- **A — pipeline (offline) — DONE (2026-07-21):** `Citation` contract, `build_citations` +
+  `build_deep_link` (`pipeline/citation.py`), `evidence_map` + `[n]` enumeration in arbitration,
+  `run_id→logical_file_key` adapter (`adapters/file_keys.py`, pure core + asyncpg), `_cite` step in
+  `RetrievalPipeline`, `PipelineResult.citations`. TDD with fakes; 76 tests green.
 - **B — lore-chat node:** `cite` node in the LangGraph wrapper; attach citations to the message
   metadata. (Needs the chat integration; logic demoable on fakes.)
 - **C — SPA rendering:** citation cards in `convertMessage`/renderer; `navigateTo` to `/files`.
