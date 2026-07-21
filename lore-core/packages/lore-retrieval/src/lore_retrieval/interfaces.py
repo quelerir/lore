@@ -85,3 +85,11 @@ class SqlRunner(Protocol):
     registry inside this runner."""
 
     async def run(self, request: SqlRequest) -> SQLResult: ...
+
+
+@runtime_checkable
+class ChatModel(Protocol):
+    """The final generation model (OpenRouter in production). LangGraph owns the
+    prompt; Neo4j GraphRAG never generates the answer."""
+
+    async def generate(self, prompt: str) -> str: ...

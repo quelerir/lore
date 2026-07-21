@@ -92,6 +92,18 @@ class SQLResult(BaseModel):
     error: str | None = None
 
 
+class AgentDecision(BaseModel):
+    """The top-level agent's evidence choice and final answer. Conflicting SQL
+    results stay explicit (``note``); text and SQL evidence are attributed, never
+    mechanically merged; no answer is produced from thin air when nothing grounds it."""
+
+    answer: str
+    used_evidence_chunk_ids: list[str]
+    used_sql_payload_ids: list[str]
+    citations: list[str]
+    note: str | None = None  # conflicting_sql_results | no_grounded_evidence | ...
+
+
 class ContextGroup(BaseModel):
     """A coherent local window of source context (small-to-big / parent-child).
     Retains every canonical member ``chunk_id``; ``citations`` target the

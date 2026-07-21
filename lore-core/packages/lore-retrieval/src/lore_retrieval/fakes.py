@@ -5,6 +5,7 @@ reranker, SQL DB, or LLM. Scoring is intentionally simple and reproducible; the
 real backends produce better relevance behind the same interface.
 """
 import re
+from collections.abc import Callable
 
 from lore_retrieval.contracts import (
     EvidenceEnvelope,
@@ -215,6 +216,20 @@ class InMemoryEvidenceResolver:
                     )
                 )
         return ResolutionResult(resolved=resolved, rejected=rejected)
+
+
+class FakeChatModel:
+    """Offline stand-in for the final generation model. Records prompts (so tests
+    can assert the model was/was not called and what evidence it saw) and returns
+    a deterministic response."""
+
+    def __init__(self, responder: Callable[[str], str] | None = None) -> None:
+        self.calls: list[str] = []
+        self._responder = responder or (lambda _prompt: "ОТВЕТ")
+
+    async def generate(self, prompt: str) -> str:
+        self.calls.append(prompt)
+        return self._responder(prompt)
 
 
 class FakeSqlRunner:
