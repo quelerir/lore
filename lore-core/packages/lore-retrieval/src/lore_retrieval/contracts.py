@@ -123,6 +123,21 @@ class AgentDecision(BaseModel):
     used_sql_payload_ids: list[str]
     citations: list[str]
     note: str | None = None  # conflicting_sql_results | no_grounded_evidence | ...
+    # index -> contributing chunk_ids, mirroring the [n] evidence enumeration shown
+    # to the model, so the cite step can resolve the markers it emitted.
+    evidence_map: dict[int, list[str]] = {}
+
+
+class Citation(BaseModel):
+    """A model-chosen source reference rendered as a clickable preview card that
+    deep-links into the FileViewer. Built only from verified EvidenceEnvelopes."""
+
+    chunk_id: str
+    run_id: str
+    logical_file_key: str
+    preview_text: str
+    heading_path: tuple[str, ...]
+    deep_link: str
 
 
 class ContextGroup(BaseModel):
@@ -153,5 +168,6 @@ class PipelineResult(BaseModel):
     groups: list[ContextGroup]
     sql_results: list[SQLResult]
     table_candidates: list[TableCandidate]
+    citations: list[Citation] = []
     rejected_evidence: list[tuple[str, str]] = []
     degradations: list[str] = []

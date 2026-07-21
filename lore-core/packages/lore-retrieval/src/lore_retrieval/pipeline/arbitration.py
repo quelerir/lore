@@ -15,13 +15,15 @@ def _build_prompt(
 ) -> str:
     parts = [f"Вопрос: {question}", ""]
     if groups:
-        parts.append("Текстовые свидетельства:")
-        parts.extend(f"- [{g.section_id}] {g.text}" for g in groups)
+        parts.append("Текстовые свидетельства (ссылайся на источник номером [n]):")
+        parts.extend(f"[{i}] {g.text}" for i, g in enumerate(groups, 1))
     if successes:
         parts.append("Результаты SQL (каждый отдельно, не объединять):")
         parts.extend(f"- payload {r.payload_id}: {r.answer_summary}" for r in successes)
     if note == "conflicting_sql_results":
         parts.append("ВНИМАНИЕ: результаты SQL расходятся — представь их раздельно.")
+    if groups:
+        parts.append("Ставь маркер [n] к каждому утверждению из свидетельства n.")
     return "\n".join(parts)
 
 
@@ -50,6 +52,8 @@ async def arbitrate_and_answer(
     used_evidence = [cid for g in groups for cid in g.chunk_ids]
     citations = [cid for g in groups for cid in g.citations]
     used_sql = [r.payload_id for r in successes]
+    # index [n] shown to the model -> that group's contributing chunk_ids
+    evidence_map = {i: list(g.citations) for i, g in enumerate(groups, 1)}
 
     answer = await model.generate(_build_prompt(question, groups, successes, note))
     return AgentDecision(
@@ -58,4 +62,5 @@ async def arbitrate_and_answer(
         used_sql_payload_ids=used_sql,
         citations=citations,
         note=note,
+        evidence_map=evidence_map,
     )
