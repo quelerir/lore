@@ -406,12 +406,3 @@ def test_postgres_lifecycle_writer_rejects_run_deleted_after_snapshot_read(write
                 (RUN_ID,),
             )
             assert cursor.fetchone()[0] == 0
-
-
-@pytest.mark.skip(
-    reason="Phase-3 Airflow path: requires airflow_adapters (build_airflow_audit_adapters, "
-    "PostgresHook, S3Hook) which are not available in lore-splitter. "
-    "Re-enable in Phase 3 when airflow hooks are wired."
-)
-def test_real_postgres_catalog_error_does_not_poison_failure_write():
-    pass
