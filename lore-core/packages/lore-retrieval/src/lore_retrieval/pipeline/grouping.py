@@ -26,6 +26,8 @@ def build_context_groups(
     *,
     max_gap: int = 1,
     group_char_budget: int = 2000,
+    promote_parents: bool = False,  # opt-in refinement; thresholds calibrated in P5
+    parent_char_budget: int = 4000,
 ) -> list[ContextGroup]:
     score_by_id = dict(reranked)
     section_of = projection.chunk_section
@@ -83,5 +85,62 @@ def build_context_groups(
                 )
             )
 
+    if promote_parents:
+        groups = _promote_parents(
+            groups, projection, positions, text_by_id, parent_char_budget
+        )
     groups.sort(key=lambda g: g.group_score, reverse=True)
     return groups
+
+
+def _promote_parents(
+    groups: list[ContextGroup],
+    projection: StructuralProjection,
+    positions: dict[str, int],
+    text_by_id: dict[str, str],
+    parent_char_budget: int,
+) -> list[ContextGroup]:
+    """When several hits occupy different child sections of the same parent,
+    promote them to one coherent parent-section group — but only when the
+    combined window fits the parent budget. Otherwise the child groups stay."""
+    section_by_id = {s.section_id: s for s in projection.sections}
+    section_chunks = {s.section_id: list(s.chunk_ids) for s in projection.sections}
+
+    by_parent: dict[str | None, list[ContextGroup]] = defaultdict(list)
+    for g in groups:
+        by_parent[section_by_id[g.section_id].parent_section_id].append(g)
+
+    consumed: set[int] = set()
+    promoted: list[ContextGroup] = []
+    for parent_id, child_groups in by_parent.items():
+        if parent_id is None or len({g.section_id for g in child_groups}) < 2:
+            continue
+        parent = section_by_id[parent_id]
+
+        member_set = set(section_chunks.get(parent_id, []))
+        for g in child_groups:
+            member_set.update(g.chunk_ids)
+        members = sorted(member_set, key=lambda c: positions.get(c, 0))
+        text = " ".join(text_by_id.get(c, "") for c in members)
+        if len(text) > parent_char_budget:
+            continue  # doesn't fit — leave the smaller child windows
+
+        scores = sorted((g.group_score for g in child_groups), reverse=True)
+        promoted.append(
+            ContextGroup(
+                document_id=parent.document_id,
+                section_id=parent_id,
+                section_path=parent.heading_path,
+                scope="parent_section",
+                chunk_ids=members,
+                start_position=positions.get(members[0], 0),
+                end_position=positions.get(members[-1], 0),
+                text=text,
+                group_score=scores[0] + 0.1 * sum(scores[1:]),
+                citations=[cid for g in child_groups for cid in g.citations],
+                truncation_reason=None,
+            )
+        )
+        consumed.update(id(g) for g in child_groups)
+
+    return promoted + [g for g in groups if id(g) not in consumed]
