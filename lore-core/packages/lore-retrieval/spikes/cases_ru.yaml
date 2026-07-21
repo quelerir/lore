@@ -1,0 +1,13 @@
+# P0 Task 8: curated Russian retrieval cases, filled from the projected corpus.
+# Fill expect_chunk_ids by inspecting fetch_chunks() output for chunks whose
+# fulltext contains the target. Keep small but real (10-20 cases total).
+
+prose:      # morphology matters: query form differs from the answer text form
+  - query: "как рассчитывается премия сотрудника"
+    expect_chunk_ids: ["<fill from corpus>"]
+
+exact:      # codes/identifiers must match verbatim; stemming/stopwords can hurt
+  - query: "ABC-123"
+    expect_chunk_ids: ["<fill from corpus>"]
+  - query: "табельный номер 4021"
+    expect_chunk_ids: ["<fill from corpus>"]
