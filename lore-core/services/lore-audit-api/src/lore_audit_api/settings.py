@@ -9,6 +9,7 @@ signing key.
 from __future__ import annotations
 
 import hashlib
+from urllib.parse import quote
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -31,7 +32,7 @@ class AuditApiSettings(BaseSettings):
 
     def audit_dsn(self) -> str:
         return (
-            f"postgresql://{self.toast_db_user}:{self.toast_db_password}"
+            f"postgresql://{quote(self.toast_db_user, safe='')}:{quote(self.toast_db_password, safe='')}"
             f"@{self.toast_db_host}:{self.toast_db_port}/{self.toast_db_name}"
         )
 

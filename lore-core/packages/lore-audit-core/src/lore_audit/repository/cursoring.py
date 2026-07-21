@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from lore_audit.read_contracts import AuditReadError
 from lore_audit.read_cursor import CursorCodec
 
 

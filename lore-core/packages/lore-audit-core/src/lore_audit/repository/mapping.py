@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
@@ -71,7 +72,6 @@ def map_detail(
         chunk_type=row[4],
         content_signature=row[10],
     )
-    import hashlib
     display_hash = hashlib.sha256(row[7].encode("utf-8")).hexdigest()
     return ChunkDetail(
         preview=preview,
