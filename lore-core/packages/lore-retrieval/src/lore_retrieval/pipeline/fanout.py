@@ -3,6 +3,9 @@
 The first pipeline stage. Runs the two text-lane routes concurrently, records
 each route's ranked candidates for provenance, then fuses with Reciprocal Rank
 Fusion and deduplicates by canonical chunk_id.
+
+Degradation (spec): a route that fails does not sink the lane — the other route
+still answers, and the failed route name is returned so the caller can record it.
 """
 import asyncio
 
@@ -19,11 +22,22 @@ async def fan_out_and_fuse(
     fulltext_k: int = 50,
     rrf_k: int = 60,
     index_version: str = "spike1",
-) -> FanoutResult:
-    vec, ft = await asyncio.gather(
+) -> tuple[FanoutResult, list[str]]:
+    raw = await asyncio.gather(
         backend.vector_search(query, vector_k),
         backend.fulltext_search(query, fulltext_k),
+        return_exceptions=True,
     )
+
+    degraded: list[str] = []
+    resolved: list[list[tuple[str, float]]] = []
+    for name, result in (("vector_search_failed", raw[0]), ("fulltext_search_failed", raw[1])):
+        if isinstance(result, BaseException):
+            degraded.append(name)
+            resolved.append([])
+        else:
+            resolved.append(result)
+    vec, ft = resolved[0], resolved[1]
 
     per_route: list[RetrievalCandidate] = []
     for route, results in ((Route.vector, vec), (Route.fulltext, ft)):
@@ -39,4 +53,4 @@ async def fan_out_and_fuse(
             )
 
     fused = rrf_fuse([vec, ft], rrf_k=rrf_k)
-    return FanoutResult(per_route=per_route, fused=fused)
+    return FanoutResult(per_route=per_route, fused=fused), degraded

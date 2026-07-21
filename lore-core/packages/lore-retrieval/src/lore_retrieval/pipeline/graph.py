@@ -12,7 +12,7 @@ is identical whether called directly or from a graph node.
 """
 import asyncio
 
-from lore_retrieval.contracts import PipelineResult, SQLResult, TableCandidate
+from lore_retrieval.contracts import ContextGroup, PipelineResult, SQLResult, TableCandidate
 from lore_retrieval.interfaces import (
     ChatModel,
     ChunkSearchBackend,
@@ -137,8 +137,11 @@ class RetrievalPipeline:
         return citations
 
     async def _text_lane(self, question: str, degradations: list[str]):
-        fanout = await fan_out_and_fuse(self._chunk_search, question, index_version=self._index_version)
-        self._tracer.record("text_fanout", {"fused": len(fanout.fused)})
+        fanout, fan_degraded = await fan_out_and_fuse(
+            self._chunk_search, question, index_version=self._index_version
+        )
+        degradations.extend(fan_degraded)
+        self._tracer.record("text_fanout", {"fused": len(fanout.fused), "degraded": fan_degraded})
 
         # Structural expansion is discovery — degrade gracefully if it fails.
         try:
@@ -154,9 +157,16 @@ class RetrievalPipeline:
         candidate_ids = _dedup(
             [cid for cid, _ in fanout.fused] + [c.chunk_id for c in expanded]
         )
-        reranked = await rerank_stage(
-            self._reranker, question, candidate_ids, self._text_by_id, top_k=self._rerank_top_k
-        )
+        try:
+            reranked = await rerank_stage(
+                self._reranker, question, candidate_ids, self._text_by_id, top_k=self._rerank_top_k
+            )
+        except Exception:
+            # Reranker down: fall back to the bounded fused order (spec degradation).
+            reranked = [
+                (cid, 1.0 / (i + 1)) for i, cid in enumerate(candidate_ids[: self._rerank_top_k])
+            ]
+            degradations.append("reranker_failed")
         self._tracer.record("text_rerank", {"candidates": len(reranked)})
 
         resolution = await resolve_evidence(
@@ -169,11 +179,31 @@ class RetrievalPipeline:
         valid = {e.chunk_id for e in resolution.resolved}
         reranked_valid = [(cid, score) for cid, score in reranked if cid in valid]
 
-        groups = build_context_groups(
-            reranked_valid, self._projection, self._positions, self._text_by_id
-        )
+        try:
+            groups = build_context_groups(
+                reranked_valid, self._projection, self._positions, self._text_by_id
+            )
+        except Exception:
+            # Auto-merging failed: pass bounded individual chunks rather than lose evidence.
+            groups = [self._singleton_group(cid, score) for cid, score in reranked_valid]
+            degradations.append("auto_merging_failed")
         self._tracer.record("grouping", {"groups": len(groups)})
         return groups, resolution
+
+    def _singleton_group(self, chunk_id: str, score: float) -> ContextGroup:
+        pos = self._positions.get(chunk_id, 0)
+        return ContextGroup(
+            document_id="",
+            section_id=self._projection.chunk_section.get(chunk_id, ""),
+            section_path=(),
+            scope="window",
+            chunk_ids=[chunk_id],
+            start_position=pos,
+            end_position=pos,
+            text=self._text_by_id.get(chunk_id, ""),
+            group_score=score,
+            citations=[chunk_id],
+        )
 
     async def _table_lane(
         self, question: str, degradations: list[str]

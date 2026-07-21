@@ -35,7 +35,8 @@ async def test_table_chunks_excluded_from_text_lane(backend):
 
 
 async def test_fanout_fuses_dedups_and_labels_routes(backend):
-    res = await fan_out_and_fuse(backend, "премия сотрудника")
+    res, degraded = await fan_out_and_fuse(backend, "премия сотрудника")
+    assert degraded == []
     routes = {c.route for c in res.per_route}
     assert Route.vector in routes and Route.fulltext in routes
 
