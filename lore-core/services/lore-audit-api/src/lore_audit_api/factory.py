@@ -33,14 +33,20 @@ def create_audit_app(
     service: AuditReadService,
     limits: AuditHttpLimits | None = None,
     auth_dependency: Callable[..., Any],
+    prefix: str = "/api/v1/audit",
     shutdown: Callable[[], None] | None = None,
 ) -> FastAPI:
     """Return a library ASGI app with injected service, limits, and auth.
 
     `auth_dependency` is a FastAPI dependency callable applied to every audit
-    route. Identity extraction (cookie/ticket) lives outside this package; only
-    the generic safe-error handlers are installed here. The caller installs the
-    `AuditAuthError -> 401` handler paired with whatever the dependency raises.
+    route. Identity extraction (cookie/ticket) lives outside this package; the
+    generic `AuditAuthError -> 401` handler stays in the package, paired with
+    whatever the dependency raises.
+
+    `prefix` is the router prefix. It defaults to `/api/v1/audit` for the
+    standalone sidecar; callers that MOUNT this app at `/api/v1/audit` (the chat)
+    pass `prefix=""` so the mount point — not the router — supplies the path,
+    avoiding a doubled `/api/v1/audit/api/v1/audit`.
     """
 
     @asynccontextmanager
@@ -61,7 +67,7 @@ def create_audit_app(
     install_safe_error_handlers(app)
     install_audit_auth_handler(app)
     app.include_router(
-        create_audit_router(service, limits or AuditHttpLimits()),
+        create_audit_router(service, limits or AuditHttpLimits(), prefix=prefix),
         dependencies=[Depends(auth_dependency)],
     )
     app.add_middleware(AuditHttpMiddleware)
