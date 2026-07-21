@@ -31,9 +31,8 @@ should be cached/warmed (it calls Ollama per turn).
 
 ## 4. Pinned versions
 
-- Driver / library floors (from `pyproject.toml`): `neo4j>=5.28,<6`, `neo4j-graphrag>=1.3,<2`,
-  `langchain-ollama>=0.2`, `asyncpg>=0.30`. Exact resolved set is in `uv.lock` (Task 11 Step 1 copies
-  the exact versions here).
+- Exact resolved versions (from `uv.lock`, 2026-07-21): `neo4j==5.28.4`, `neo4j-graphrag==1.18.0`,
+  `langchain-ollama==1.1.0`, `asyncpg==0.31.0`, `pydantic==2.13.4`, `pydantic-settings==2.14.2`.
 - Neo4j server version: PENDING (creds) — from section 1.
 - Reranker: **none in P0** (deferred to P2).
 
