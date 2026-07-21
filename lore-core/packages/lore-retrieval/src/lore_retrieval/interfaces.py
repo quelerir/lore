@@ -7,7 +7,7 @@ orchestration depends only on these Protocols, so backends swap by injection.
 """
 from typing import Protocol, runtime_checkable
 
-from lore_retrieval.contracts import RetrievalCandidate
+from lore_retrieval.contracts import ResolutionResult, RetrievalCandidate
 
 
 @runtime_checkable
@@ -52,3 +52,13 @@ class Reranker(Protocol):
     async def rerank(
         self, query: str, docs: list[tuple[str, str]], top_k: int
     ) -> list[tuple[str, float]]: ...
+
+
+@runtime_checkable
+class CanonicalEvidenceResolver(Protocol):
+    """Batch-resolve final canonical envelopes, rejecting missing / stale /
+    superseded / wrong-version / hash-mismatched evidence. Not a retrieval stage
+    — it supplies trusted citations and SQL lineage for already-selected chunks.
+    """
+
+    async def resolve(self, chunk_ids: list[str], *, index_version: str) -> ResolutionResult: ...

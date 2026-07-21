@@ -6,7 +6,12 @@ real backends produce better relevance behind the same interface.
 """
 import re
 
-from lore_retrieval.contracts import RetrievalCandidate, Route
+from lore_retrieval.contracts import (
+    EvidenceEnvelope,
+    ResolutionResult,
+    RetrievalCandidate,
+    Route,
+)
 from lore_retrieval.projection_model import StructuralProjection
 from lore_retrieval.source import SourceChunk
 
@@ -145,3 +150,53 @@ class FakeReranker:
             scored.append((chunk_id, score))
         scored.sort(key=lambda kv: (-kv[1], kv[0]))
         return scored[:top_k]
+
+
+class InMemoryEvidenceResolver:
+    """Offline stand-in for the CanonicalEvidenceResolver over one ready corpus.
+
+    Rejects requests that a real resolver would reject: unknown chunk (missing),
+    a query index_version other than the active one (wrong_version), an
+    explicitly superseded chunk, or a chunk flagged as hash-mismatched.
+    """
+
+    def __init__(
+        self,
+        chunks: list[SourceChunk],
+        *,
+        active_index_version: str = "spike1",
+        superseded: frozenset[str] = frozenset(),
+        hash_mismatch: frozenset[str] = frozenset(),
+    ) -> None:
+        self._by_id = {c.chunk_id: c for c in chunks}
+        self._active = active_index_version
+        self._superseded = set(superseded)
+        self._hash_mismatch = set(hash_mismatch)
+
+    async def resolve(self, chunk_ids: list[str], *, index_version: str) -> ResolutionResult:
+        resolved: list[EvidenceEnvelope] = []
+        rejected: list[tuple[str, str]] = []
+        for cid in chunk_ids:
+            chunk = self._by_id.get(cid)
+            if chunk is None:
+                rejected.append((cid, "missing"))
+            elif index_version != self._active:
+                rejected.append((cid, "wrong_version"))
+            elif cid in self._superseded:
+                rejected.append((cid, "superseded"))
+            elif cid in self._hash_mismatch:
+                rejected.append((cid, "hash_mismatch"))
+            else:
+                resolved.append(
+                    EvidenceEnvelope(
+                        chunk_id=cid,
+                        fulltext=chunk.fulltext,
+                        display_text=chunk.display_text or chunk.fulltext,
+                        coordinates=chunk.coordinates,
+                        payload_refs=chunk.payload_refs,
+                        run_id=chunk.run_id,
+                        index_version=self._active,
+                        fulltext_hash=chunk.fulltext_hash,
+                    )
+                )
+        return ResolutionResult(resolved=resolved, rejected=rejected)

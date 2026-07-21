@@ -1,6 +1,15 @@
 import json
+from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+def _as_json(value: Any, default: Any) -> Any:
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return json.loads(value)
+    return value
 
 
 class SourceChunk(BaseModel):
@@ -12,6 +21,9 @@ class SourceChunk(BaseModel):
     heading_path: tuple[str, ...]
     vector_text: str
     fulltext: str
+    display_text: str = ""
+    coordinates: dict = Field(default_factory=dict)
+    payload_refs: list = Field(default_factory=list)
     vector_text_hash: str
     fulltext_hash: str
 
@@ -21,9 +33,7 @@ class SourceChunk(BaseModel):
 
 
 def row_to_source_chunk(row: dict) -> SourceChunk:
-    coords = row.get("coordinates") or {}
-    if isinstance(coords, str):
-        coords = json.loads(coords)
+    coords = _as_json(row.get("coordinates"), {})
     heading = tuple(coords.get("heading_path") or ())
     run_id = row["run_id"]
     return SourceChunk(
@@ -38,6 +48,9 @@ def row_to_source_chunk(row: dict) -> SourceChunk:
         heading_path=heading,
         vector_text=row["vector_text"],
         fulltext=row["fulltext"],
+        display_text=row.get("display_text") or "",
+        coordinates=coords,
+        payload_refs=_as_json(row.get("payload_refs"), []),
         vector_text_hash=row["vector_text_hash"],
         fulltext_hash=row["fulltext_hash"],
     )
@@ -57,7 +70,7 @@ async def fetch_chunks(
         rows = await conn.fetch(
             f"""
             SELECT chunk_id, run_id::text AS run_id, ordinal, chunk_type,
-                   coordinates, vector_text, fulltext,
+                   coordinates, vector_text, fulltext, display_text, payload_refs,
                    vector_text_hash, fulltext_hash
             FROM lore_core.chunks
             {where}

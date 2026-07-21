@@ -32,3 +32,23 @@ class RetrievalCandidate(BaseModel):
 class FanoutResult(BaseModel):
     per_route: list[RetrievalCandidate]  # every route's candidates, for provenance
     fused: list[tuple[str, float]]  # (chunk_id, rrf_score), deduped by chunk_id, ranked
+
+
+class EvidenceEnvelope(BaseModel):
+    """A canonical, verified piece of evidence. ``fulltext`` is the hash-linked
+    answer context; ``display_text``/``coordinates`` are for citation and
+    ``payload_refs`` is the trusted SQL-lineage locator (never an SQL trigger)."""
+
+    chunk_id: str
+    fulltext: str
+    display_text: str
+    coordinates: dict
+    payload_refs: list
+    run_id: str
+    index_version: str
+    fulltext_hash: str
+
+
+class ResolutionResult(BaseModel):
+    resolved: list[EvidenceEnvelope]
+    rejected: list[tuple[str, str]]  # (chunk_id, reason): missing|wrong_version|superseded|hash_mismatch
