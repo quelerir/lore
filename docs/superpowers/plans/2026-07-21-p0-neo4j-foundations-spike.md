@@ -378,7 +378,7 @@ git commit -m "feat(retrieval): add EmbeddingBackend with Ollama bge-m3 and grap
   - `row_to_source_chunk(row: dict) -> SourceChunk` — maps a `lore_core.chunks` row (with jsonb `coordinates`) into a `SourceChunk`.
   - `async fetch_chunks(dsn: str, *, run_id: str | None = None, limit: int = 500) -> list[SourceChunk]` — read-only asyncpg query against `lore_core.chunks`, ordered by `(document_id, position)`.
 
-**Notes:** The read is `SELECT ... FROM lore_core.chunks` in a `READ ONLY` transaction. Column names follow the merged read side (`display_text`/`full_text`/`vector_text`, `coordinates` jsonb with `heading_path`). Confirm exact column names against `lore-core/services/lore-chat/audit/read_cursor.py` before running; adjust the SELECT if the audit read side names differ.
+**Notes:** The read is `SELECT ... FROM lore_core.chunks` in a `READ ONLY` transaction. **Schema verified during execution** against `lore-core/packages/lore-audit-core/src/lore_audit/repository/queries.py` (`_CHUNK_COLUMNS`) — the authoritative columns are: `chunk_id, run_id, ordinal, pipeline_type, chunk_type, vector_text, fulltext, display_text, coordinates, payload_refs, content_signature, vector_text_hash, fulltext_hash`. Corrections applied vs the original draft: the fulltext column is **`fulltext`** (not `full_text`); the order column is **`ordinal`** (not `position`); there is **no `document_id`** column — a processing run maps to one document, so `document_id = run_id` for the spike (P1 may join `processing_runs → logical_file_key` for a cross-run-stable id). The implemented `src/lore_retrieval/source.py` is the source of truth.
 
 - [ ] **Step 1: Write the failing test (pure mapping, no DB)**
 
