@@ -1,0 +1,29 @@
+schema_version: lore/runtime/v1
+
+splitter:
+  s3_conn_id: lore_s3
+  postgres_conn_id: lore_postgres
+  image_toast_bucket: lore-images
+  image_toast_prefix: splitter/images
+  storage_schema: lore_core
+  storage_mode: postgres
+  embedding_byte_budget: 4096
+  max_embedding_unique_values: 20
+  toast_min_rows: 40
+  toast_min_columns: 8
+  toast_min_cells: 240
+  max_active_tasks: 16
+  retries: 2
+
+audit:
+  enabled: true
+  ruleset_version: audit/v1
+  full_on_success: true
+  contract_on_failed_or_skipped: true
+
+viewer:
+  source_url_ttl_seconds: 300
+  page_size_default: 50
+  page_size_max: 500
+  source_context_max_chars: 32000
+  image_preview_max_pixels: 4000000
