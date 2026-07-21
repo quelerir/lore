@@ -618,6 +618,8 @@ git commit -m "spike(retrieval): probe Neo4j capabilities and record edition/ver
 
 **Notes:** version-scoped index/label naming (e.g. label `TextChunk_v3`, index `text_vec_v3`) is the Community-portable one-ready-version mechanism; only the active version's indexes exist/serve queries. All writes are parameterized; no query text is interpolated from user/LLM input (index names come from the trusted `index_version`, which is an internal identifier, not user text).
 
+**Implementation deviation (applied):** `ensure_indexes` uses raw async `CREATE VECTOR INDEX` / `CREATE FULLTEXT INDEX` Cypher instead of `neo4j_graphrag.indexes.*`, because those helpers expect a *sync* `neo4j.Driver` and the rest of the module is async. Retrieval uses raw `db.index.vector.queryNodes` / `db.index.fulltext.queryNodes`; the fulltext procedure takes no `{limit}` argument, so results are bounded with `ORDER BY score DESC LIMIT $k` in the RETURN. The implemented `src/lore_retrieval/neo4j_spike.py` is the source of truth. `neo4j-graphrag` remains a declared dep for P2 (hybrid retriever + the `Neo4jGraphRagEmbedder` boundary).
+
 - [ ] **Step 1: Write the implementation**
 
 ```python
