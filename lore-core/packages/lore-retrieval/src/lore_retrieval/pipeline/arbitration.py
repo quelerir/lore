@@ -35,8 +35,13 @@ async def arbitrate_and_answer(
 ) -> AgentDecision:
     successes = [r for r in sql_results if r.status is SQLStatus.success]
 
+    # Judge conflict on real content: use the summary when present, else the rows,
+    # so two successes with distinct rows but no summary aren't collapsed to {None}.
+    signatures = {
+        r.answer_summary if r.answer_summary is not None else repr(r.rows) for r in successes
+    }
     note: str | None = None
-    if len(successes) > 1 and len({r.answer_summary for r in successes}) > 1:
+    if len(successes) > 1 and len(signatures) > 1:
         note = "conflicting_sql_results"  # keep explicit; never merge across tables
 
     # Nothing grounds the question: do not invent facts, do not call the model.

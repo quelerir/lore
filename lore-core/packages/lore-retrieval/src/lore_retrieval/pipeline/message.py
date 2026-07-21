@@ -16,5 +16,6 @@ def to_message_metadata(result: PipelineResult, *, include_debug: bool = False) 
             "degradations": result.degradations,
             "groups": len(result.groups),
             "sql_results": len(result.sql_results),
+            "rejected_evidence": result.rejected_evidence,  # why evidence was excluded
         }
     return metadata

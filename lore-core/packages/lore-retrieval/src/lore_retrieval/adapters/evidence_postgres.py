@@ -47,6 +47,10 @@ def rows_to_resolution(
 
 
 class PostgresEvidenceResolver:
+    # NOTE: the real version gate is ``active_run_ids`` (from the derived-index
+    # ledger, wired in P1). ``index_version`` is only stamped onto the envelope
+    # here — unlike ``InMemoryEvidenceResolver`` it does not by itself reject a
+    # stale version. Callers must pass the active run set to enforce versioning.
     def __init__(
         self,
         dsn: str,
@@ -63,17 +67,16 @@ class PostgresEvidenceResolver:
 
         conn = await asyncpg.connect(self._dsn)
         try:
-            await conn.execute("BEGIN TRANSACTION READ ONLY")
-            rows = await conn.fetch(
-                """
-                SELECT chunk_id, run_id::text AS run_id, fulltext, display_text,
-                       coordinates, payload_refs, fulltext_hash
-                FROM lore_core.chunks
-                WHERE chunk_id = ANY($1::text[])
-                """,
-                chunk_ids,
-            )
-            await conn.execute("COMMIT")
+            async with conn.transaction(readonly=True):
+                rows = await conn.fetch(
+                    """
+                    SELECT chunk_id, run_id::text AS run_id, fulltext, display_text,
+                           coordinates, payload_refs, fulltext_hash
+                    FROM lore_core.chunks
+                    WHERE chunk_id = ANY($1::text[])
+                    """,
+                    chunk_ids,
+                )
         finally:
             await conn.close()
 

@@ -61,25 +61,26 @@ async def fetch_chunks(
 ) -> list[SourceChunk]:
     import asyncpg
 
+    # `where`/`limit_pos` are code-controlled literals ($1/$2 placeholders); all
+    # values are bound parameters — no user text enters the SQL string.
+    where = "WHERE run_id = $1" if run_id else ""
+    args = [run_id, limit] if run_id else [limit]
+    limit_pos = "$2" if run_id else "$1"
     conn = await asyncpg.connect(dsn)
     try:
-        await conn.execute("BEGIN TRANSACTION READ ONLY")
-        where = "WHERE run_id = $1" if run_id else ""
-        args = [run_id, limit] if run_id else [limit]
-        limit_pos = "$2" if run_id else "$1"
-        rows = await conn.fetch(
-            f"""
-            SELECT chunk_id, run_id::text AS run_id, ordinal, chunk_type,
-                   coordinates, vector_text, fulltext, display_text, payload_refs,
-                   vector_text_hash, fulltext_hash
-            FROM lore_core.chunks
-            {where}
-            ORDER BY run_id, ordinal
-            LIMIT {limit_pos}
-            """,
-            *args,
-        )
-        await conn.execute("COMMIT")
+        async with conn.transaction(readonly=True):
+            rows = await conn.fetch(
+                f"""
+                SELECT chunk_id, run_id::text AS run_id, ordinal, chunk_type,
+                       coordinates, vector_text, fulltext, display_text, payload_refs,
+                       vector_text_hash, fulltext_hash
+                FROM lore_core.chunks
+                {where}
+                ORDER BY run_id, ordinal
+                LIMIT {limit_pos}
+                """,
+                *args,
+            )
     finally:
         await conn.close()
 

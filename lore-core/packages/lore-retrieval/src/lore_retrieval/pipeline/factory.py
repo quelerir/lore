@@ -34,7 +34,10 @@ def build_offline_pipeline(
     payload_by_chunk = {
         c.chunk_id: c.payload_refs[0]["payload_id"]
         for c in chunks
-        if c.is_table and c.payload_refs and "payload_id" in c.payload_refs[0]
+        if c.is_table
+        and c.payload_refs
+        and isinstance(c.payload_refs[0], dict)
+        and "payload_id" in c.payload_refs[0]
     }
     kwargs = dict(
         chunk_search=backend,

@@ -5,15 +5,12 @@ by mapping required filters/measures to columns, NOT by checking sample values.
 A query value absent from samples never rejects an otherwise-expressible schema.
 Recall-first: with no stated requirements, a table is feasible.
 """
-import re
-
 from lore_retrieval.contracts import QueryRequirements, TableProfile
-
-_TOKEN = re.compile(r"\w+", re.UNICODE)
+from lore_retrieval.text_utils import tokenize
 
 
 def _tokens(text: str) -> set[str]:
-    return {t.lower() for t in _TOKEN.findall(text)}
+    return set(tokenize(text))
 
 
 def assess_feasibility(

@@ -218,4 +218,6 @@ def rrf_fuse(
     for route in routes:
         for rank, (chunk_id, _) in enumerate(route):
             scores[chunk_id] = scores.get(chunk_id, 0.0) + 1.0 / (rrf_k + rank)
-    return sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
+    # Stable tiebreak by chunk_id so equal RRF scores order deterministically
+    # regardless of route input order.
+    return sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))

@@ -22,16 +22,15 @@ class PostgresFileKeyResolver:
 
         conn = await asyncpg.connect(self._dsn)
         try:
-            await conn.execute("BEGIN TRANSACTION READ ONLY")
-            rows = await conn.fetch(
-                """
-                SELECT run_id::text AS run_id, logical_file_key
-                FROM lore_core.processing_runs
-                WHERE run_id = ANY($1::text[])
-                """,
-                run_ids,
-            )
-            await conn.execute("COMMIT")
+            async with conn.transaction(readonly=True):
+                rows = await conn.fetch(
+                    """
+                    SELECT run_id::text AS run_id, logical_file_key
+                    FROM lore_core.processing_runs
+                    WHERE run_id = ANY($1::text[])
+                    """,
+                    run_ids,
+                )
         finally:
             await conn.close()
         return rows_to_file_keys([dict(r) for r in rows])

@@ -35,6 +35,11 @@ class GraphExpansionBackend(Protocol):
     neighbours, and (at most one level up) the parent section's chunks. Every
     returned candidate carries a structural route and a bounded path summary.
     All caps are enforced; no route returns unbounded nodes.
+
+    ``max_next`` gates the NEXT neighbours: the derived graph stores one hop, so
+    it is effectively a 0-vs-nonzero flag returning the immediate previous/next
+    chunk. ``max_siblings`` caps in-section siblings and parent-section chunks.
+    ``parent_ascent`` gates the single-level parent ascent (0 disables).
     """
 
     async def expand(

@@ -58,7 +58,9 @@ def build_context_groups(
         for run in runs:
             start_pos, end_pos = positions[run[0]], positions[run[-1]]
             members = [c for c in all_chunks if start_pos <= positions.get(c, -1) <= end_pos]
-            scope = "section" if members == all_chunks else "window"
+            # Compare by set: a member missing from `positions` shouldn't demote a
+            # genuinely full-section window to "window".
+            scope = "section" if set(members) == set(all_chunks) else "window"
 
             text = " ".join(text_by_id.get(c, "") for c in members)
             truncation = None

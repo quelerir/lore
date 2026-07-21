@@ -42,7 +42,13 @@ class OpenRouterChatModel:
             )
             resp.raise_for_status()
             data = resp.json()
-            return data["choices"][0]["message"]["content"]
+            choices = data.get("choices")
+            if not choices:
+                raise RuntimeError(f"OpenRouter returned no choices: {data.get('error', data)}")
+            content = choices[0].get("message", {}).get("content")
+            if content is None:
+                raise RuntimeError("OpenRouter returned empty content")
+            return content
         finally:
             if owns_client:
                 await client.aclose()

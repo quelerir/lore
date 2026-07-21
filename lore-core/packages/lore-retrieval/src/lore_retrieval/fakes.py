@@ -4,7 +4,6 @@ These let the whole pipeline run and be tested offline — no Neo4j, embeddings,
 reranker, SQL DB, or LLM. Scoring is intentionally simple and reproducible; the
 real backends produce better relevance behind the same interface.
 """
-import re
 from collections.abc import Callable
 
 from lore_retrieval.contracts import (
@@ -18,18 +17,13 @@ from lore_retrieval.contracts import (
 )
 from lore_retrieval.projection_model import StructuralProjection
 from lore_retrieval.source import SourceChunk
-
-_TOKEN = re.compile(r"\w+", re.UNICODE)
-
-
-def _tokens(text: str) -> list[str]:
-    return [t.lower() for t in _TOKEN.findall(text)]
+from lore_retrieval.text_utils import tokenize
 
 
 def _rank_fulltext(chunks: list[SourceChunk], query: str, top_k: int) -> list[tuple[str, float]]:
-    q = _tokens(query)
+    q = tokenize(query)
     scored = [
-        (c.chunk_id, float(sum(_tokens(c.fulltext).count(t) for t in q)))
+        (c.chunk_id, float(sum(tokenize(c.fulltext).count(t) for t in q)))
         for c in chunks
     ]
     scored = [(cid, s) for cid, s in scored if s > 0]
@@ -38,10 +32,10 @@ def _rank_fulltext(chunks: list[SourceChunk], query: str, top_k: int) -> list[tu
 
 
 def _rank_vector(chunks: list[SourceChunk], query: str, top_k: int) -> list[tuple[str, float]]:
-    q = set(_tokens(query))
+    q = set(tokenize(query))
     scored: list[tuple[str, float]] = []
     for c in chunks:
-        toks = set(_tokens(c.vector_text))
+        toks = set(tokenize(c.vector_text))
         if toks and q:
             jaccard = len(q & toks) / len(q | toks)
             if jaccard > 0:
@@ -138,10 +132,11 @@ class InMemoryGraphExpansion:
             if sec_id is None:
                 continue
 
-            # in-section siblings, bounded
-            for sib in self._section_chunks.get(sec_id, [])[:max_siblings + 1]:
-                if sib != seed:
-                    emit(sib, Route.section_child, sec_id)
+            # in-section siblings, bounded (exclude the seed BEFORE capping so the
+            # cap holds even when the seed is a later chunk in the section)
+            siblings = [s for s in self._section_chunks.get(sec_id, []) if s != seed]
+            for sib in siblings[:max_siblings]:
+                emit(sib, Route.section_child, sec_id)
 
             # one-level parent ascent, bounded
             section = self._section_by_id.get(sec_id)
@@ -161,10 +156,10 @@ class FakeReranker:
     async def rerank(
         self, query: str, docs: list[tuple[str, str]], top_k: int
     ) -> list[tuple[str, float]]:
-        q = _tokens(query)
+        q = tokenize(query)
         scored: list[tuple[str, float]] = []
         for chunk_id, text in docs:
-            toks = _tokens(text)
+            toks = tokenize(text)
             score = float(sum(toks.count(t) for t in q))
             scored.append((chunk_id, score))
         scored.sort(key=lambda kv: (-kv[1], kv[0]))

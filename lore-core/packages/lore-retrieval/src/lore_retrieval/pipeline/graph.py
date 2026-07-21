@@ -149,10 +149,13 @@ class RetrievalPipeline:
                 self._graph_expansion, fanout, seed_count=self._seed_count
             )
             self._tracer.record("text_expansion", {"expanded": len(expanded)})
-        except Exception:
+        except Exception as exc:
             expanded = []
             degradations.append("structural_expansion_failed")
-            self._tracer.record("text_expansion", {"expanded": 0, "degraded": True})
+            # Record the error type so a logic bug isn't fully silent behind degradation.
+            self._tracer.record(
+                "text_expansion", {"expanded": 0, "degraded": True, "error": type(exc).__name__}
+            )
 
         candidate_ids = _dedup(
             [cid for cid, _ in fanout.fused] + [c.chunk_id for c in expanded]
@@ -222,7 +225,9 @@ class RetrievalPipeline:
             sql_results = await run_sql_fanout(self._sql_runner, candidates, question)
             self._tracer.record("table_sql", {"calls": len(sql_results)})
             return candidates, sql_results
-        except Exception:
+        except Exception as exc:
             degradations.append("table_lane_unavailable")
-            self._tracer.record("table_sql", {"calls": 0, "degraded": True})
+            self._tracer.record(
+                "table_sql", {"calls": 0, "degraded": True, "error": type(exc).__name__}
+            )
             return [], []
