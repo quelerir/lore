@@ -38,10 +38,16 @@ should be cached/warmed (it calls Ollama per turn).
 
 ## 5. Embedding model
 
-- Model: **bge-m3 via Ollama**, behind the `EmbeddingBackend` interface (`lore_retrieval.embeddings`),
-  swappable by config.
-- Dimension: 1024 (config default). Confirm against a live `embed_query` call (Task 3 Step 5) and
-  record the observed dimension here: PENDING (creds).
+- **Chat/LLM provider: OpenRouter only** (Ollama dropped as an LLM fallback). Embeddings are a
+  separate concern — **OpenRouter exposes no embeddings API**, so it cannot serve the vector lane.
+- Embedding model: **bge-m3 via Ollama (interim)**, behind the `EmbeddingBackend` interface
+  (`lore_retrieval.embeddings`), swappable by config. The final embeddings provider is **OPEN —
+  under team review** (2026-07-21). Candidates when decided: a managed multilingual API
+  (OpenAI text-embedding-3-large / Voyage / Jina / Cohere via an OpenAI-compatible client) or a
+  self-hosted bge-m3 (HF TEI, no Ollama). Swapping is one `EmbeddingBackend` implementation.
+- Dimension: 1024 (config default, bge-m3). Confirm against a live `embed_query` call (Task 3 Step 5)
+  and record the observed dimension here: PENDING (creds). Note a provider change may change the
+  dimension and require re-projection under a new `index_version`.
 - Similarity: cosine (set on the vector index).
 
 ## 6. Activation shape
