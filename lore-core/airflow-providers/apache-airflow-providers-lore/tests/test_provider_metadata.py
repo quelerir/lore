@@ -12,12 +12,17 @@ def test_get_provider_info_declares_both_operators():
 
 
 def test_sibling_packages_importable_without_real_airflow_sdk():
-    import importlib.util
+    import importlib.metadata as md
 
     import lore_splitter  # noqa: F401
     import lore_audit  # noqa: F401
 
-    # The provider owns the `airflow.providers.lore` namespace, so `airflow`
-    # resolves to our own package. What must be ABSENT is the real Airflow SDK
-    # (e.g. airflow.models) — the test env installs airflow-free; stubs fake it.
-    assert importlib.util.find_spec("airflow.models") is None
+    # The real Airflow SDK must NOT be installed in the provider test env.
+    # Assert on the installed DISTRIBUTION (not sys.modules / find_spec), so the
+    # check is immune to the fake `airflow.*` modules other tests stub in-process.
+    try:
+        md.version("apache-airflow")
+        installed = True
+    except md.PackageNotFoundError:
+        installed = False
+    assert not installed, "apache-airflow must not be installed in the provider test env"
