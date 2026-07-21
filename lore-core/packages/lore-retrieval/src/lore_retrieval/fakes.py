@@ -221,6 +221,16 @@ class InMemoryEvidenceResolver:
         return ResolutionResult(resolved=resolved, rejected=rejected)
 
 
+class FakeFileKeyResolver:
+    """Offline stand-in for the run_id -> logical_file_key resolver."""
+
+    def __init__(self, mapping: dict[str, str]) -> None:
+        self._mapping = mapping
+
+    async def resolve(self, run_ids: list[str]) -> dict[str, str]:
+        return {r: self._mapping[r] for r in run_ids if r in self._mapping}
+
+
 class FakeChatModel:
     """Offline stand-in for the final generation model. Records prompts (so tests
     can assert the model was/was not called and what evidence it saw) and returns
