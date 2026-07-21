@@ -122,3 +122,15 @@ class ContextGroup(BaseModel):
     group_score: float
     citations: list[str]
     truncation_reason: str | None = None
+
+
+class PipelineResult(BaseModel):
+    """Everything one user turn produced — the decision plus the intermediate
+    artifacts (for citations, observability, and tests)."""
+
+    decision: AgentDecision
+    groups: list[ContextGroup]
+    sql_results: list[SQLResult]
+    table_candidates: list[TableCandidate]
+    rejected_evidence: list[tuple[str, str]] = []
+    degradations: list[str] = []
