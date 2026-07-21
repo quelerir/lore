@@ -290,8 +290,8 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       .catch(() => setAllFiles([]));
   }, [currentUser]);
 
-  // Lazily load the selected file's runs (real API returns them thin; the mock
-  // returns them fully hydrated). Merge into the file tree; retry on failure.
+  // Lazily load the selected file's runs (the API returns them thin; chunks
+  // hydrate later). Merge into the file tree; retry on failure.
   const hydratedFilesRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const fileId = selectedFileId;
@@ -309,8 +309,8 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       });
   }, [selectedFileId]);
 
-  // Lazily load the selected run's chunk previews. Mock runs already carry
-  // chunks, so the length guard skips them.
+  // Lazily load the selected run's chunk previews; the length guard skips
+  // runs whose chunks are already loaded.
   const hydratedRunsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const fileId = selectedFileId;
