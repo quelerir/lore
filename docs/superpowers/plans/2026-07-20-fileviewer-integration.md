@@ -1,3 +1,9 @@
+> **⚠️ SUPERSEDED (2026-07-21).** This plan described integrating the audit read
+> API by vendoring a copy into `backend/audit/`. That approach was abandoned during
+> the lore↔agent-lore merge. The audit API now lives in the `lore-audit-core` /
+> `lore-audit-api` packages and is mounted into chat via
+> `lore-core/services/lore-chat/audit_mount.py` + `audit_auth.py`. Kept for history only.
+
 # FileViewer (audit read API) Integration — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
