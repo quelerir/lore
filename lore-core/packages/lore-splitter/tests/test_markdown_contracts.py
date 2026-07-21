@@ -297,11 +297,13 @@ def test_document_output_bundle_serializes_paths_kind_and_metadata_payloads() ->
 def test_markdown_package_exports_only_stable_contract_symbols() -> None:
     import lore_splitter.markdown as markdown
 
-    # NOTE(task-1): contracts-only. NOTE(task-2): profile/toast impl added for storage tests.
     assert set(markdown.__all__) == {
         "ColumnProfile",
         "DocumentOutputBundle",
         "MarkdownTableLocation",
+        "MarkdownTableExtractionResult",
+        "MarkdownTableOccurrence",
+        "MetadataConfig",
         "RunOutputManifest",
         "TableData",
         "TableDataExtractionResult",
@@ -310,9 +312,21 @@ def test_markdown_package_exports_only_stable_contract_symbols() -> None:
         "ToastThresholds",
         "WorkbookOutputBundle",
         "XlsxTableLocation",
+        "build_document_output_bundle",
+        "build_embedding_metadata",
+        "build_full_metadata",
+        "build_workbook_output_bundle",
         "classify_table",
         "content_signature",
+        "extract_markdown_document_tables",
+        "extract_table_data",
+        "metadata_json_bytes",
         "profile_table",
+        "render_workbook_markdown",
+        "render_toast_reference",
         "toast_id",
+        "write_document_outputs",
+        "write_run_manifest",
+        "write_workbook_outputs",
     }
     assert not any(name.startswith("_") for name in markdown.__all__)

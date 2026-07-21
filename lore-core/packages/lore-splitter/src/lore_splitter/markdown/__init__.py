@@ -1,7 +1,5 @@
 """Markdown and TOAST metadata public API."""
 
-# NOTE(task-1): output, render, table_data, table_markdown impl deferred.
-# NOTE(task-2): profile.py and toast.py added to support storage layer tests.
 from lore_splitter.markdown.contracts import (
     ColumnProfile,
     DocumentOutputBundle,
@@ -14,11 +12,30 @@ from lore_splitter.markdown.contracts import (
     WorkbookOutputBundle,
     XlsxTableLocation,
 )
+from lore_splitter.markdown.output import (
+    MetadataConfig,
+    build_document_output_bundle,
+    build_embedding_metadata,
+    build_full_metadata,
+    build_workbook_output_bundle,
+    metadata_json_bytes,
+    write_document_outputs,
+    write_run_manifest,
+    write_workbook_outputs,
+)
 from lore_splitter.markdown.profile import profile_table
+from lore_splitter.markdown.render import render_workbook_markdown
+from lore_splitter.markdown.table_data import extract_table_data
+from lore_splitter.markdown.table_markdown import (
+    MarkdownTableExtractionResult,
+    MarkdownTableOccurrence,
+    extract_markdown_document_tables,
+)
 from lore_splitter.markdown.toast import (
     ToastThresholds,
     classify_table,
     content_signature,
+    render_toast_reference,
     toast_id,
 )
 
@@ -26,31 +43,31 @@ __all__ = [
     "ColumnProfile",
     "DocumentOutputBundle",
     "MarkdownTableLocation",
+    "MarkdownTableExtractionResult",
+    "MarkdownTableOccurrence",
+    "MetadataConfig",
     "RunOutputManifest",
     "TableData",
     "TableDataExtractionResult",
     "TableProfile",
     "ToastDecision",
-    "ToastThresholds",
     "WorkbookOutputBundle",
     "XlsxTableLocation",
+    "build_document_output_bundle",
+    "build_embedding_metadata",
+    "build_full_metadata",
+    "build_workbook_output_bundle",
+    "ToastThresholds",
     "classify_table",
     "content_signature",
+    "extract_table_data",
+    "extract_markdown_document_tables",
     "profile_table",
+    "metadata_json_bytes",
+    "render_workbook_markdown",
+    "render_toast_reference",
     "toast_id",
-    # trimmed: "MarkdownTableExtractionResult",  # markdown/table_markdown.py
-    # trimmed: "MarkdownTableOccurrence",         # markdown/table_markdown.py
-    # trimmed: "MetadataConfig",                  # markdown/output.py
-    # trimmed: "build_document_output_bundle",    # markdown/output.py
-    # trimmed: "build_embedding_metadata",        # markdown/output.py
-    # trimmed: "build_full_metadata",             # markdown/output.py
-    # trimmed: "build_workbook_output_bundle",    # markdown/output.py
-    # trimmed: "extract_table_data",              # markdown/table_data.py
-    # trimmed: "extract_markdown_document_tables",# markdown/table_markdown.py
-    # trimmed: "metadata_json_bytes",             # markdown/output.py
-    # trimmed: "render_workbook_markdown",        # markdown/render.py
-    # trimmed: "render_toast_reference",          # markdown/toast.py
-    # trimmed: "write_document_outputs",          # markdown/output.py
-    # trimmed: "write_run_manifest",              # markdown/output.py
-    # trimmed: "write_workbook_outputs",          # markdown/output.py
+    "write_document_outputs",
+    "write_run_manifest",
+    "write_workbook_outputs",
 ]
