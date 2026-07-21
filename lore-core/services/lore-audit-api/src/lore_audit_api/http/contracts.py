@@ -19,7 +19,7 @@ from pydantic import (
 )
 
 from lore_audit_api.http.limits import AuditHttpLimits
-from lore_audit.read_contracts import (
+from lore_audit.read import (
     AuditReadError,
     ChunkBatchRequest,
     ChunkDetailRequest,

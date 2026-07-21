@@ -28,7 +28,7 @@ from lore_audit_api.http.errors import (
     install_safe_error_handlers,
     normalize_http_error,
 )
-from lore_audit.read_contracts import (
+from lore_audit.read import (
     AuditReadError,
     ChunkBatchRequest,
     FileListRequest,

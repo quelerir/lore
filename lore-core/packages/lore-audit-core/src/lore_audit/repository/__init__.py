@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, TypeVar
 from uuid import UUID
 
-from lore_audit.read_contracts import (
+from lore_audit.read import (
     AuditReadError,
     Availability,
     ChunkBatchRequest,

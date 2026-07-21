@@ -6,7 +6,7 @@ import hashlib
 import json
 from typing import Any
 
-from lore_audit.read_contracts import (
+from lore_audit.read import (
     ChunkPreview,
     DiagnosticDetail,
     FileCard,
@@ -17,7 +17,7 @@ from lore_audit.read_contracts import (
 )
 from lore_audit.read_cursor import CursorCodec, TextWindowBuilder
 from lore_core_domain.run_status import RunStatus
-from lore_audit.read_contracts import AuditReadError, ChunkDetail, ChunkDetailRequest
+from lore_audit.read import AuditReadError, ChunkDetail, ChunkDetailRequest
 
 
 def map_file(row: Any) -> FileCard:

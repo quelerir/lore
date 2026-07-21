@@ -11,7 +11,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from lore_audit.read_contracts import AuditReadError, TextWindow
+from lore_audit.read import AuditReadError, TextWindow
 
 _TOKEN_VERSION = 1
 _MAX_TOKEN_BYTES = 4_096

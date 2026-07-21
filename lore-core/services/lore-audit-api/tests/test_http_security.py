@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from lore_audit_api.factory import create_audit_app as _create_audit_app
 from lore_audit_api.http.middleware import AuditHttpMiddleware
-from lore_audit.read_contracts import AuditReadError
+from lore_audit.read import AuditReadError
 
 
 def _allow_anon() -> dict[str, str]:

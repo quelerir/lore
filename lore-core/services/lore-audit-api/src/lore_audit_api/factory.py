@@ -18,7 +18,7 @@ from fastapi import Depends, FastAPI
 
 from lore_audit.read_adapters import PostgresRegisteredTableReader
 from lore_audit.read_cursor import CursorCodec
-from lore_audit.read_repositories import PostgresAuditReadRepository
+from lore_audit.repository import PostgresAuditReadRepository
 from lore_audit.read_service import AuditReadService
 from lore_audit_api.http.auth import install_audit_auth_handler
 from lore_audit_api.http.errors import install_safe_error_handlers

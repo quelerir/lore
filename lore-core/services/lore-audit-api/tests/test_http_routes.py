@@ -21,7 +21,7 @@ def _app(service: object, limits: AuditHttpLimits | None = None):
     return create_audit_app(
         service=service, limits=limits, auth_dependency=_allow_anon
     )
-from lore_audit.read_contracts import (
+from lore_audit.read import (
     Availability,
     ChunkBatchRequest,
     ChunkDetailRequest,
