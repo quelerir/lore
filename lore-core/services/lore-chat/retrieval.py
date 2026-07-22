@@ -55,6 +55,11 @@ def _build_pipeline(*, tracer=None):
         base_url=s.openrouter_base_url,
         max_tokens=s.llm_max_tokens or 800,
     )
+    # Real cross-encoder rerank when RETRIEVAL_RERANKER is configured; else the
+    # factory falls back to IdentityReranker (P0 no-op, keeps RRF-fusion order).
+    from lore_retrieval.adapters.rerank_http import build_reranker
+
+    reranker = build_reranker(s.reranker_endpoint)
     # Live table lane: bind the toast SQL graph when TOAST is configured; else the
     # factory falls back to a no-op SqlRunner (text-lane answers unaffected).
     sql_runner = None
@@ -84,6 +89,7 @@ def _build_pipeline(*, tracer=None):
         chat_model=chat_model,
         index_version=s.index_version,
         sql_runner=sql_runner,
+        reranker=reranker,
         tracer=tracer,
     )
 

@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     embedding_model: str = "bge-m3"
     embedding_dim: int = 1024
 
+    # HTTP cross-encoder reranker (P2, POST /rerank). Empty => IdentityReranker
+    # (P0 no-op, keeps RRF-fusion order). Set to sharpen top-k precision.
+    reranker_endpoint: str = Field(default="", validation_alias="RERANKER_ENDPOINT")
+    reranker_model: str = "bge-reranker-v2-m3"
+
     # Active Neo4j projection the chat queries (a separate indexing job populates
     # it). v2 = full current lore_core corpus (19k chunks); v1 kept in Neo4j as
     # rollback. Override per-env with RETRIEVAL_INDEX_VERSION.
