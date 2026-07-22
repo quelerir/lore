@@ -1,3 +1,4 @@
+import json
 from typing import Any, Optional
 
 import chainlit as cl
@@ -9,7 +10,6 @@ from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
 )
-from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -21,6 +21,7 @@ from agents import PROFILE_TO_MODE, Mode, build_agent
 from audit_mount import attach_audit_router
 from auth import verify_ticket
 from config import get_settings
+from run_trace import ToolCallTracker, iter_node_updates
 
 # Optional: grounded knowledge-base citations. If lore-retrieval is unavailable,
 # the chat runs unchanged (no capture, no citation metadata).
@@ -170,6 +171,20 @@ async def on_chat_resume(thread: ThreadDict) -> None:
     cl.user_session.set("history", history[-MAX_HISTORY_MESSAGES:])
 
 
+async def _render_run_steps(payload: Any, tracker: ToolCallTracker) -> None:
+    """Render one LangGraph ``updates`` payload as a clean debug trace: a step per
+    node, and under it the node's resolved tool calls (name + arguments + result)
+    as collapsible child steps. Replaces the noisy default per-run tracer."""
+    for node_name, msgs in iter_node_updates(payload):
+        node_step = cl.Step(name=node_name, type="run")
+        await node_step.send()
+        for ev in tracker.observe(msgs):
+            tool_step = cl.Step(name=ev["name"], type="tool", parent_id=node_step.id)
+            tool_step.input = json.dumps(ev["args"], ensure_ascii=False, indent=2)
+            tool_step.output = ev["result"]
+            await tool_step.send()
+
+
 async def handle_message(
     agent: CompiledStateGraph, messages: list[BaseMessage], out: cl.Message
 ) -> str:
@@ -179,18 +194,22 @@ async def handle_message(
     message), so the agent answers with context. Uses stream_mode="messages"
     so LangGraph yields LLM token chunks as they are produced; each assistant
     text chunk is pushed to the Chainlit message via stream_token for live
-    token-by-token rendering. Streaming (never ainvoke) avoids the nest_asyncio
-    deadlock. Returns the full assistant text.
+    token-by-token rendering. The "updates" mode drives a clean node -> tool-call
+    debug trace (see ``_render_run_steps``). Streaming (never ainvoke) avoids the
+    nest_asyncio deadlock. Returns the full assistant text.
     """
     state = {"messages": messages}
-    config = RunnableConfig(callbacks=[cl.LangchainCallbackHandler()])
+    tracker = ToolCallTracker()
     streamed = ""
     final_state: Optional[dict] = None
     async for stream_mode, payload in agent.astream(
-        state, stream_mode=["messages", "values"], config=config
+        state, stream_mode=["messages", "updates", "values"]
     ):
         if stream_mode == "values":
             final_state = payload
+            continue
+        if stream_mode == "updates":
+            await _render_run_steps(payload, tracker)
             continue
         chunk, _meta = payload
         # Служебные LLM-вызовы (планирование SQL) помечены тегом internal —
