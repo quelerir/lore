@@ -49,6 +49,16 @@ def _build_pipeline():
         base_url=s.openrouter_base_url,
         max_tokens=s.llm_max_tokens or 800,
     )
+    # Live table lane: bind the toast SQL graph when TOAST is configured; else the
+    # factory falls back to a no-op SqlRunner (text-lane answers unaffected).
+    sql_runner = None
+    try:
+        from toast_binding import toast_configured, toast_sql_runner
+
+        if toast_configured():
+            sql_runner = toast_sql_runner()
+    except Exception:
+        sql_runner = None
     return build_live_pipeline(
         driver=driver,
         database=s.neo4j_database,
@@ -56,6 +66,7 @@ def _build_pipeline():
         embedder=embedder,
         chat_model=chat_model,
         index_version=s.index_version,
+        sql_runner=sql_runner,
     )
 
 
