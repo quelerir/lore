@@ -178,6 +178,20 @@ class FakeReranker:
         return scored[:top_k]
 
 
+class IdentityReranker:
+    """P0 no-op reranker: preserves the input (RRF-fusion) order, only capping to
+    ``top_k`` with descending positional scores. Unlike ``FakeReranker`` (a lexical
+    test proxy) it never re-scores by term overlap — so a strong vector/fusion hit
+    with weak literal token match (e.g. a table whose text says "юристконсульт"
+    for the query "юристы") is not demoted. Used by the live pipeline until a real
+    cross-encoder lands (P2)."""
+
+    async def rerank(
+        self, query: str, docs: list[tuple[str, str]], top_k: int
+    ) -> list[tuple[str, float]]:
+        return [(chunk_id, 1.0 / (i + 1)) for i, (chunk_id, _text) in enumerate(docs[:top_k])]
+
+
 class InMemoryEvidenceResolver:
     """Offline stand-in for the CanonicalEvidenceResolver over one ready corpus.
 

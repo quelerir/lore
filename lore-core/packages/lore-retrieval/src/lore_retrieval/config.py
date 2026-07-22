@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     )
     llm_max_tokens: int | None = Field(default=None, validation_alias="LLM_MAX_TOKENS")
 
+    # Table lane SQL generator (a stronger model than the chat/arbitration model).
+    sql_model: str = Field(default="anthropic/claude-sonnet-4.6", validation_alias="SQL_MODEL")
+    sql_max_queries: int = Field(default=3, validation_alias="SQL_MAX_QUERIES")
+    sql_candidates_per_round: int = Field(default=2, validation_alias="SQL_CANDIDATES_PER_ROUND")
+
     # --- lore_core corpus lives on the TOAST/audit instance; reuse those
     # components to build the read-side DSN when RETRIEVAL_LORE_CORE_DSN is unset. ---
     toast_db_host: str | None = Field(default=None, validation_alias="TOAST_DB_HOST")

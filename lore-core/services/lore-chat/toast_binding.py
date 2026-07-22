@@ -13,11 +13,9 @@ any lore-chat/toast import (dependency direction stays package←service).
 """
 from lore_retrieval.adapters.context_postgres import PostgresChunkContextLoader
 from lore_retrieval.adapters.sql_callable import CallableSqlRunner
-from lore_retrieval.config import get_settings as _retrieval_settings
+from lore_retrieval.config import get_settings as _settings
 from lore_retrieval.contracts import SQLResult, SQLStatus, SqlRequest
 
-from agents.base import build_sql_model
-from config import get_settings as _chat_settings
 from toast.executor import PgExecutor
 from toast.models import ok_rows
 from toast.sql_graph import build_sql_graph
@@ -34,24 +32,39 @@ _loader: PostgresChunkContextLoader | None = None
 
 
 def toast_configured() -> bool:
-    """True when the TOAST DB is fully configured (TOAST_DB_* complete)."""
+    """True when the lore_core/TOAST DB is reachable (same instance holds
+    lore_core.chunks + the toast_tbl_* data tables)."""
     try:
-        return bool(_chat_settings().toast_dsn)
+        return bool(_settings().lore_core_effective_dsn)
     except Exception:
         return False
+
+
+def _sql_model():
+    """The SQL-generator model (langchain), built from the shared retrieval
+    settings — decoupled from lore-chat's chainlit/JWT config so it works on the
+    host and in the container alike. extra_body caps OpenRouter output tokens."""
+    from langchain_openai import ChatOpenAI
+
+    s = _settings()
+    kw: dict = {}
+    if s.llm_max_tokens:
+        kw = {"max_tokens": s.llm_max_tokens, "extra_body": {"max_tokens": s.llm_max_tokens}}
+    return ChatOpenAI(
+        model=s.sql_model, base_url=s.openrouter_base_url,
+        api_key=s.openrouter_api_key, temperature=0.0, **kw,
+    )
 
 
 def _ensure():
     global _graph, _loader
     if _graph is None:
-        cs = _chat_settings()
+        s = _settings()
+        dsn = s.lore_core_effective_dsn
         _graph = build_sql_graph(
-            build_sql_model(),
-            PgExecutor(cs.toast_dsn),
-            cs.sql_max_queries,
-            cs.sql_candidates_per_round,
+            _sql_model(), PgExecutor(dsn), s.sql_max_queries, s.sql_candidates_per_round
         )
-        _loader = PostgresChunkContextLoader(_retrieval_settings().lore_core_effective_dsn)
+        _loader = PostgresChunkContextLoader(dsn)
     return _graph, _loader
 
 

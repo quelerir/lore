@@ -11,6 +11,7 @@ from lore_retrieval.fakes import (
     FakeFileKeyResolver,
     FakeReranker,
     FakeSqlRunner,
+    IdentityReranker,
     InMemoryChunkContextLoader,
     InMemoryChunkSearchBackend,
     InMemoryEvidenceResolver,
@@ -80,7 +81,7 @@ def build_live_pipeline(
     kwargs = dict(
         chunk_search=Neo4jChunkSearchBackend(driver, database, index_version, embedder),
         graph_expansion=Neo4jGraphExpansionBackend(driver, database, index_version),
-        reranker=reranker or FakeReranker(),  # P0: no reranker (identity)
+        reranker=reranker or IdentityReranker(),  # P0: no cross-encoder; keep fusion order
         resolver=PostgresEvidenceResolver(dsn),
         table_search=Neo4jTableSearchBackend(driver, database, index_version, embedder),
         sql_runner=sql_runner or FakeSqlRunner({}),  # text-lane citations: no live TOAST
