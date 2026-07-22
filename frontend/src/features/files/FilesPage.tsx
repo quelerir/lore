@@ -343,6 +343,33 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
               : { ...file, runs: file.runs.map((r) => (r.id === runId ? { ...r, chunks } : r)) },
           ),
         );
+        // Populate table detail so the payloads tab (and Phase D table citations)
+        // render real tables. Best-effort: failures leave run.tables empty.
+        const tableIds = [
+          ...new Set(
+            chunks.flatMap((c) =>
+              c.payloads.filter((p) => p.type === "table").map((p) => p.id),
+            ),
+          ),
+        ];
+        if (tableIds.length) {
+          void filesProvider
+            .hydrateRunTables(runId, tableIds)
+            .then((tables) => {
+              if (!tables.length) return;
+              setAllFiles((prev) =>
+                prev.map((file) =>
+                  file.id !== fileId
+                    ? file
+                    : {
+                        ...file,
+                        runs: file.runs.map((r) => (r.id === runId ? { ...r, tables } : r)),
+                      },
+                ),
+              );
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {
         hydratedRunsRef.current.delete(runId);

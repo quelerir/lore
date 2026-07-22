@@ -6,14 +6,17 @@ import {
   mapFileCard,
   mapPayloadRef,
   mapRun,
+  mapTablePayload,
   type ChunkDetailDto,
   type ChunkPreviewDto,
   type FileCardDto,
   type PageDto,
   type PayloadDetailDto,
   type RunDetailDto,
+  type TableProfileDto,
+  type TableRowPageDto,
 } from "./mappers";
-import type { FileChunk, FileChunkPayloadRef, FileRun } from "./types";
+import type { FileChunk, FileChunkPayloadRef, FileRun, FileTablePayload } from "./types";
 
 // Bound how much of a very large run we eagerly pull, to stay kind to the backend.
 const MAX_CHUNKS = 500;
@@ -21,6 +24,8 @@ const CONCURRENCY = 8;
 // Payload refs are resolved in one batched endpoint call per this many ids
 // (matches the backend's max_length on POST /payloads/query).
 const PAYLOAD_BATCH = 100;
+// Rows sampled per table for the payloads-tab preview (kept small; server clamps).
+const TABLE_SAMPLE_LIMIT = 10;
 
 // Map with a bounded number of in-flight requests (waves of `size`).
 async function mapPooled<T, R>(
@@ -138,5 +143,33 @@ export class ApiFilesProvider implements FilesProvider {
       }
     });
     return resolved;
+  }
+
+  // Table detail for the payloads-tab inspector: per table payload, fetch its
+  // profile (columns + row count) then a small sample page, and combine into a
+  // FileTablePayload. Best-effort per table (a failure drops just that one) and
+  // bounded concurrency. Deduped by payload id.
+  async hydrateRunTables(
+    runId: string,
+    tablePayloadIds: string[],
+  ): Promise<FileTablePayload[]> {
+    const encodedRun = encodeURIComponent(runId);
+    const unique = [...new Set(tablePayloadIds)];
+    const tables = await mapPooled(unique, CONCURRENCY, async (id) => {
+      const encId = encodeURIComponent(id);
+      try {
+        const profile = await auditGet<TableProfileDto>(
+          `/runs/${encodedRun}/payloads/${encId}/table/profile`,
+        );
+        const sample = await auditPost<TableRowPageDto>(
+          `/runs/${encodedRun}/payloads/${encId}/table/sample`,
+          { columns: profile.columns, limit: TABLE_SAMPLE_LIMIT },
+        );
+        return mapTablePayload(profile, sample);
+      } catch {
+        return null; // table detail is best-effort; skip on any failure
+      }
+    });
+    return tables.filter((table): table is FileTablePayload => table !== null);
   }
 }

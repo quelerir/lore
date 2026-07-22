@@ -4,6 +4,7 @@ import type {
   FileChunkPayloadRef,
   FileRecord,
   FileRun,
+  FileTablePayload,
   RunStatus,
 } from "./types";
 
@@ -47,6 +48,46 @@ export function mapPayloadRef(dto: PayloadDetailDto): FileChunkPayloadRef {
     dto.kind === "image" || dto.kind === "transcript" ? dto.kind : "table";
   const label = typeof dto.summary?.label === "string" ? dto.summary.label : dto.payload_id;
   return { type, id: dto.payload_id, label };
+}
+
+export interface TableProfileDto {
+  schema_version: string;
+  payload_id: string;
+  columns: string[];
+  row_count: number;
+  summary: Record<string, unknown>;
+}
+
+export interface TableRowPageDto {
+  schema_version: string;
+  payload_id: string;
+  columns: string[];
+  rows: Array<Record<string, unknown>>;
+  next_cursor: string | null;
+  truncated: boolean;
+}
+
+// Combine a table's profile (columns + row_count + summary) with a sampled page of
+// rows into the UI's FileTablePayload (the payloads-tab inspector renders it). The
+// backend profile carries column NAMES only (no dtype), so type is left blank.
+export function mapTablePayload(
+  profile: TableProfileDto,
+  sample: TableRowPageDto,
+): FileTablePayload {
+  const label =
+    typeof profile.summary?.label === "string" ? profile.summary.label : profile.payload_id;
+  return {
+    id: profile.payload_id,
+    summary: label,
+    coordinates: "",
+    schema: profile.columns.map((name) => ({ name, type: "" })),
+    rowCount: profile.row_count,
+    columnCount: profile.columns.length,
+    samples: sample.rows as Array<Record<string, string | number | null>>,
+    contentId: profile.payload_id,
+    usages: [],
+    relatedChunkIds: [],
+  };
 }
 
 export interface ChunkPreviewDto {
