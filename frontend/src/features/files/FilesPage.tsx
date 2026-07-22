@@ -18,6 +18,7 @@ import {
   Search,
   Table2,
   UserRound,
+  Loader2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -262,6 +263,12 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
   const [selectedChunkId, setSelectedChunkId] = useState<string | null>(initialUrlState.chunkId);
   const [selectedTab, setSelectedTab] = useState<InspectorTab>(initialUrlState.tab);
   const [compareRunId, setCompareRunId] = useState<string | null>(initialUrlState.compareRunId);
+  // Deep-links open before the (slow, prod-scale) file/run/chunk fetch resolves;
+  // distinguish "still loading" from "genuinely not found" so we show a spinner,
+  // not an error, while the backend is fetching.
+  const [filesLoading, setFilesLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(false);
   const [comments, setComments] = useState<ReviewComment[]>([]);
   const [reviewerName, setReviewerNameState] = useState("");
   const [commentDraft, setCommentDraft] = useState<CommentDraft>({
@@ -287,7 +294,8 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     void filesProvider
       .listFiles()
       .then((result) => setAllFiles(result.files))
-      .catch(() => setAllFiles([]));
+      .catch(() => setAllFiles([]))
+      .finally(() => setFilesLoading(false));
   }, [currentUser]);
 
   // Lazily load the selected file's runs (the API returns them thin; chunks
@@ -297,6 +305,8 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     const fileId = selectedFileId;
     if (!fileId || hydratedFilesRef.current.has(fileId)) return;
     hydratedFilesRef.current.add(fileId);
+    setDetailLoading(true);
+    setDetailError(false);
     void filesProvider
       .hydrateFileRuns(fileId)
       .then((runs) => {
@@ -306,7 +316,9 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       })
       .catch(() => {
         hydratedFilesRef.current.delete(fileId);
-      });
+        setDetailError(true);
+      })
+      .finally(() => setDetailLoading(false));
   }, [selectedFileId]);
 
   // Lazily load the selected run's chunk previews; the length guard skips
@@ -319,6 +331,8 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     const run = allFiles.find((f) => f.id === fileId)?.runs.find((r) => r.id === runId);
     if (!run || run.chunks.length > 0) return;
     hydratedRunsRef.current.add(runId);
+    setDetailLoading(true);
+    setDetailError(false);
     void filesProvider
       .hydrateRunChunks(runId)
       .then((chunks) => {
@@ -330,7 +344,11 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
           ),
         );
       })
-      .catch(() => hydratedRunsRef.current.delete(runId));
+      .catch(() => {
+        hydratedRunsRef.current.delete(runId);
+        setDetailError(true);
+      })
+      .finally(() => setDetailLoading(false));
   }, [allFiles, selectedFileId, selectedRunId]);
 
   useEffect(() => {
@@ -1133,6 +1151,15 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
                 ) : null}
               </div>
             </>
+          ) : detailError ? (
+            <div className={styles.emptyState}>
+              Не удалось загрузить документ. Обновите страницу или попробуйте ещё раз.
+            </div>
+          ) : filesLoading || detailLoading ? (
+            <div className={styles.loadingState}>
+              <Loader2 size={18} className={styles.spinner} />
+              <span>Загрузка документа…</span>
+            </div>
           ) : (
             <div className={styles.emptyState}>Файл или запуск не найден.</div>
           )}

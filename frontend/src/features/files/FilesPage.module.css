@@ -1186,6 +1186,25 @@
   padding: 22px;
 }
 
+.loadingState {
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted, #64748b);
+}
+
+.spinner {
+  animation: fv-spin 0.8s linear infinite;
+  flex: none;
+}
+
+@keyframes fv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 1180px) {
   .layout {
     grid-template-columns: 270px 1fr;
