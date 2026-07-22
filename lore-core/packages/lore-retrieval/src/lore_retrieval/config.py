@@ -39,7 +39,12 @@ class Settings(BaseSettings):
 
     lore_core_dsn: str = ""
 
-    ollama_base_url: str = "http://localhost:11434"
+    # Non-prefixed so the container honors compose's OLLAMA_BASE_URL
+    # (host.docker.internal); otherwise it falls back to localhost:11434 — no
+    # Ollama there — and every embed connect-refuses (vector_search_failed).
+    ollama_base_url: str = Field(
+        default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
+    )
     embedding_model: str = "bge-m3"
     embedding_dim: int = 1024
 
