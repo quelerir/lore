@@ -38,10 +38,13 @@ def select_table_candidates(
     feasible: Callable[[str], bool] | None = None,
     floor: float = 0.0,
     max_k: int = 5,
+    provenance_by_chunk: dict[str, tuple[str, tuple[str, ...]]] | None = None,
 ) -> list[TableCandidate]:
     """Recall-first: dedup to one physical payload per slot, drop below-floor and
-    infeasible schemas, cap at max_k, never pad with irrelevant candidates."""
+    infeasible schemas, cap at max_k, never pad with irrelevant candidates. Carries
+    the anchor's (run_id, heading_path) provenance when supplied, for citations."""
     is_feasible = feasible or (lambda _cid: True)
+    provenance = provenance_by_chunk or {}
     seen_payloads: set[str] = set()
     out: list[TableCandidate] = []
     for chunk_id, score in reranked:
@@ -55,7 +58,11 @@ def select_table_candidates(
         if not is_feasible(chunk_id):
             continue
         seen_payloads.add(payload_id)
-        out.append(TableCandidate(chunk_id=chunk_id, payload_id=payload_id, score=score))
+        run_id, heading_path = provenance.get(chunk_id, ("", ()))
+        out.append(TableCandidate(
+            chunk_id=chunk_id, payload_id=payload_id, score=score,
+            run_id=run_id, heading_path=heading_path,
+        ))
     return out
 
 

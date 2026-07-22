@@ -53,6 +53,22 @@ def test_select_dedups_physical_payload_to_one_slot():
     assert picked[0].chunk_id == "t1"
 
 
+def test_select_table_candidates_carries_anchor_provenance():
+    out = select_table_candidates(
+        [("t1", 0.9)],
+        PAYLOAD_BY_CHUNK,
+        provenance_by_chunk={"t1": ("run-7", ("H", "Оклады"))},
+    )
+    assert len(out) == 1
+    assert out[0].run_id == "run-7"
+    assert out[0].heading_path == ("H", "Оклады")
+
+
+def test_select_table_candidates_defaults_without_provenance():
+    out = select_table_candidates([("t1", 0.9)], PAYLOAD_BY_CHUNK)
+    assert out[0].run_id == "" and out[0].heading_path == ()
+
+
 def test_select_respects_floor_feasibility_and_cap():
     reranked = [("t1", 2.0), ("t3", 0.5)]
     assert [c.payload_id for c in select_table_candidates(reranked, PAYLOAD_BY_CHUNK, floor=1.0)] == ["pay1"]

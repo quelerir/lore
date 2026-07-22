@@ -284,6 +284,9 @@ class RetrievalPipeline:
             # Per-query: load the discovered table rows for their text + payload ids.
             tbl_chunks = await self._context_loader.load(table_ids)
             text_by_id = {c.chunk_id: c.fulltext for c in tbl_chunks}
+            provenance_by_chunk = {
+                c.chunk_id: (c.run_id, c.heading_path) for c in tbl_chunks
+            }
             payload_by_chunk = {
                 c.chunk_id: c.payload_refs[0]["payload_id"]
                 for c in tbl_chunks
@@ -296,7 +299,8 @@ class RetrievalPipeline:
                 self._reranker, question, table_ids, text_by_id, top_k=len(fused) or 1,
             )
             candidates = select_table_candidates(
-                reranked, payload_by_chunk, floor=self._table_floor, max_k=self._max_sql
+                reranked, payload_by_chunk, floor=self._table_floor, max_k=self._max_sql,
+                provenance_by_chunk=provenance_by_chunk,
             )
             self._tracer.record("table_discover", {"candidates": len(candidates)})
             return candidates
