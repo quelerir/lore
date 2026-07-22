@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react";
+import { FileText, Table } from "lucide-react";
 import type { Citation } from "../../chat/citations";
 import { navigateTo } from "../../router/AppRouter";
 import styles from "./Citations.module.css";
@@ -23,15 +23,23 @@ export default function Citations({ items }: CitationsProps) {
       <div className={styles.title}>Источники</div>
       <ul className={styles.list}>
         {items.map((c, i) => (
-          <li key={`${c.chunkId}-${i}`}>
+          <li key={`${c.chunkId}-${i}`} id={c.marker != null ? `citation-${c.marker}` : undefined}>
             <button
               type="button"
               className={styles.card}
               onClick={() => navigateTo(c.deepLink)}
-              title="Открыть источник в просмотрщике файлов"
+              title={
+                c.kind === "table"
+                  ? "Открыть таблицу в просмотрщике файлов"
+                  : "Открыть источник в просмотрщике файлов"
+              }
             >
               <span className={styles.head}>
-                <FileText size={14} className={styles.icon} aria-hidden />
+                {c.kind === "table" ? (
+                  <Table size={14} className={styles.icon} aria-hidden />
+                ) : (
+                  <FileText size={14} className={styles.icon} aria-hidden />
+                )}
                 <span className={styles.heading}>{cardLabel(c)}</span>
               </span>
               {c.previewText ? <span className={styles.preview}>{c.previewText}</span> : null}
