@@ -40,12 +40,15 @@ def _build_pipeline(*, tracer=None):
     from neo4j import AsyncGraphDatabase
 
     from lore_retrieval.adapters.chat_openrouter import OpenRouterChatModel
-    from lore_retrieval.embeddings import OllamaEmbeddingBackend
+    from lore_retrieval.embeddings import build_embedder
     from lore_retrieval.pipeline.factory import build_live_pipeline
 
     s = _retrieval_settings()
     driver = AsyncGraphDatabase.driver(s.neo4j_uri, auth=(s.neo4j_user, s.neo4j_password))
-    embedder = OllamaEmbeddingBackend(s.embedding_model, s.ollama_base_url, s.embedding_dim)
+    embedder = build_embedder(
+        endpoint=s.embedding_endpoint, model=s.embedding_model,
+        base_url=s.ollama_base_url, dim=s.embedding_dim,
+    )
     chat_model = OpenRouterChatModel(
         api_key=s.openrouter_api_key,
         model=s.openrouter_model,

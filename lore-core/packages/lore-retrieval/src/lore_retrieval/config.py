@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(
         default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
     )
+    # HTTP bge-m3 service (POST /embed). Reachable from host AND container over the
+    # VPN, so when set it replaces the host-only Ollama path uniformly. Empty =>
+    # fall back to Ollama. Same bge-m3/1024 vectors (cosine 1.0), drop-in vs v2.
+    embedding_endpoint: str = Field(default="", validation_alias="EMBEDDING_ENDPOINT")
     embedding_model: str = "bge-m3"
     embedding_dim: int = 1024
 

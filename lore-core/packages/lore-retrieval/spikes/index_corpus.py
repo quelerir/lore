@@ -13,7 +13,7 @@ import asyncio
 from neo4j import AsyncGraphDatabase
 
 from lore_retrieval.config import get_settings
-from lore_retrieval.embeddings import OllamaEmbeddingBackend
+from lore_retrieval.embeddings import build_embedder
 from lore_retrieval.neo4j_spike import ensure_indexes, project_batch, project_structure
 from lore_retrieval.projection_model import build_structural_projection
 from lore_retrieval.source import fetch_chunks
@@ -41,7 +41,10 @@ async def main() -> None:
         print("no chunks fetched from lore_core.chunks — nothing to index")
         return
 
-    emb = OllamaEmbeddingBackend(s.embedding_model, s.ollama_base_url, s.embedding_dim)
+    emb = build_embedder(
+        endpoint=s.embedding_endpoint, model=s.embedding_model,
+        base_url=s.ollama_base_url, dim=s.embedding_dim,
+    )
     driver = AsyncGraphDatabase.driver(s.neo4j_uri, auth=(s.neo4j_user, s.neo4j_password))
     try:
         await ensure_indexes(driver, s.neo4j_database, version, emb.dim)
