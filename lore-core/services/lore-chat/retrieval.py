@@ -18,7 +18,6 @@ import contextvars
 from langchain_core.tools import BaseTool, tool
 
 from lore_retrieval.config import get_settings as _retrieval_settings
-from lore_retrieval.observability import trace_sink
 
 # Set by app.on_message (parent task) each turn; the tool mutates container["result"].
 turn_capture: contextvars.ContextVar[dict | None] = contextvars.ContextVar(
@@ -84,17 +83,12 @@ async def knowledge_base(query: str) -> str:
     процедуры. Вызывай для вопросов о внутренних документах и правилах компании —
     ответ будет обоснован источниками."""
     container = turn_capture.get()
-    trace: list = []
-    token = trace_sink.set(trace)  # pipeline stages record here (this task + child lanes)
     try:
         result = await get_pipeline().answer(query)
     except Exception:
         return "Не удалось обратиться к базе знаний. Ответь по общим знаниям, если это уместно."
-    finally:
-        trace_sink.reset(token)
     if container is not None:
-        container["result"] = result
-        container["trace"] = trace  # captured for the chat debug view (see app._render_run_steps)
+        container["result"] = result  # captured for on_message (citations metadata)
     return result.decision.answer or "В базе знаний нет ответа на этот вопрос."
 
 

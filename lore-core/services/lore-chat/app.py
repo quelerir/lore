@@ -26,7 +26,7 @@ from run_trace import ToolCallTracker, iter_node_updates
 # Optional: grounded knowledge-base citations. If lore-retrieval is unavailable,
 # the chat runs unchanged (no capture, no citation metadata).
 try:
-    from lore_retrieval.pipeline.message import to_message_metadata
+    from lore_retrieval.observability import trace_sink
 
     from retrieval import turn_capture
 
@@ -84,8 +84,8 @@ async def chat_profiles() -> list[cl.ChatProfile]:
             name="fast",
             display_name="Быстрый",
             markdown_description=(
-                "Фиксированный langgraph-маршрут с одним циклом "
-                "инструментов (калькулятор). Предсказуем и быстр."
+                "Grounded-граф по базе знаний: retrieve (neo4j) → sql → "
+                "summarize. Ответ обоснован источниками, ход виден в трейсе."
             ),
             default=True,
         ),
@@ -171,38 +171,42 @@ async def on_chat_resume(thread: ThreadDict) -> None:
     cl.user_session.set("history", history[-MAX_HISTORY_MESSAGES:])
 
 
-async def _render_pipeline_trace(container: dict) -> None:
-    """Under a knowledge_base tool step, render the retrieval pipeline's own
-    stages (neo4j fan-out/expansion/rerank/resolve/grouping, table lane, SQL,
-    arbitration/cite) captured per-turn, plus each SQL call's outcome — so a wrong
-    answer can be traced to the stage that produced it."""
-    trace = container.get("trace") or []
-    for ev in trace:
-        stage = ev.get("stage", "")
-        data = ev.get("data", {})
-        # 'sql' events carry the actual generated query + execution result.
-        name = f"sql · {data.get('table', '')}" if stage == "sql" else stage
-        async with cl.Step(name=name, type=("tool" if stage == "sql" else "run")) as step:
-            step.output = json.dumps(data, ensure_ascii=False, indent=2)
+def _trace_step_meta(ev: dict) -> tuple[str, str]:
+    """(display name, step type) for a pipeline trace event. 'sql' events carry
+    the actual generated query + execution result."""
+    stage = ev.get("stage", "")
+    if stage == "sql":
+        return f"sql · {ev.get('data', {}).get('table', '')}", "tool"
+    return stage, "run"
 
 
 async def _render_run_steps(
     payload: Any, tracker: ToolCallTracker, container: Optional[dict]
 ) -> None:
-    """Render one LangGraph ``updates`` payload as a clean debug trace: a step per
-    node, and under it the node's tool calls (name + arguments + result). The
-    knowledge_base tool additionally shows the retrieval pipeline's inner stages.
-    Uses ``async with`` so each step nests under the on_message run (bare .send()
-    leaves parent_id unset, so the frontend trace would drop it)."""
+    """Render one LangGraph ``updates`` payload: a step per node, and under it the
+    node's tool calls plus the retrieval-pipeline stages produced while that node
+    ran. Pipeline stages come from the per-turn trace via a cursor, so each stage
+    nests under the node that produced it (retrieve → neo4j stages, sql → SQL
+    queries, summarize → arbitration/cite). Uses ``async with`` so steps nest
+    under the on_message run (bare .send() leaves parent_id unset → frontend drops
+    them)."""
+    trace = (container or {}).get("trace") or []
+    cursor = (container or {}).get("_trace_cursor", 0)
     for node_name, msgs in iter_node_updates(payload):
         events = tracker.observe(msgs)
+        new_trace = trace[cursor:]
+        cursor = len(trace)
         async with cl.Step(name=node_name, type="run"):
             for ev in events:
                 async with cl.Step(name=ev["name"], type="tool") as tool_step:
                     tool_step.input = json.dumps(ev["args"], ensure_ascii=False, indent=2)
                     tool_step.output = ev["result"]
-                    if ev["name"] == "knowledge_base" and container is not None:
-                        await _render_pipeline_trace(container)
+            for te in new_trace:
+                name, step_type = _trace_step_meta(te)
+                async with cl.Step(name=name, type=step_type) as stage_step:
+                    stage_step.output = json.dumps(te.get("data", {}), ensure_ascii=False, indent=2)
+    if container is not None:
+        container["_trace_cursor"] = cursor
 
 
 async def handle_message(
@@ -256,7 +260,20 @@ async def handle_message(
         if last and isinstance(last[-1], AIMessage) and isinstance(last[-1].content, str):
             streamed = last[-1].content
             await out.stream_token(streamed)
+    # Grounded graph carries citations in its final state (the summarize node);
+    # capture them for on_message to attach as message metadata.
+    if container is not None and isinstance(final_state, dict) and final_state.get("citations"):
+        container["citations"] = final_state["citations"]
     return streamed
+
+
+def _turn_citations(capture: dict) -> list:
+    """Citations from either path: the grounded graph's final state (fast mode) or
+    the deep-mode knowledge_base tool's PipelineResult."""
+    if capture.get("citations"):
+        return capture["citations"]
+    result = capture.get("result")
+    return list(getattr(result, "citations", []) or []) if result is not None else []
 
 
 @cl.on_message
@@ -275,19 +292,23 @@ async def on_message(message: cl.Message) -> None:
     out = cl.Message(content="")
     await out.send()
 
-    # Set the capture container in THIS (parent) task before running the agent;
-    # the knowledge_base tool mutates it (see retrieval.py for why this is robust
-    # across task boundaries). After the turn, attach any citations as metadata.
+    # Set the capture container + per-turn trace sink in THIS (parent) task before
+    # running the agent; pipeline stages (in the grounded graph nodes or the deep
+    # knowledge_base tool) record into the shared trace, and the grounded summarize
+    # node / the tool write their result here (robust across task boundaries).
     capture: dict = {}
     if _RETRIEVAL_AVAILABLE:
         turn_capture.set(capture)
+        trace: list = []
+        trace_sink.set(trace)
+        capture["trace"] = trace
 
     answer = await handle_message(agent, history, out, capture)
 
     if _RETRIEVAL_AVAILABLE:
-        result = capture.get("result")
-        if result is not None and getattr(result, "citations", None):
-            out.metadata = to_message_metadata(result)
+        citations = _turn_citations(capture)
+        if citations:
+            out.metadata = {"citations": [c.model_dump() for c in citations]}
     await out.update()
 
     history.append(AIMessage(content=answer))

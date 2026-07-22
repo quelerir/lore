@@ -66,7 +66,7 @@ async def fetch_chunks(
     where = "WHERE run_id::text = $1" if run_id else ""
     args = [run_id, limit] if run_id else [limit]
     limit_pos = "$2" if run_id else "$1"
-    conn = await asyncpg.connect(dsn)
+    conn = await asyncpg.connect(dsn, statement_cache_size=0)  # pgbouncer-safe
     try:
         async with conn.transaction(readonly=True):
             rows = await conn.fetch(

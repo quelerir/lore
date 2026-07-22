@@ -13,9 +13,17 @@ def build_agent(
     mode: Mode,
     model: BaseChatModel | None = None,
 ) -> CompiledStateGraph:
-    if model is None:
-        model = build_model()
-    tools = make_tools()
     if mode is Mode.DEEP:
-        return build_deep_agent(model, tools)
-    return build_fast_agent(model, tools)
+        return build_deep_agent(model or build_model(), make_tools())
+    # FAST = the grounded retrieval graph (retrieve → sql → summarize) when the
+    # knowledge base is configured; otherwise the plain calculator tool graph.
+    try:
+        from retrieval import get_pipeline, retrieval_configured
+
+        if retrieval_configured():
+            from agents.grounded import build_grounded_agent
+
+            return build_grounded_agent(get_pipeline())
+    except Exception:
+        pass
+    return build_fast_agent(model or build_model(), make_tools())

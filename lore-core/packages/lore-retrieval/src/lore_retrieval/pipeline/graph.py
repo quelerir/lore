@@ -90,17 +90,11 @@ class RetrievalPipeline:
         self._citation_preview_chars = citation_preview_chars
 
     async def answer(self, question: str) -> PipelineResult:
-        degradations: list[str] = []
-        (groups, resolution), (table_candidates, sql_results) = await asyncio.gather(
-            self._text_lane(question, degradations),
-            self._table_lane(question, degradations),
-        )
-        decision = await arbitrate_and_answer(self._chat_model, question, groups, sql_results)
-        self._tracer.record(
-            "arbitration",
-            {"note": decision.note, "used_sql": len(decision.used_sql_payload_ids)},
-        )
-        citations = await self._cite(decision, resolution.resolved)
+        """Full turn = the three stages in sequence. The lore-chat grounded graph
+        drives the SAME three methods as explicit LangGraph nodes."""
+        groups, resolution, table_candidates, degradations = await self.retrieve(question)
+        sql_results, sql_degr = await self.run_table_sql(question, table_candidates)
+        decision, citations = await self.summarize(question, groups, resolution, sql_results)
         return PipelineResult(
             decision=decision,
             groups=groups,
@@ -108,8 +102,46 @@ class RetrievalPipeline:
             table_candidates=table_candidates,
             citations=citations,
             rejected_evidence=resolution.rejected,
-            degradations=degradations,
+            degradations=degradations + sql_degr,
         )
+
+    # --- The three stages, exposed so a LangGraph can call them as nodes ---
+
+    async def retrieve(self, question: str):
+        """Stage 1 (neo4j): text lane ∥ table discovery. Returns
+        (groups, resolution, table_candidates, degradations)."""
+        degradations: list[str] = []
+        (groups, resolution), table_candidates = await asyncio.gather(
+            self._text_lane(question, degradations),
+            self._table_discover(question, degradations),
+        )
+        return groups, resolution, table_candidates, degradations
+
+    async def run_table_sql(
+        self, question: str, table_candidates: list[TableCandidate]
+    ) -> tuple[list[SQLResult], list[str]]:
+        """Stage 2: bounded parallel SQL over the discovered table candidates."""
+        degradations: list[str] = []
+        try:
+            sql_results = await run_sql_fanout(self._sql_runner, table_candidates, question)
+        except Exception as exc:
+            degradations.append("table_lane_unavailable")
+            self._tracer.record(
+                "table_sql", {"calls": 0, "degraded": True, "error": type(exc).__name__}
+            )
+            return [], degradations
+        self._tracer.record("table_sql", {"calls": len(sql_results)})
+        return sql_results, degradations
+
+    async def summarize(self, question, groups, resolution, sql_results):
+        """Stage 3: top-level arbitration (final answer) + citation resolution."""
+        decision = await arbitrate_and_answer(self._chat_model, question, groups, sql_results)
+        self._tracer.record(
+            "arbitration",
+            {"note": decision.note, "used_sql": len(decision.used_sql_payload_ids)},
+        )
+        citations = await self._cite(decision, resolution.resolved)
+        return decision, citations
 
     async def _cite(self, decision, envelopes):
         """Dedicated cite step: resolve the model's [n] markers into Citations."""
@@ -231,10 +263,10 @@ class RetrievalPipeline:
             citations=[chunk_id],
         )
 
-    async def _table_lane(
+    async def _table_discover(
         self, question: str, degradations: list[str]
-    ) -> tuple[list[TableCandidate], list[SQLResult]]:
-        # Table-lane failure must not sink the text answer.
+    ) -> list[TableCandidate]:
+        # Table discovery (neo4j). SQL execution is a separate stage (run_table_sql).
         try:
             fused = await discover_table_candidates(self._table_search, question)
             table_ids = [cid for cid, _ in fused]
@@ -256,12 +288,10 @@ class RetrievalPipeline:
                 reranked, payload_by_chunk, floor=self._table_floor, max_k=self._max_sql
             )
             self._tracer.record("table_discover", {"candidates": len(candidates)})
-            sql_results = await run_sql_fanout(self._sql_runner, candidates, question)
-            self._tracer.record("table_sql", {"calls": len(sql_results)})
-            return candidates, sql_results
+            return candidates
         except Exception as exc:
             degradations.append("table_lane_unavailable")
             self._tracer.record(
-                "table_sql", {"calls": 0, "degraded": True, "error": type(exc).__name__}
+                "table_discover", {"candidates": 0, "degraded": True, "error": type(exc).__name__}
             )
-            return [], []
+            return []

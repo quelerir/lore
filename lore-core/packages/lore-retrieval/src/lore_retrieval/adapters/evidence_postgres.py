@@ -65,7 +65,7 @@ class PostgresEvidenceResolver:
     async def resolve(self, chunk_ids: list[str], *, index_version: str) -> ResolutionResult:
         import asyncpg
 
-        conn = await asyncpg.connect(self._dsn)
+        conn = await asyncpg.connect(self._dsn, statement_cache_size=0)  # pgbouncer-safe
         try:
             async with conn.transaction(readonly=True):
                 rows = await conn.fetch(
