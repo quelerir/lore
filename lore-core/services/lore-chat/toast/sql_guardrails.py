@@ -7,6 +7,7 @@ CTE разрешены: алиасы WITH исключаются из прове
 Вторая линия обороны — read-only транзакция в исполнителе.
 """
 
+import os
 import re
 
 import sqlglot
@@ -14,7 +15,9 @@ from sqlglot import exp
 
 TOAST_TABLE_RE = re.compile(r"^toast_tbl_[0-9a-f]{20}$")
 
-ALLOWED_SCHEMA = "splitter_toast"
+# Схема физических toast-таблиц. Конфигурируема: апстрим splitter уже переезжал
+# (splitter_toast → lore_toast), поэтому имя — из окружения, а не хардкод.
+ALLOWED_SCHEMA = os.environ.get("TOAST_SCHEMA", "lore_toast")
 
 # Денайлист функций (сравнение по нормализации: lower + без подчёркиваний,
 # по префиксу — накрывает семейства вида query_to_xml*/dblink_*/pg_read_*).
@@ -38,7 +41,7 @@ def _forbidden_func(stmt: exp.Expression) -> str | None:
 
 
 def qualify_table(sql: str, table: str) -> str:
-    """Дописывает splitter_toast. к голому имени переданной таблицы.
+    """Дописывает ALLOWED_SCHEMA. к голому имени переданной таблицы.
 
     AST-трансформ, а не regex: подстрока в строковом литерале не
     переписывается. Неразбираемый SQL возвращается как есть — упадёт в

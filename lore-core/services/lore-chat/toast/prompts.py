@@ -9,9 +9,10 @@ generate_prompt собирает базовый блок + секции фидб
 import json
 
 from toast.models import Attempt, SqlToolState
+from toast.sql_guardrails import ALLOWED_SCHEMA
 
 FIXED_SCHEMA = (
-    "Таблицы извлечены из XLSX (Postgres, схема splitter_toast). У каждой "
+    f"Таблицы извлечены из XLSX (Postgres, схема {ALLOWED_SCHEMA}). У каждой "
     "первые служебные колонки: _splitter_row_number (int), "
     "_splitter_source_row (int), _splitter_source_range (text). Дальше — "
     "колонки данных: column_1, column_2, ... или переименованные "
