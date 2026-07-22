@@ -45,8 +45,9 @@ src/lore_retrieval/
 ## Code-ahead — UNVERIFIED vs live (mock-tested only, clearly flagged in-module)
 
 - `adapters/neo4j_backends.py`: `Neo4j{ChunkSearch,TableSearch,GraphExpansion}Backend` +
-  `neo4j_spike.project_structure` (Section nodes + HAS_SECTION/HAS_SUBSECTION/HAS_CHUNK/NEXT).
-  Needs a live Neo4j to validate Cypher/index behaviour.
+  `neo4j_spike.project_structure` — **VERIFIED LIVE 2026-07-22** on Neo4j Community 5.26.28
+  (`spikes/live_validate_neo4j.py`; fixed the deprecated `CALL{WITH}` → `CALL(seed){}`). No longer
+  code-ahead.
 - `adapters/evidence_postgres.py`, `adapters/file_keys.py`: asyncpg over `lore_core.chunks` /
   `processing_runs` — pure cores unit-tested; SQL needs a live `loreagent_test` DSN.
 - `adapters/chat_openrouter.py`: httpx OpenRouter adapter, mock-tested (needs a key to run live).
