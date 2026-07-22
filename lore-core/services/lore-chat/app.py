@@ -177,18 +177,13 @@ async def _render_pipeline_trace(container: dict) -> None:
     arbitration/cite) captured per-turn, plus each SQL call's outcome — so a wrong
     answer can be traced to the stage that produced it."""
     trace = container.get("trace") or []
-    result = container.get("result")
     for ev in trace:
         stage = ev.get("stage", "")
         data = ev.get("data", {})
-        async with cl.Step(name=stage, type="run") as step:
-            step.output = json.dumps(data, ensure_ascii=False)
-            if stage == "table_sql" and result is not None:
-                for r in getattr(result, "sql_results", []) or []:
-                    async with cl.Step(name=f"sql · {r.payload_id}", type="tool") as sub:
-                        rows = getattr(r, "rows", []) or []
-                        summary = getattr(r, "answer_summary", "") or ""
-                        sub.output = f"status={r.status} · rows={len(rows)}\n{summary}"
+        # 'sql' events carry the actual generated query + execution result.
+        name = f"sql · {data.get('table', '')}" if stage == "sql" else stage
+        async with cl.Step(name=name, type=("tool" if stage == "sql" else "run")) as step:
+            step.output = json.dumps(data, ensure_ascii=False, indent=2)
 
 
 async def _render_run_steps(

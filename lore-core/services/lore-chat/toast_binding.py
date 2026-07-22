@@ -15,6 +15,7 @@ from lore_retrieval.adapters.context_postgres import PostgresChunkContextLoader
 from lore_retrieval.adapters.sql_callable import CallableSqlRunner
 from lore_retrieval.config import get_settings as _settings
 from lore_retrieval.contracts import SQLResult, SQLStatus, SqlRequest
+from lore_retrieval.observability import trace_sink
 
 from toast.executor import PgExecutor
 from toast.models import ok_rows
@@ -89,6 +90,17 @@ async def _run(request: SqlRequest) -> SQLResult:
             "desc_full": chunk.fulltext,
         }
     )
+    # Surface the actual generated SQL + execution for the chat debug trace.
+    sink = trace_sink.get()
+    if sink is not None:
+        for a in state.get("attempts", []):
+            sink.append({"stage": "sql", "data": {
+                "table": request.payload_id,
+                "sql": a.get("sql", ""),
+                "ok": a.get("ok"),
+                "rows": a.get("row_count", 0),
+                "error": a.get("error"),
+            }})
     status = _STATUS_MAP.get(state.get("status", ""), SQLStatus.execution_error)
     answer = state.get("answer") or None
     return SQLResult(
