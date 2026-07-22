@@ -61,6 +61,8 @@ async def test_pipeline_emits_citations_from_markers():
     assert c.preview_text  # non-empty preview
 
 
-async def test_pipeline_without_markers_has_no_citations():
+async def test_pipeline_without_markers_falls_back_to_grounded_sources():
     result = await _pipeline(lambda _p: "Ответ без ссылок.").answer("премия сотрудника формула")
-    assert result.citations == []
+    # No markers but grounding existed -> deterministic top-N fallback (marker=None).
+    assert result.citations
+    assert all(c.marker is None for c in result.citations)

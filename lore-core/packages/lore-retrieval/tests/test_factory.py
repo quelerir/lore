@@ -26,8 +26,10 @@ async def test_factory_builds_working_pipeline_with_citations():
     assert result.citations[0].logical_file_key == "doc.pdf"
 
 
-async def test_factory_default_responder_has_no_citations():
+async def test_factory_default_responder_falls_back_to_grounded_sources():
     pipe = build_offline_pipeline(CORPUS)
     result = await pipe.answer("премия")
     assert result.decision.answer == "ОТВЕТ"   # default responder emits no [n] markers
-    assert result.citations == []
+    # No markers but grounding existed -> deterministic top-N fallback (marker=None).
+    assert result.citations
+    assert all(c.marker is None for c in result.citations)
