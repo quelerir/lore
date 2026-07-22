@@ -1,10 +1,21 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Package root (…/lore-retrieval): src/lore_retrieval/config.py -> parents[2].
+_PKG_ROOT = Path(__file__).resolve().parents[2]
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="RETRIEVAL_", extra="ignore")
+    # Reads real env vars first, then a gitignored .env / .env.local in the
+    # package root (put RETRIEVAL_NEO4J_* / RETRIEVAL_LORE_CORE_DSN there).
+    model_config = SettingsConfigDict(
+        env_prefix="RETRIEVAL_",
+        env_file=(str(_PKG_ROOT / ".env"), str(_PKG_ROOT / ".env.local")),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
