@@ -51,7 +51,7 @@ def _pipeline(**over):
 
 
 async def test_fanout_degrades_when_one_route_fails():
-    res, degraded = await fan_out_and_fuse(OneLaneBackend(CORPUS), "премия формула")
+    res, degraded, _failures = await fan_out_and_fuse(OneLaneBackend(CORPUS), "премия формула")
     assert degraded == ["vector_search_failed"]
     assert [cid for cid, _ in res.fused]              # fulltext still produced candidates
 

@@ -166,11 +166,15 @@ class RetrievalPipeline:
         return citations
 
     async def _text_lane(self, question: str, degradations: list[str]):
-        fanout, fan_degraded = await fan_out_and_fuse(
+        fanout, fan_degraded, fan_failures = await fan_out_and_fuse(
             self._chunk_search, question, index_version=self._index_version
         )
         degradations.extend(fan_degraded)
-        self._tracer.record("text_fanout", {"fused": len(fanout.fused), "degraded": fan_degraded})
+        fanout_trace: dict = {"fused": len(fanout.fused), "degraded": fan_degraded}
+        # Surface the real exception(s) so a failed route isn't silent in the trace.
+        if fan_failures:
+            fanout_trace["failures"] = fan_failures
+        self._tracer.record("text_fanout", fanout_trace)
 
         # Structural expansion is discovery — degrade gracefully if it fails.
         try:

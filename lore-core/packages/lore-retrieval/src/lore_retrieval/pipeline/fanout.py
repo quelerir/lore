@@ -5,7 +5,11 @@ each route's ranked candidates for provenance, then fuses with Reciprocal Rank
 Fusion and deduplicates by canonical chunk_id.
 
 Degradation (spec): a route that fails does not sink the lane — the other route
-still answers, and the failed route name is returned so the caller can record it.
+still answers. Two things are returned about a failure: the frontend-facing
+degradation code (``vector_search_failed`` / ``fulltext_search_failed``) and a
+structured failure record carrying the exception type + repr, so the real error
+reaches the trace instead of being swallowed by ``return_exceptions`` — parity
+with the table-SQL and structural-expansion stages.
 """
 import asyncio
 
@@ -22,7 +26,7 @@ async def fan_out_and_fuse(
     fulltext_k: int = 50,
     rrf_k: int = 60,
     index_version: str = "spike1",
-) -> tuple[FanoutResult, list[str]]:
+) -> tuple[FanoutResult, list[str], list[dict[str, str]]]:
     raw = await asyncio.gather(
         backend.vector_search(query, vector_k),
         backend.fulltext_search(query, fulltext_k),
@@ -30,10 +34,14 @@ async def fan_out_and_fuse(
     )
 
     degraded: list[str] = []
+    failures: list[dict[str, str]] = []
     resolved: list[list[tuple[str, float]]] = []
     for name, result in (("vector_search_failed", raw[0]), ("fulltext_search_failed", raw[1])):
         if isinstance(result, BaseException):
             degraded.append(name)
+            failures.append(
+                {"lane": name, "error": type(result).__name__, "detail": repr(result)}
+            )
             resolved.append([])
         else:
             resolved.append(result)
@@ -53,4 +61,4 @@ async def fan_out_and_fuse(
             )
 
     fused = rrf_fuse([vec, ft], rrf_k=rrf_k)
-    return FanoutResult(per_route=per_route, fused=fused), degraded
+    return FanoutResult(per_route=per_route, fused=fused), degraded, failures
