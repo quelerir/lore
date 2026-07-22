@@ -21,6 +21,13 @@ _PREMIA = [
     _txt("c2", 2, ("Root", "Премия"), "формула премии зависит от оклада"),
 ]
 
+# Corpus with an off-topic distractor: the relevant chunk must still be retrieved
+# and cited without the distractor polluting the grounding.
+_MIXED = [
+    _txt("v1", 1, ("Root", "Отпуск"), "отпуск оформляется заявлением за две недели"),
+    _txt("v2", 2, ("Root", "Парковка"), "парковка для гостей офиса на первом этаже"),
+]
+
 
 GOLDEN_CASES: list[EvalCase] = [
     EvalCase(
@@ -38,5 +45,22 @@ GOLDEN_CASES: list[EvalCase] = [
         responder=lambda _prompt: "Ответ без маркеров.",
         gold_chunk_ids=("c1",),
         file_keys={"d1": "premia.pdf"},
+    ),
+    EvalCase(
+        name="distractor_does_not_pollute",
+        query="как оформить отпуск заявление",
+        corpus=_MIXED,
+        responder=lambda _prompt: "Отпуск оформляется заявлением [1].",
+        gold_chunk_ids=("v1",),
+        file_keys={"d1": "office.pdf"},
+    ),
+    EvalCase(
+        name="declines_when_no_evidence",
+        query="конфигурация гиперпространственного двигателя",
+        corpus=_PREMIA,
+        responder=lambda _prompt: "Я не должен отвечать без источников.",
+        gold_chunk_ids=(),          # negative case: nothing should ground
+        file_keys={"d1": "premia.pdf"},
+        expect_answer=False,        # pipeline must decline (empty answer), not invent
     ),
 ]

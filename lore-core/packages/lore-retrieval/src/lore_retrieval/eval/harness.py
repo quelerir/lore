@@ -23,17 +23,21 @@ from lore_retrieval.source import SourceChunk
 
 @dataclass(frozen=True)
 class CaseMetrics:
-    retrieval_hit: bool
-    citation_hit: bool
-    grounded: bool
-    fell_back: bool
+    has_gold: bool          # positive case (a gold source is expected retrieved/cited)
+    retrieval_hit: bool     # gold surfaced (text group or table anchor) — positive cases
+    citation_hit: bool      # gold ended up cited — positive cases
+    grounded: bool          # every citation maps to retrieved evidence (all cases)
+    fell_back: bool         # answered by the deterministic top-N fallback (all cases)
+    answered: bool          # a non-empty answer was produced (all cases)
+    answer_expected: bool   # the case expects an answer (False for decline cases)
 
 
 @dataclass(frozen=True)
 class EvalCase:
     """One labelled eval case. ``responder`` scripts the (fake) model's answer so the
     run is deterministic offline; ``gold_chunk_ids`` are the sources that should be
-    retrieved/cited."""
+    retrieved/cited (empty = a negative/decline case). ``expect_answer=False`` marks a
+    case that SHOULD decline (no grounding → empty answer, no invented facts)."""
 
     name: str
     query: str
@@ -41,6 +45,7 @@ class EvalCase:
     responder: Callable[[str], str]
     gold_chunk_ids: tuple[str, ...]
     file_keys: dict[str, str]
+    expect_answer: bool = True
 
 
 def _retrieved_ids(result: PipelineResult) -> set[str]:
@@ -49,38 +54,50 @@ def _retrieved_ids(result: PipelineResult) -> set[str]:
     return ids
 
 
-def evaluate_case(result: PipelineResult, gold_chunk_ids: Sequence[str]) -> CaseMetrics:
-    """Score one pipeline run against its gold sources (pure)."""
+def evaluate_case(
+    result: PipelineResult, gold_chunk_ids: Sequence[str], *, expect_answer: bool = True
+) -> CaseMetrics:
+    """Score one pipeline run against its labels (pure)."""
     retrieved = _retrieved_ids(result)
     cited = {citation.chunk_id for citation in result.citations}
     gold = set(gold_chunk_ids)
     return CaseMetrics(
+        has_gold=bool(gold),
         retrieval_hit=bool(gold & retrieved),
         citation_hit=bool(gold & cited),
         grounded=all(citation.chunk_id in retrieved for citation in result.citations),
         fell_back=bool(result.citations)
         and all(citation.marker is None for citation in result.citations),
+        answered=bool((result.decision.answer or "").strip()),
+        answer_expected=expect_answer,
     )
 
 
 def aggregate(metrics: list[CaseMetrics]) -> dict:
-    """Mean each boolean metric across cases; empty is safe (all zeros)."""
+    """Aggregate metrics. Recall is over positive (gold) cases only; answered /
+    decline / grounding / fallback are over all cases. Empty is safe (all zeros)."""
     n = len(metrics)
     if n == 0:
         return {
-            "n": 0, "retrieval_recall": 0.0, "citation_recall": 0.0,
-            "grounding": 0.0, "fallback_rate": 0.0,
+            "n": 0, "n_gold": 0, "retrieval_recall": 0.0, "citation_recall": 0.0,
+            "grounding": 0.0, "fallback_rate": 0.0, "answer_rate": 0.0,
+            "decline_correct": 0.0,
         }
 
-    def rate(pred: Callable[[CaseMetrics], bool]) -> float:
-        return sum(1 for m in metrics if pred(m)) / n
+    def rate(items: list[CaseMetrics], pred: Callable[[CaseMetrics], bool]) -> float:
+        return sum(1 for m in items if pred(m)) / len(items) if items else 0.0
 
+    gold_cases = [m for m in metrics if m.has_gold]
     return {
         "n": n,
-        "retrieval_recall": rate(lambda m: m.retrieval_hit),
-        "citation_recall": rate(lambda m: m.citation_hit),
-        "grounding": rate(lambda m: m.grounded),
-        "fallback_rate": rate(lambda m: m.fell_back),
+        "n_gold": len(gold_cases),
+        "retrieval_recall": rate(gold_cases, lambda m: m.retrieval_hit),
+        "citation_recall": rate(gold_cases, lambda m: m.citation_hit),
+        "grounding": rate(metrics, lambda m: m.grounded),
+        "fallback_rate": rate(metrics, lambda m: m.fell_back),
+        "answer_rate": rate(metrics, lambda m: m.answered),
+        # answered iff expected — declines correctly, answers when it should.
+        "decline_correct": rate(metrics, lambda m: m.answered == m.answer_expected),
     }
 
 
@@ -92,15 +109,19 @@ async def run_eval(cases: Sequence[EvalCase]) -> dict:
             case.corpus, chat_responder=case.responder, file_keys=case.file_keys
         )
         result = await pipeline.answer(case.query)
-        metrics.append(evaluate_case(result, case.gold_chunk_ids))
+        metrics.append(
+            evaluate_case(result, case.gold_chunk_ids, expect_answer=case.expect_answer)
+        )
     return aggregate(metrics)
 
 
 def format_report(report: dict) -> str:
     return (
-        f"cases={report['n']} "
+        f"cases={report['n']} (gold={report['n_gold']}) "
         f"retrieval_recall={report['retrieval_recall']:.2f} "
         f"citation_recall={report['citation_recall']:.2f} "
         f"grounding={report['grounding']:.2f} "
-        f"fallback_rate={report['fallback_rate']:.2f}"
+        f"fallback_rate={report['fallback_rate']:.2f} "
+        f"answer_rate={report['answer_rate']:.2f} "
+        f"decline_correct={report['decline_correct']:.2f}"
     )
