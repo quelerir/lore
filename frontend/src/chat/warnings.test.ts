@@ -26,6 +26,28 @@ describe("extractWarnings", () => {
     expect(w[0].text).toContain("weird_new_code");
   });
 
+  // Guard: every degradation code the backend can emit must have a human label,
+  // never the raw-code fallback. Keep this list in sync with the backend —
+  // grep `degradations`/`degraded.append` in lore-retrieval + lore-chat.
+  it("has a human label for every known backend degradation code", () => {
+    const BACKEND_CODES = [
+      "answer_generation_failed",
+      "auto_merging_failed",
+      "context_load_failed",
+      "fulltext_search_failed",
+      "reranker_failed",
+      "structural_expansion_failed",
+      "table_lane_unavailable",
+      "vector_search_failed",
+    ];
+    for (const code of BACKEND_CODES) {
+      const [w] = extractWarnings(step({ degradations: [code] }));
+      expect(w, code).toBeDefined();
+      expect(w.text, code).not.toContain(code); // not the `Ограничение: <code>` fallback
+      expect(w.text, code).not.toContain("Ограничение:");
+    }
+  });
+
   it("surfaces a hard error as an error-level warning", () => {
     const w = extractWarnings(step({ error: "HTTPStatusError" }));
     expect(w).toEqual([{ level: "error", text: "Ошибка при обработке запроса" }]);
