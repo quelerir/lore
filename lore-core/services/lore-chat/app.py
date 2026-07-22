@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Any, Optional
 
 import chainlit as cl
@@ -260,10 +261,13 @@ async def handle_message(
         if last and isinstance(last[-1], AIMessage) and isinstance(last[-1].content, str):
             streamed = last[-1].content
             await out.stream_token(streamed)
-    # Grounded graph carries citations in its final state (the summarize node);
-    # capture them for on_message to attach as message metadata.
-    if container is not None and isinstance(final_state, dict) and final_state.get("citations"):
-        container["citations"] = final_state["citations"]
+    # Grounded graph carries citations + degradations in its final state; capture
+    # both for on_message to attach as message metadata (cards + warning chips).
+    if container is not None and isinstance(final_state, dict):
+        if final_state.get("citations"):
+            container["citations"] = final_state["citations"]
+        if final_state.get("degradations"):
+            container["degradations"] = final_state["degradations"]
     return streamed
 
 
@@ -274,6 +278,15 @@ def _turn_citations(capture: dict) -> list:
         return capture["citations"]
     result = capture.get("result")
     return list(getattr(result, "citations", []) or []) if result is not None else []
+
+
+def _turn_degradations(capture: dict) -> list:
+    """Degradations from either path: grounded graph state (fast) or the deep-mode
+    knowledge_base PipelineResult. Surfaced as warning chips on the message."""
+    if capture.get("degradations"):
+        return list(capture["degradations"])
+    result = capture.get("result")
+    return list(getattr(result, "degradations", []) or []) if result is not None else []
 
 
 @cl.on_message
@@ -303,12 +316,31 @@ async def on_message(message: cl.Message) -> None:
         trace_sink.set(trace)
         capture["trace"] = trace
 
-    answer = await handle_message(agent, history, out, capture)
+    try:
+        answer = await handle_message(agent, history, out, capture)
+    except Exception as exc:
+        # Last-resort net: any uncaught turn error surfaces as a visible message +
+        # an error flag, never silent (the grounded graph degrades most failures
+        # itself; this covers the rest — deep mode, node crashes, transport).
+        logging.exception("turn failed")
+        answer = "⚠️ Ошибка при обработке запроса. Попробуйте ещё раз."
+        out.content = answer
+        out.metadata = {"error": type(exc).__name__}
+        await out.update()
+        history.append(AIMessage(content=answer))
+        cl.user_session.set("history", history[-MAX_HISTORY_MESSAGES:])
+        return
 
     if _RETRIEVAL_AVAILABLE:
+        meta: dict = {}
         citations = _turn_citations(capture)
         if citations:
-            out.metadata = {"citations": [c.model_dump() for c in citations]}
+            meta["citations"] = [c.model_dump() for c in citations]
+        degradations = _turn_degradations(capture)
+        if degradations:
+            meta["degradations"] = degradations
+        if meta:
+            out.metadata = meta
     await out.update()
 
     history.append(AIMessage(content=answer))

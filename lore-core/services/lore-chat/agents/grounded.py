@@ -127,12 +127,27 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
         }
 
     async def summarize(state: GroundedState) -> dict:
-        decision, citations = await pipeline.summarize(
-            _question(state["messages"]),
-            state.get("groups", []),
-            state["resolution"],
-            state.get("sql_results", []),
-        )
+        try:
+            decision, citations = await pipeline.summarize(
+                _question(state["messages"]),
+                state.get("groups", []),
+                state["resolution"],
+                state.get("sql_results", []),
+            )
+        except Exception as exc:
+            # Answer generation failed (model 403/timeout/etc). Degrade VISIBLY —
+            # a shown message + a degradation flag — instead of crashing the turn.
+            return {
+                "messages": [
+                    AIMessage(
+                        content="⚠️ Не удалось сгенерировать ответ — сервис модели "
+                        "сейчас недоступен. Попробуйте ещё раз позже."
+                    )
+                ],
+                "citations": [],
+                "degradations": state.get("degradations", []) + ["answer_generation_failed"],
+                "answer_detail": {"error": type(exc).__name__, "detail": repr(exc)},
+            }
         answer = decision.answer or "В базе знаний нет ответа на этот вопрос."
         return {
             "messages": [AIMessage(content=answer)],
