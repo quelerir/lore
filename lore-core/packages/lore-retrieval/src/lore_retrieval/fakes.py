@@ -73,6 +73,18 @@ class InMemoryChunkSearchBackend:
         return _rank_vector(self._table, query, top_k)
 
 
+class InMemoryChunkContextLoader:
+    """Offline ChunkContextLoader over one in-memory corpus: returns the
+    ``SourceChunk`` rows for the requested ids (order preserved, unknown ids
+    dropped) — the fake counterpart of the Postgres per-query loader."""
+
+    def __init__(self, chunks: list[SourceChunk]) -> None:
+        self._by_id = {c.chunk_id: c for c in chunks}
+
+    async def load(self, chunk_ids: list[str]) -> list[SourceChunk]:
+        return [self._by_id[cid] for cid in chunk_ids if cid in self._by_id]
+
+
 class InMemoryGraphExpansion:
     """Offline stand-in for the Neo4j GraphExpansionBackend, driven by a
     StructuralProjection (see ``projection_model``). Mirrors the fixed bounded

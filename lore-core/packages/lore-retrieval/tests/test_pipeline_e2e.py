@@ -5,6 +5,7 @@ from lore_retrieval.fakes import (
     FakeChatModel,
     FakeReranker,
     FakeSqlRunner,
+    InMemoryChunkContextLoader,
     InMemoryChunkSearchBackend,
     InMemoryEvidenceResolver,
     InMemoryGraphExpansion,
@@ -42,9 +43,6 @@ CORPUS = [
 
 def _pipeline(*, table_search=None, sql_runner=None, chat_model=None):
     projection = build_structural_projection(CORPUS)
-    positions = {c.chunk_id: c.position for c in CORPUS}
-    text_by_id = {c.chunk_id: c.fulltext for c in CORPUS}
-    payload_by_chunk = {"t1": "pay_sal", "t2": "pay_sal"}
     backend = InMemoryChunkSearchBackend(CORPUS)
     return RetrievalPipeline(
         chunk_search=backend,
@@ -58,10 +56,7 @@ def _pipeline(*, table_search=None, sql_runner=None, chat_model=None):
                                  status=SQLStatus.success, answer_summary="средний оклад 100000"),
         }),
         chat_model=chat_model or FakeChatModel(lambda _p: "ГОТОВЫЙ ОТВЕТ"),
-        projection=projection,
-        positions=positions,
-        text_by_id=text_by_id,
-        payload_by_chunk=payload_by_chunk,
+        context_loader=InMemoryChunkContextLoader(CORPUS),
     )
 
 

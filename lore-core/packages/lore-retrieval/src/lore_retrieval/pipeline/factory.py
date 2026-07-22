@@ -11,6 +11,7 @@ from lore_retrieval.fakes import (
     FakeFileKeyResolver,
     FakeReranker,
     FakeSqlRunner,
+    InMemoryChunkContextLoader,
     InMemoryChunkSearchBackend,
     InMemoryEvidenceResolver,
     InMemoryGraphExpansion,
@@ -31,14 +32,6 @@ def build_offline_pipeline(
 ) -> RetrievalPipeline:
     projection = build_structural_projection(chunks)
     backend = InMemoryChunkSearchBackend(chunks)
-    payload_by_chunk = {
-        c.chunk_id: c.payload_refs[0]["payload_id"]
-        for c in chunks
-        if c.is_table
-        and c.payload_refs
-        and isinstance(c.payload_refs[0], dict)
-        and "payload_id" in c.payload_refs[0]
-    }
     kwargs = dict(
         chunk_search=backend,
         graph_expansion=InMemoryGraphExpansion(projection),
@@ -47,12 +40,54 @@ def build_offline_pipeline(
         table_search=backend,
         sql_runner=FakeSqlRunner(sql_outcomes or {}),
         chat_model=FakeChatModel(chat_responder),
-        projection=projection,
-        positions={c.chunk_id: c.position for c in chunks},
-        text_by_id={c.chunk_id: c.fulltext for c in chunks},
-        payload_by_chunk=payload_by_chunk,
+        context_loader=InMemoryChunkContextLoader(chunks),
         file_key_resolver=FakeFileKeyResolver(file_keys) if file_keys else None,
         tracer=tracer,
+    )
+    kwargs.update(overrides)
+    return RetrievalPipeline(**kwargs)
+
+
+def build_live_pipeline(
+    *,
+    driver,
+    database: str,
+    dsn: str,
+    embedder,
+    chat_model,
+    index_version: str,
+    file_key_resolver=None,
+    sql_runner=None,
+    reranker=None,
+    **overrides,
+) -> RetrievalPipeline:
+    """Assemble a production RetrievalPipeline: Neo4j search/expansion + bge-m3
+    embedder + lore_core Postgres resolver/file-keys/context-loader + the injected
+    ChatModel. Assumes Neo4j is ALREADY projected under ``index_version`` (a
+    separate indexing job) — this only queries. P0 has no reranker (identity) and
+    no live TOAST binding (empty SqlRunner); both are injectable via overrides.
+    Local imports keep the offline factory free of neo4j/asyncpg at import time.
+    """
+    from lore_retrieval.adapters.context_postgres import PostgresChunkContextLoader
+    from lore_retrieval.adapters.evidence_postgres import PostgresEvidenceResolver
+    from lore_retrieval.adapters.file_keys import PostgresFileKeyResolver
+    from lore_retrieval.adapters.neo4j_backends import (
+        Neo4jChunkSearchBackend,
+        Neo4jGraphExpansionBackend,
+        Neo4jTableSearchBackend,
+    )
+
+    kwargs = dict(
+        chunk_search=Neo4jChunkSearchBackend(driver, database, index_version, embedder),
+        graph_expansion=Neo4jGraphExpansionBackend(driver, database, index_version),
+        reranker=reranker or FakeReranker(),  # P0: no reranker (identity)
+        resolver=PostgresEvidenceResolver(dsn),
+        table_search=Neo4jTableSearchBackend(driver, database, index_version, embedder),
+        sql_runner=sql_runner or FakeSqlRunner({}),  # text-lane citations: no live TOAST
+        chat_model=chat_model,
+        context_loader=PostgresChunkContextLoader(dsn),
+        file_key_resolver=file_key_resolver or PostgresFileKeyResolver(dsn),
+        index_version=index_version,
     )
     kwargs.update(overrides)
     return RetrievalPipeline(**kwargs)

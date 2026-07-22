@@ -15,6 +15,7 @@ import asyncio
 from lore_retrieval.contracts import ContextGroup, PipelineResult, SQLResult, TableCandidate
 from lore_retrieval.interfaces import (
     ChatModel,
+    ChunkContextLoader,
     ChunkSearchBackend,
     CanonicalEvidenceResolver,
     GraphExpansionBackend,
@@ -35,7 +36,7 @@ from lore_retrieval.pipeline.table_lane import (
     select_table_candidates,
 )
 from lore_retrieval.observability import NullTracer
-from lore_retrieval.projection_model import StructuralProjection
+from lore_retrieval.projection_model import StructuralProjection, build_structural_projection
 
 
 def _dedup(ids: list[str]) -> list[str]:
@@ -59,10 +60,7 @@ class RetrievalPipeline:
         table_search: TableSearchBackend,
         sql_runner: SqlRunner,
         chat_model: ChatModel,
-        projection: StructuralProjection,
-        positions: dict[str, int],
-        text_by_id: dict[str, str],
-        payload_by_chunk: dict[str, str],
+        context_loader: ChunkContextLoader,
         file_key_resolver=None,  # optional: async .resolve(run_ids) -> {run_id: logical_file_key}
         tracer=None,  # optional observability seam; defaults to no-op
         index_version: str = "spike1",
@@ -80,10 +78,7 @@ class RetrievalPipeline:
         self._table_search = table_search
         self._sql_runner = sql_runner
         self._chat_model = chat_model
-        self._projection = projection
-        self._positions = positions
-        self._text_by_id = text_by_id
-        self._payload_by_chunk = payload_by_chunk
+        self._context_loader = context_loader
         self._file_key_resolver = file_key_resolver
         self._tracer = tracer or NullTracer()
         self._index_version = index_version
@@ -160,9 +155,14 @@ class RetrievalPipeline:
         candidate_ids = _dedup(
             [cid for cid, _ in fanout.fused] + [c.chunk_id for c in expanded]
         )
+        # Per-query context: load ONLY the candidate rows, then derive the maps
+        # (positions / text / candidate-scoped projection) locally — never the
+        # whole corpus. Loader failure degrades to empty maps (turn survives).
+        projection, positions, text_by_id = await self._load_context(candidate_ids, degradations)
+
         try:
             reranked = await rerank_stage(
-                self._reranker, question, candidate_ids, self._text_by_id, top_k=self._rerank_top_k
+                self._reranker, question, candidate_ids, text_by_id, top_k=self._rerank_top_k
             )
         except Exception:
             # Reranker down: fall back to the bounded fused order (spec degradation).
@@ -183,27 +183,50 @@ class RetrievalPipeline:
         reranked_valid = [(cid, score) for cid, score in reranked if cid in valid]
 
         try:
-            groups = build_context_groups(
-                reranked_valid, self._projection, self._positions, self._text_by_id
-            )
+            groups = build_context_groups(reranked_valid, projection, positions, text_by_id)
         except Exception:
             # Auto-merging failed: pass bounded individual chunks rather than lose evidence.
-            groups = [self._singleton_group(cid, score) for cid, score in reranked_valid]
+            groups = [
+                self._singleton_group(cid, score, projection, positions, text_by_id)
+                for cid, score in reranked_valid
+            ]
             degradations.append("auto_merging_failed")
         self._tracer.record("grouping", {"groups": len(groups)})
         return groups, resolution
 
-    def _singleton_group(self, chunk_id: str, score: float) -> ContextGroup:
-        pos = self._positions.get(chunk_id, 0)
+    async def _load_context(
+        self, chunk_ids: list[str], degradations: list[str]
+    ) -> tuple[StructuralProjection, dict[str, int], dict[str, str]]:
+        try:
+            chunks = await self._context_loader.load(chunk_ids)
+        except Exception as exc:
+            degradations.append("context_load_failed")
+            self._tracer.record("text_context", {"loaded": 0, "error": type(exc).__name__})
+            chunks = []
+        self._tracer.record("text_context", {"loaded": len(chunks)})
+        projection = build_structural_projection(chunks)
+        positions = {c.chunk_id: c.position for c in chunks}
+        text_by_id = {c.chunk_id: c.fulltext for c in chunks}
+        return projection, positions, text_by_id
+
+    @staticmethod
+    def _singleton_group(
+        chunk_id: str,
+        score: float,
+        projection: StructuralProjection,
+        positions: dict[str, int],
+        text_by_id: dict[str, str],
+    ) -> ContextGroup:
+        pos = positions.get(chunk_id, 0)
         return ContextGroup(
             document_id="",
-            section_id=self._projection.chunk_section.get(chunk_id, ""),
+            section_id=projection.chunk_section.get(chunk_id, ""),
             section_path=(),
             scope="window",
             chunk_ids=[chunk_id],
             start_position=pos,
             end_position=pos,
-            text=self._text_by_id.get(chunk_id, ""),
+            text=text_by_id.get(chunk_id, ""),
             group_score=score,
             citations=[chunk_id],
         )
@@ -214,12 +237,23 @@ class RetrievalPipeline:
         # Table-lane failure must not sink the text answer.
         try:
             fused = await discover_table_candidates(self._table_search, question)
+            table_ids = [cid for cid, _ in fused]
+            # Per-query: load the discovered table rows for their text + payload ids.
+            tbl_chunks = await self._context_loader.load(table_ids)
+            text_by_id = {c.chunk_id: c.fulltext for c in tbl_chunks}
+            payload_by_chunk = {
+                c.chunk_id: c.payload_refs[0]["payload_id"]
+                for c in tbl_chunks
+                if c.is_table
+                and c.payload_refs
+                and isinstance(c.payload_refs[0], dict)
+                and "payload_id" in c.payload_refs[0]
+            }
             reranked = await rerank_stage(
-                self._reranker, question, [cid for cid, _ in fused], self._text_by_id,
-                top_k=len(fused) or 1,
+                self._reranker, question, table_ids, text_by_id, top_k=len(fused) or 1,
             )
             candidates = select_table_candidates(
-                reranked, self._payload_by_chunk, floor=self._table_floor, max_k=self._max_sql
+                reranked, payload_by_chunk, floor=self._table_floor, max_k=self._max_sql
             )
             self._tracer.record("table_discover", {"candidates": len(candidates)})
             sql_results = await run_sql_fanout(self._sql_runner, candidates, question)

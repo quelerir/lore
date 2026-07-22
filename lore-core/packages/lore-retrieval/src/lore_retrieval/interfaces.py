@@ -13,6 +13,21 @@ from lore_retrieval.contracts import (
     SqlRequest,
     SQLResult,
 )
+from lore_retrieval.source import SourceChunk
+
+
+@runtime_checkable
+class ChunkContextLoader(Protocol):
+    """Loads the source rows for a bounded set of already-retrieved chunk ids.
+
+    Supplies the per-query maps (position / text / heading path / payloads) the
+    text and table lanes need for rerank and auto-merging — WITHOUT ever holding
+    the whole corpus in memory. Given the fan-out+expansion candidate ids, return
+    their ``SourceChunk`` rows; the pipeline derives positions, text, a
+    candidate-scoped structural projection, and table payloads from them.
+    """
+
+    async def load(self, chunk_ids: list[str]) -> list[SourceChunk]: ...
 
 
 @runtime_checkable

@@ -4,6 +4,7 @@ from lore_retrieval.fakes import (
     FakeChatModel,
     FakeReranker,
     FakeSqlRunner,
+    InMemoryChunkContextLoader,
     InMemoryChunkSearchBackend,
     InMemoryEvidenceResolver,
     InMemoryGraphExpansion,
@@ -43,8 +44,7 @@ def _pipeline(**over):
         reranker=FakeReranker(), resolver=InMemoryEvidenceResolver(CORPUS),
         table_search=backend, sql_runner=FakeSqlRunner({}),
         chat_model=FakeChatModel(lambda _p: "ответ [1]"),
-        projection=projection, positions={c.chunk_id: c.position for c in CORPUS},
-        text_by_id={c.chunk_id: c.fulltext for c in CORPUS}, payload_by_chunk={},
+        context_loader=InMemoryChunkContextLoader(CORPUS),
     )
     kwargs.update(over)
     return RetrievalPipeline(**kwargs)

@@ -23,35 +23,14 @@ import asyncio
 from neo4j import AsyncGraphDatabase
 
 from lore_retrieval.adapters.chat_openrouter import OpenRouterChatModel
-from lore_retrieval.adapters.evidence_postgres import PostgresEvidenceResolver
-from lore_retrieval.adapters.file_keys import PostgresFileKeyResolver
-from lore_retrieval.adapters.neo4j_backends import (
-    Neo4jChunkSearchBackend,
-    Neo4jGraphExpansionBackend,
-    Neo4jTableSearchBackend,
-)
 from lore_retrieval.config import get_settings
 from lore_retrieval.embeddings import OllamaEmbeddingBackend
-from lore_retrieval.fakes import FakeReranker, FakeSqlRunner
 from lore_retrieval.neo4j_spike import ensure_indexes, project_batch, project_structure
-from lore_retrieval.pipeline.graph import RetrievalPipeline
+from lore_retrieval.pipeline.factory import build_live_pipeline
 from lore_retrieval.projection_model import build_structural_projection
 from lore_retrieval.source import fetch_chunks
 
 VERSION = "livecycle"
-
-
-def _payload_by_chunk(chunks):
-    out = {}
-    for c in chunks:
-        if (
-            c.is_table
-            and c.payload_refs
-            and isinstance(c.payload_refs[0], dict)
-            and "payload_id" in c.payload_refs[0]
-        ):
-            out[c.chunk_id] = c.payload_refs[0]["payload_id"]
-    return out
 
 
 async def main() -> None:
@@ -120,25 +99,18 @@ async def main() -> None:
             await sess.run("CALL db.awaitIndexes(120)")
         print(f"projected {n} chunk nodes + {len(proj.sections)} sections into Neo4j")
 
-        # --- assemble the live pipeline ---
-        pipeline = RetrievalPipeline(
-            chunk_search=Neo4jChunkSearchBackend(driver, s.neo4j_database, VERSION, emb),
-            graph_expansion=Neo4jGraphExpansionBackend(driver, s.neo4j_database, VERSION),
-            reranker=FakeReranker(),  # P0: no reranker (deferred to P2)
-            resolver=PostgresEvidenceResolver(dsn),
-            table_search=Neo4jTableSearchBackend(driver, s.neo4j_database, VERSION, emb),
-            sql_runner=FakeSqlRunner({}),  # text-lane demo: no live TOAST needed
+        # --- assemble the live pipeline (same factory lore-chat will use) ---
+        pipeline = build_live_pipeline(
+            driver=driver,
+            database=s.neo4j_database,
+            dsn=dsn,
+            embedder=emb,
             chat_model=OpenRouterChatModel(
                 api_key=s.openrouter_api_key,
                 model=s.openrouter_model,
                 base_url=s.openrouter_base_url,
                 max_tokens=s.llm_max_tokens or 800,
             ),
-            projection=proj,
-            positions={c.chunk_id: c.position for c in chunks},
-            text_by_id={c.chunk_id: c.fulltext for c in chunks},
-            payload_by_chunk=_payload_by_chunk(chunks),
-            file_key_resolver=PostgresFileKeyResolver(dsn),
             index_version=VERSION,
         )
 
