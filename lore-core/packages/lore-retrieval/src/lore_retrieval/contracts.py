@@ -4,6 +4,7 @@ These are Lore-owned application types — never upstream library types — so t
 backend behind any stage can change without changing the orchestration.
 """
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -64,6 +65,8 @@ class TableCandidate(BaseModel):
     score: float
     feasible: bool = True
     reason: str | None = None
+    run_id: str = ""                      # anchor provenance (from the loaded SourceChunk)
+    heading_path: tuple[str, ...] = ()
 
 
 class SQLStatus(str, Enum):
@@ -126,6 +129,9 @@ class AgentDecision(BaseModel):
     # index -> contributing chunk_ids, mirroring the [n] evidence enumeration shown
     # to the model, so the cite step can resolve the markers it emitted.
     evidence_map: dict[int, list[str]] = {}
+    # index -> the SQL success's anchor chunk_id, continuing the [n] sequence after
+    # the text groups; disjoint index range from evidence_map.
+    sql_evidence_map: dict[int, str] = {}
 
 
 class Citation(BaseModel):
@@ -138,6 +144,8 @@ class Citation(BaseModel):
     preview_text: str
     heading_path: tuple[str, ...]
     deep_link: str
+    kind: Literal["text", "table"] = "text"
+    marker: int | None = None  # the [n] index; None for deterministic-fallback citations
 
 
 class ContextGroup(BaseModel):
