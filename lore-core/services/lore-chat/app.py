@@ -171,22 +171,50 @@ async def on_chat_resume(thread: ThreadDict) -> None:
     cl.user_session.set("history", history[-MAX_HISTORY_MESSAGES:])
 
 
-async def _render_run_steps(payload: Any, tracker: ToolCallTracker) -> None:
+async def _render_pipeline_trace(container: dict) -> None:
+    """Under a knowledge_base tool step, render the retrieval pipeline's own
+    stages (neo4j fan-out/expansion/rerank/resolve/grouping, table lane, SQL,
+    arbitration/cite) captured per-turn, plus each SQL call's outcome — so a wrong
+    answer can be traced to the stage that produced it."""
+    trace = container.get("trace") or []
+    result = container.get("result")
+    for ev in trace:
+        stage = ev.get("stage", "")
+        data = ev.get("data", {})
+        async with cl.Step(name=stage, type="run") as step:
+            step.output = json.dumps(data, ensure_ascii=False)
+            if stage == "table_sql" and result is not None:
+                for r in getattr(result, "sql_results", []) or []:
+                    async with cl.Step(name=f"sql · {r.payload_id}", type="tool") as sub:
+                        rows = getattr(r, "rows", []) or []
+                        summary = getattr(r, "answer_summary", "") or ""
+                        sub.output = f"status={r.status} · rows={len(rows)}\n{summary}"
+
+
+async def _render_run_steps(
+    payload: Any, tracker: ToolCallTracker, container: Optional[dict]
+) -> None:
     """Render one LangGraph ``updates`` payload as a clean debug trace: a step per
-    node, and under it the node's resolved tool calls (name + arguments + result)
-    as collapsible child steps. Replaces the noisy default per-run tracer."""
+    node, and under it the node's tool calls (name + arguments + result). The
+    knowledge_base tool additionally shows the retrieval pipeline's inner stages.
+    Uses ``async with`` so each step nests under the on_message run (bare .send()
+    leaves parent_id unset, so the frontend trace would drop it)."""
     for node_name, msgs in iter_node_updates(payload):
-        node_step = cl.Step(name=node_name, type="run")
-        await node_step.send()
-        for ev in tracker.observe(msgs):
-            tool_step = cl.Step(name=ev["name"], type="tool", parent_id=node_step.id)
-            tool_step.input = json.dumps(ev["args"], ensure_ascii=False, indent=2)
-            tool_step.output = ev["result"]
-            await tool_step.send()
+        events = tracker.observe(msgs)
+        async with cl.Step(name=node_name, type="run"):
+            for ev in events:
+                async with cl.Step(name=ev["name"], type="tool") as tool_step:
+                    tool_step.input = json.dumps(ev["args"], ensure_ascii=False, indent=2)
+                    tool_step.output = ev["result"]
+                    if ev["name"] == "knowledge_base" and container is not None:
+                        await _render_pipeline_trace(container)
 
 
 async def handle_message(
-    agent: CompiledStateGraph, messages: list[BaseMessage], out: cl.Message
+    agent: CompiledStateGraph,
+    messages: list[BaseMessage],
+    out: cl.Message,
+    container: Optional[dict] = None,
 ) -> str:
     """Run the agent for one user turn, streaming assistant tokens into `out`.
 
@@ -209,7 +237,7 @@ async def handle_message(
             final_state = payload
             continue
         if stream_mode == "updates":
-            await _render_run_steps(payload, tracker)
+            await _render_run_steps(payload, tracker, container)
             continue
         chunk, _meta = payload
         # Служебные LLM-вызовы (планирование SQL) помечены тегом internal —
@@ -259,7 +287,7 @@ async def on_message(message: cl.Message) -> None:
     if _RETRIEVAL_AVAILABLE:
         turn_capture.set(capture)
 
-    answer = await handle_message(agent, history, out)
+    answer = await handle_message(agent, history, out, capture)
 
     if _RETRIEVAL_AVAILABLE:
         result = capture.get("result")

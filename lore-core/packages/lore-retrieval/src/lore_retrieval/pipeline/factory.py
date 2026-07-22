@@ -60,6 +60,7 @@ def build_live_pipeline(
     file_key_resolver=None,
     sql_runner=None,
     reranker=None,
+    tracer=None,
     **overrides,
 ) -> RetrievalPipeline:
     """Assemble a production RetrievalPipeline: Neo4j search/expansion + bge-m3
@@ -77,6 +78,7 @@ def build_live_pipeline(
         Neo4jGraphExpansionBackend,
         Neo4jTableSearchBackend,
     )
+    from lore_retrieval.observability import ContextTracer
 
     kwargs = dict(
         chunk_search=Neo4jChunkSearchBackend(driver, database, index_version, embedder),
@@ -88,6 +90,7 @@ def build_live_pipeline(
         chat_model=chat_model,
         context_loader=PostgresChunkContextLoader(dsn),
         file_key_resolver=file_key_resolver or PostgresFileKeyResolver(dsn),
+        tracer=tracer or ContextTracer(),  # per-turn stage trace for the chat debug view
         index_version=index_version,
     )
     kwargs.update(overrides)
