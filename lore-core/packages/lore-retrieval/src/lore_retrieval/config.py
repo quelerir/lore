@@ -3,16 +3,26 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Package root (…/lore-retrieval): src/lore_retrieval/config.py -> parents[2].
-_PKG_ROOT = Path(__file__).resolve().parents[2]
+
+def _repo_root() -> Path:
+    """Walk up to the single shared repo root (marked by docker-compose.yml/.git)
+    so we read ONE root .env, not per-package config files."""
+    start = Path(__file__).resolve()
+    for parent in [start, *start.parents]:
+        if (parent / "docker-compose.yml").exists() or (parent / ".git").exists():
+            return parent
+    return start.parents[5]  # known depth fallback: …/lore/lore-core/packages/lore-retrieval/src/lore_retrieval
+
+
+_ROOT = _repo_root()
 
 
 class Settings(BaseSettings):
-    # Reads real env vars first, then a gitignored .env / .env.local in the
-    # package root (put RETRIEVAL_NEO4J_* / RETRIEVAL_LORE_CORE_DSN there).
+    # Reads real env vars first, then the shared root .env / .env.local
+    # (RETRIEVAL_NEO4J_* / RETRIEVAL_LORE_CORE_DSN live there, prefix-namespaced).
     model_config = SettingsConfigDict(
         env_prefix="RETRIEVAL_",
-        env_file=(str(_PKG_ROOT / ".env"), str(_PKG_ROOT / ".env.local")),
+        env_file=(str(_ROOT / ".env"), str(_ROOT / ".env.local")),
         env_file_encoding="utf-8",
         extra="ignore",
     )
