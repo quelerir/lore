@@ -27,7 +27,7 @@ class PostgresFileKeyResolver:
                     """
                     SELECT run_id::text AS run_id, logical_file_key
                     FROM lore_core.processing_runs
-                    WHERE run_id = ANY($1::text[])
+                    WHERE run_id::text = ANY($1::text[])
                     """,
                     run_ids,
                 )
