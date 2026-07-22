@@ -1,14 +1,25 @@
 """Grounded retrieval graph — the fast profile.
 
-Runs the retrieval pipeline's three stages as explicit LangGraph nodes:
+Runs the retrieval pipeline as an explicit LangGraph diamond — two answer
+variants that rejoin at summarize (matches the neo4j spec's parallel text/table
+lanes → top-level arbitration):
 
-    START → neo4j_retrieve → toast_sql → summarize → END
+    START → neo4j_retrieve ─┬→ neo4j_only ──→ summarize → END
+                            └→ toast_sql ────↗
 
-so the answer is grounded end-to-end (no chat agent re-paraphrasing it) and the
-debug trace shows each stage as its own node. The nodes call the SAME
-``RetrievalPipeline`` methods that ``pipeline.answer`` composes — one source of
-truth. ``summarize`` emits the final ``AIMessage`` (streamed to the user) and the
-resolved citations in the graph state.
+    · variant 1 (pure neo4j): text evidence via ``neo4j_only`` to summarize;
+    · variant 2 (neo4j → SQL): SQL over the discovered table candidate;
+    · summarize is a JOIN — waits for both, merges the evidence, emits the final
+      ``AIMessage`` + citations.
+
+    ``neo4j_only`` and ``toast_sql`` run in parallel (same supersteps), so both
+    reach summarize together and it fires ONCE. A direct neo4j_retrieve→summarize
+    edge would be shorter than the SQL branch and fire summarize early/twice — the
+    equal-length passthrough is what makes the join correct.
+
+The nodes call the SAME ``RetrievalPipeline`` methods that ``pipeline.answer``
+composes — one source of truth. When no table candidate is discovered, toast_sql
+records an explicit ``no_candidate`` outcome (honest empty, not silent).
 
 Each node also writes a compact ``*_detail`` object into the state so a viewer
 (LangGraph Studio's node inspector, or any state dump) sees what happened at a
@@ -34,6 +45,7 @@ class GroundedState(TypedDict, total=False):
     degradations: list
     # Compact, human-readable per-node summaries (for Studio / state dumps).
     neo4j_detail: dict
+    variant1_detail: dict
     sql_detail: list
     answer_detail: dict
 
@@ -72,9 +84,31 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
             },
         }
 
+    async def neo4j_only(state: GroundedState) -> dict:
+        # Variant 1: answer straight from neo4j text evidence (no SQL). A light
+        # passthrough that marks the pure-neo4j branch AND keeps both variants the
+        # same length so summarize joins them in one superstep.
+        groups = state.get("groups", [])
+        return {"variant1_detail": {"variant": "pure_neo4j", "context_groups": len(groups)}}
+
     async def toast_sql(state: GroundedState) -> dict:
+        candidates = state.get("table_candidates", [])
+        if not candidates:
+            # Spec-aligned: SQL runs only when a table candidate is discovered
+            # (стр. 56-57: "table discovery does not imply SQL execution"). Make
+            # the empty branch HONEST — an explicit "no candidate" outcome rather
+            # than a silent empty, so the trace shows the SQL path was reached.
+            return {
+                "sql_results": [],
+                "sql_detail": [
+                    {
+                        "status": "no_candidate",
+                        "note": "таблица-кандидат в neo4j не найдена — SQL не запускался",
+                    }
+                ],
+            }
         results, degr = await pipeline.run_table_sql(
-            _question(state["messages"]), state.get("table_candidates", [])
+            _question(state["messages"]), candidates
         )
         return {
             "sql_results": results,
@@ -112,10 +146,16 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
 
     g = StateGraph(GroundedState)
     g.add_node("neo4j_retrieve", neo4j_retrieve)
+    g.add_node("neo4j_only", neo4j_only)
     g.add_node("toast_sql", toast_sql)
     g.add_node("summarize", summarize)
     g.add_edge(START, "neo4j_retrieve")
-    g.add_edge("neo4j_retrieve", "toast_sql")
+    # Diamond: neo4j_retrieve forks into two equal-length branches that rejoin at
+    # summarize. Equal length => both land in the same superstep => summarize is a
+    # true join (fires once with BOTH evidence sources).
+    g.add_edge("neo4j_retrieve", "neo4j_only")  # variant 1: pure neo4j
+    g.add_edge("neo4j_retrieve", "toast_sql")   # variant 2: neo4j → SQL
+    g.add_edge("neo4j_only", "summarize")
     g.add_edge("toast_sql", "summarize")
     g.add_edge("summarize", END)
     return g.compile()

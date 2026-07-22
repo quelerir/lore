@@ -59,6 +59,32 @@ def test_runs_three_stages_in_order_and_answers_with_citations():
     assert state["sql_detail"][0]["rows"] == 1
 
 
+def test_summarize_joins_once_after_both_branches():
+    """Diamond: summarize is a join — it runs exactly once, after toast_sql, so it
+    sees the SQL results (a naive short edge would fire it early/twice)."""
+    pipe = _FakePipe()
+    agent = build_grounded_agent(pipe)
+    asyncio.run(agent.ainvoke({"messages": [HumanMessage(content="q")]}))
+    assert [c[0] for c in pipe.calls].count("summarize") == 1
+    assert pipe.calls[-1][0] == "summarize"  # ran last, after run_table_sql
+
+
+def test_no_table_candidate_marks_sql_branch_explicitly():
+    """When retrieve finds no table candidate, the SQL branch is honest: it records
+    a 'no_candidate' outcome and never calls run_table_sql."""
+    pipe = _FakePipe()
+
+    async def _retrieve(q):
+        pipe.calls.append(("retrieve", q))
+        return ([], SimpleNamespace(resolved=[], rejected=[]), [], [])
+
+    pipe.retrieve = _retrieve
+    agent = build_grounded_agent(pipe)
+    state = asyncio.run(agent.ainvoke({"messages": [HumanMessage(content="q")]}))
+    assert "run_table_sql" not in [c[0] for c in pipe.calls]
+    assert state["sql_detail"][0]["status"] == "no_candidate"
+
+
 def test_empty_answer_falls_back_to_message():
     pipe = _FakePipe()
 
