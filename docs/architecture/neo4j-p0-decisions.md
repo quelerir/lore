@@ -7,14 +7,17 @@ spike harnesses under `lore-core/packages/lore-retrieval/spikes/`.
 
 This record answers the P0-relevant promotion questions from the milestone roadmap and gates P1.
 
-## 1. Neo4j capabilities — PENDING (creds)
+## 1. Neo4j capabilities — DONE (probed live 2026-07-22)
 
-Run `spikes/probe_capabilities.py`. Record: edition (`community`/`enterprise`), exact 5.x version,
-whether `db.index.vector.queryNodes` and `db.index.fulltext.queryNodes` are available, and
-multi-database availability.
+- **Edition: Community.** Version: **Neo4j Kernel 5.26.28**.
+- **Vector + fulltext supported:** both `db.index.vector.queryNodes` and
+  `db.index.fulltext.queryNodes` procedures available.
+- **Multi-database: NO** (Community — only `neo4j` + `system`).
+- Connection: plain `bolt://` (server not TLS on 7687), reached over VPN.
 
-Activation baseline = version-labeled indexes (portable). Separate-DB activation is available only
-if edition is Enterprise. See `neo4j-identity-and-activation.md`.
+**Activation decision:** Community ⇒ **version-labeled indexes/labels** for the one-ready-version
+mechanism (separate databases are Enterprise-only). Already the implemented baseline
+(`neo4j_spike._labels` + version-suffixed indexes). See `neo4j-identity-and-activation.md`.
 
 ## 2. Analyzer — PENDING (creds)
 
