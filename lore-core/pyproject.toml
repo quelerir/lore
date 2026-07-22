@@ -7,3 +7,4 @@ lore-core-domain = { workspace = true }
 lore-splitter = { workspace = true }
 lore-audit-core = { workspace = true }
 lore-audit-api = { workspace = true }
+lore-retrieval = { workspace = true }

@@ -18,10 +18,11 @@ dependencies = [
     "psycopg[binary,pool]==3.3.4",
     "lore-audit-core",
     "lore-audit-api",
+    "lore-retrieval",
 ]
 
 [tool.setuptools]
-py-modules = ["app", "auth", "config", "audit_mount", "audit_auth"]
+py-modules = ["app", "auth", "config", "audit_mount", "audit_auth", "retrieval"]
 packages = ["agents", "toast", "evals"]
 
 [tool.pytest.ini_options]

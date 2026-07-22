@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     embedding_model: str = "bge-m3"
     embedding_dim: int = 1024
 
+    # Active Neo4j projection the chat queries (a separate indexing job populates it).
+    index_version: str = "v1"
+
     # --- Chat (OpenRouter) — reuse the SAME shared-root .env vars lore-chat uses
     # (non-prefixed via validation_alias), so we never duplicate the key. ---
     openrouter_api_key: str = Field(default="", validation_alias="OPENROUTER_API_KEY")

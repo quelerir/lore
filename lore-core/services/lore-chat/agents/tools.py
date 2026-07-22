@@ -68,4 +68,15 @@ def calculator(expression: str) -> str:
 
 
 def make_tools() -> list[BaseTool]:
-    return [calculator]
+    """Calculator always; the grounded knowledge_base tool only when retrieval is
+    configured (Neo4j + lore_core DSN present). If lore-retrieval is unavailable
+    or unconfigured, the chat runs exactly as before."""
+    tools: list[BaseTool] = [calculator]
+    try:
+        from retrieval import knowledge_base, retrieval_configured
+
+        if retrieval_configured():
+            tools.append(knowledge_base)
+    except Exception:
+        pass
+    return tools

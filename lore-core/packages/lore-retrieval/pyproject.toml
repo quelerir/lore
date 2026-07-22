@@ -34,3 +34,6 @@ no_implicit_optional = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+lore_retrieval = ["py.typed"]

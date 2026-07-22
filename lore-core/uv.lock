@@ -662,6 +662,7 @@ dependencies = [
     { name = "langsmith" },
     { name = "lore-audit-api" },
     { name = "lore-audit-core" },
+    { name = "lore-retrieval" },
     { name = "psycopg", extra = ["binary", "pool"] },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
@@ -687,6 +688,7 @@ requires-dist = [
     { name = "langsmith", specifier = ">=0.2" },
     { name = "lore-audit-api", editable = "services/lore-audit-api" },
     { name = "lore-audit-core", editable = "packages/lore-audit-core" },
+    { name = "lore-retrieval", editable = "packages/lore-retrieval" },
     { name = "psycopg", extras = ["binary", "pool"], specifier = "==3.3.4" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },
     { name = "pyjwt", specifier = ">=2.8" },
@@ -1581,7 +1583,7 @@ source = { editable = "packages/lore-core-domain" }
 [[package]]
 name = "lore-retrieval"
 version = "0.0.1"
-source = { virtual = "packages/lore-retrieval" }
+source = { editable = "packages/lore-retrieval" }
 dependencies = [
     { name = "asyncpg" },
     { name = "httpx" },

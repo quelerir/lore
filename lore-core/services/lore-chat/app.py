@@ -22,6 +22,17 @@ from audit_mount import attach_audit_router
 from auth import verify_ticket
 from config import get_settings
 
+# Optional: grounded knowledge-base citations. If lore-retrieval is unavailable,
+# the chat runs unchanged (no capture, no citation metadata).
+try:
+    from lore_retrieval.pipeline.message import to_message_metadata
+
+    from retrieval import turn_capture
+
+    _RETRIEVAL_AVAILABLE = True
+except Exception:  # pragma: no cover - import-time environment guard
+    _RETRIEVAL_AVAILABLE = False
+
 # Сколько последних сообщений истории отдаём агенту: без предела длинный
 # диалог рано или поздно упирается в контекст модели.
 MAX_HISTORY_MESSAGES = 40
@@ -221,7 +232,20 @@ async def on_message(message: cl.Message) -> None:
 
     out = cl.Message(content="")
     await out.send()
+
+    # Set the capture container in THIS (parent) task before running the agent;
+    # the knowledge_base tool mutates it (see retrieval.py for why this is robust
+    # across task boundaries). After the turn, attach any citations as metadata.
+    capture: dict = {}
+    if _RETRIEVAL_AVAILABLE:
+        turn_capture.set(capture)
+
     answer = await handle_message(agent, history, out)
+
+    if _RETRIEVAL_AVAILABLE:
+        result = capture.get("result")
+        if result is not None and getattr(result, "citations", None):
+            out.metadata = to_message_metadata(result)
     await out.update()
 
     history.append(AIMessage(content=answer))

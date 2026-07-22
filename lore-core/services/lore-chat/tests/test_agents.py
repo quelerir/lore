@@ -89,8 +89,19 @@ def test_fast_route_with_tool_call():
 # --- инструменты --------------------------------------------------------------
 
 
-def test_make_tools_is_calculator_only():
+def test_make_tools_calculator_only_when_retrieval_unconfigured(monkeypatch):
+    import retrieval
+
+    monkeypatch.setattr(retrieval, "retrieval_configured", lambda: False)
     assert [t.name for t in make_tools()] == ["calculator"]
+
+
+def test_make_tools_adds_knowledge_base_when_configured(monkeypatch):
+    import retrieval
+
+    monkeypatch.setattr(retrieval, "retrieval_configured", lambda: True)
+    names = [t.name for t in make_tools()]
+    assert names == ["calculator", "knowledge_base"]
 
 
 # --- model provider -----------------------------------------------------------
