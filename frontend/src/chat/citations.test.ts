@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IStep } from "@chainlit/react-client";
-import { extractCitations } from "./citations";
+import { collectCitationsByMessage, extractCitations } from "./citations";
 
 const step = (metadata: unknown): IStep =>
   ({ id: "s1", name: "assistant", type: "assistant_message", output: "ответ", metadata } as IStep);
@@ -36,5 +36,23 @@ describe("extractCitations", () => {
     );
     expect(cites).toHaveLength(1);
     expect(cites[0].chunkId).toBe("c1");
+  });
+});
+
+describe("collectCitationsByMessage", () => {
+  const node = (id: string, metadata: unknown, steps?: IStep[]): IStep =>
+    ({ id, type: "assistant_message", output: "a", metadata, steps } as IStep);
+
+  it("maps assistant_message id → citations, walking nested run steps", () => {
+    // Ответ приходит вложенным в run-обёртку on_message (steps), как в реальном дереве.
+    const run = { id: "run1", type: "run", steps: [node("m1", { citations: [raw] })] } as IStep;
+    const map = collectCitationsByMessage([run]);
+    expect([...map.keys()]).toEqual(["m1"]);
+    expect(map.get("m1")?.[0].chunkId).toBe("c1");
+  });
+
+  it("omits messages without citations", () => {
+    const map = collectCitationsByMessage([node("m1", {}), node("m2", { citations: [raw] })]);
+    expect([...map.keys()]).toEqual(["m2"]);
   });
 });

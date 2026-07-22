@@ -6,7 +6,9 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { copyText } from "../../chat/copyText";
 import { useSessionUi } from "../../chat/sessionUi";
+import Citations from "../Citations/Citations";
 import ExecutionSteps from "../ExecutionSteps/ExecutionSteps";
+import Warnings from "../Warnings/Warnings";
 import styles from "./AssistantMessage.module.css";
 
 const REMARK_PLUGINS = [remarkGfm, remarkBreaks];
@@ -29,8 +31,11 @@ export default function AssistantMessage() {
       .join("\n"),
   );
   const id = useMessage((m) => m.id);
-  const { traceByMessage, activeMessageId } = useSessionUi();
+  const { traceByMessage, citationsByMessage, warningsByMessage, activeMessageId } =
+    useSessionUi();
   const steps = traceByMessage.get(id) ?? [];
+  const citations = citationsByMessage.get(id) ?? [];
+  const warnings = warningsByMessage.get(id) ?? [];
   const isActive = id === activeMessageId;
   const [isCopied, setIsCopied] = useState(false);
 
@@ -53,6 +58,8 @@ export default function AssistantMessage() {
             <TypingIndicator />
           ) : null}
         </div>
+        {!isActive ? <Warnings items={warnings} /> : null}
+        {!isActive ? <Citations items={citations} /> : null}
         <div className={styles.actions}>
           <button
             type="button"

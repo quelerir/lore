@@ -13,9 +13,11 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { RecoilRoot } from "recoil";
 import { chainlitApi } from "./chainlitClient";
+import { collectCitationsByMessage } from "./citations";
 import { collectChatMessages, convertMessage } from "./convertMessage";
 import { collectTraceByMessage } from "./executionSteps";
 import { SessionUiContext } from "./sessionUi";
+import { collectWarningsByMessage } from "./warnings";
 
 export type ChatMode = "fast" | "deep";
 
@@ -131,6 +133,16 @@ function SessionBridge({
     [messages],
   );
 
+  const citationsByMessage = useMemo(
+    () => collectCitationsByMessage(messages),
+    [messages],
+  );
+
+  const warningsByMessage = useMemo(
+    () => collectWarningsByMessage(messages),
+    [messages],
+  );
+
   // Пока идёт задача — последний ассистентский ответ считается активным:
   // на нём показываем лоадер и держим блок шагов раскрытым.
   const activeMessageId = useMemo(() => {
@@ -142,8 +154,14 @@ function SessionBridge({
   }, [loading, chatMessages]);
 
   const sessionUi = useMemo(
-    () => ({ switching, traceByMessage, activeMessageId }),
-    [switching, traceByMessage, activeMessageId],
+    () => ({
+      switching,
+      traceByMessage,
+      citationsByMessage,
+      warningsByMessage,
+      activeMessageId,
+    }),
+    [switching, traceByMessage, citationsByMessage, warningsByMessage, activeMessageId],
   );
 
   return (

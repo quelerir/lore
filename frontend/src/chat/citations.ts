@@ -51,3 +51,24 @@ export function extractCitations(step: IStep): Citation[] {
     .map((entry) => toCitation((entry ?? {}) as RawCitation))
     .filter((entry): entry is Citation => entry !== null);
 }
+
+/**
+ * id ассистентского сообщения → его цитаты, обходя дерево шагов (ответ приходит
+ * вложенным в run-обёртку on_message — как и в collectTraceByMessage). Мапой
+ * пользуется AssistantMessage через sessionUi, по аналогии с traceByMessage.
+ * Сообщения без цитат в мапу не попадают.
+ */
+export function collectCitationsByMessage(steps: IStep[]): Map<string, Citation[]> {
+  const out = new Map<string, Citation[]>();
+  const walk = (nodes: IStep[]): void => {
+    for (const node of nodes) {
+      if (node.type === "assistant_message") {
+        const cites = extractCitations(node);
+        if (cites.length) out.set(node.id, cites);
+      }
+      if (node.steps?.length) walk(node.steps);
+    }
+  };
+  walk(steps);
+  return out;
+}

@@ -124,7 +124,10 @@ the chunk (or shows `VS-BROKEN-LINK` if stale).
   `RetrievalPipeline`, `PipelineResult.citations`. TDD with fakes; 76 tests green.
 - **B — lore-chat node:** `cite` node in the LangGraph wrapper; attach citations to the message
   metadata. (Needs the chat integration; logic demoable on fakes.)
-- **C — SPA rendering:** citation cards in `convertMessage`/renderer; `navigateTo` to `/files`.
+- **C — SPA rendering — DONE (2026-07-22):** `collectCitationsByMessage` (id→citations, mirrors
+  `traceByMessage`), threaded via `sessionUi.citationsByMessage` in `ChainlitRuntimeProvider`;
+  `Citations` component (preview cards, `onClick → navigateTo(deep_link)`) rendered under the answer
+  in `AssistantMessage`. Unit test for the collector. Frontend build/visual verify needs Node 20.
 - **D — extensions:** table citations (deep-link the TableChunk anchor, `tab=payloads`); inline
   superscript markers; deterministic fallback when the model cites nothing.
 
