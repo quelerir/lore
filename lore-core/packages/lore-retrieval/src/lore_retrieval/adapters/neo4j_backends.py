@@ -1,9 +1,10 @@
 """Real Neo4j implementations of the retrieval interfaces.
 
-⚠️ CODE-AHEAD — UNVERIFIED against a live Neo4j. These are drop-in adapters
-behind ``ChunkSearchBackend`` / ``TableSearchBackend`` / ``GraphExpansionBackend``,
-mock-tested only (query construction + result mapping). The exact Cypher and
-index behaviour must be validated once a Neo4j instance is available (P0 spikes).
+VERIFIED LIVE against Neo4j Community 5.26.28 on 2026-07-22 via
+``spikes/live_validate_neo4j.py`` (ensure_indexes + project_batch +
+project_structure + vector/fulltext/table search + expansion, then cleanup).
+Drop-in adapters behind ``ChunkSearchBackend`` / ``TableSearchBackend`` /
+``GraphExpansionBackend``; also unit-tested (query construction + result mapping).
 All search/expansion uses fixed parameterized Cypher; only internal index/label
 identifiers are interpolated.
 """
@@ -51,15 +52,15 @@ class Neo4jTableSearchBackend:
 # One bounded template: NEXT neighbours, in-section siblings, one-level parent chunks.
 _EXPAND_CYPHER = """
 MATCH (seed:{label} {{chunk_id: $seed}})
-CALL {{
-    WITH seed MATCH (seed)-[:NEXT]->(nx) RETURN nx AS n, 'next_neighbor' AS route
+CALL (seed) {{
+    MATCH (seed)-[:NEXT]->(nx) RETURN nx AS n, 'next_neighbor' AS route
     UNION
-    WITH seed MATCH (pv)-[:NEXT]->(seed) RETURN pv AS n, 'next_neighbor' AS route
+    MATCH (pv)-[:NEXT]->(seed) RETURN pv AS n, 'next_neighbor' AS route
     UNION
-    WITH seed MATCH (sec)-[:HAS_CHUNK]->(seed), (sec)-[:HAS_CHUNK]->(sib)
+    MATCH (sec)-[:HAS_CHUNK]->(seed), (sec)-[:HAS_CHUNK]->(sib)
     WHERE sib <> seed RETURN sib AS n, 'section_child' AS route LIMIT $max_siblings
     UNION
-    WITH seed MATCH (parent)-[:HAS_SUBSECTION]->(sec)-[:HAS_CHUNK]->(seed),
+    MATCH (parent)-[:HAS_SUBSECTION]->(sec)-[:HAS_CHUNK]->(seed),
     (parent)-[:HAS_CHUNK]->(pc) RETURN pc AS n, 'section_parent' AS route LIMIT $max_siblings
 }}
 RETURN DISTINCT n.chunk_id AS chunk_id, route
