@@ -21,6 +21,7 @@ from lore_audit_api.http.contracts import (
     ManifestQuery,
     OccurrenceListQuery,
     PageQuery,
+    PayloadBatchBody,
     ReferenceBatchBody,
     RunListQuery,
     SourceContextQuery,
@@ -121,6 +122,10 @@ def create_audit_router(
         return _project_many(
             service.get_chunk_neighbors(query.to_request(run_id, chunk_id, limits))
         )
+
+    @router.post("/runs/{run_id}/payloads/query")
+    def get_payloads(run_id: Identity, body: PayloadBatchBody) -> list[dict[str, Any]]:
+        return _project_many(service.get_payloads(body.to_request(run_id, limits)))
 
     @router.get("/runs/{run_id}/payloads/{payload_id}")
     def get_payload(run_id: Identity, payload_id: Identity) -> dict[str, Any]:

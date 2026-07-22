@@ -28,6 +28,7 @@ from lore_audit.read import (
     FileCardRequest,
     FileListRequest,
     ImageRequest,
+    PayloadBatchRequest,
     ReferenceBatchRequest,
     RunCompareRequest,
     RunListRequest,
@@ -202,6 +203,15 @@ class ChunkBatchBody(_ClosedModel):
         if len(self.chunk_ids) > limits.max_batch_size:
             raise AuditReadError("bounds_exceeded")
         return ChunkBatchRequest(run_id, tuple(self.chunk_ids), limits.read_bounds())
+
+
+class PayloadBatchBody(_ClosedModel):
+    payload_ids: Annotated[list[Identity], Field(min_length=1, max_length=100)]
+
+    def to_request(self, run_id: Identity, limits: AuditHttpLimits) -> PayloadBatchRequest:
+        if len(self.payload_ids) > limits.max_batch_size:
+            raise AuditReadError("bounds_exceeded")
+        return PayloadBatchRequest(run_id, tuple(self.payload_ids), limits.read_bounds())
 
 
 class OccurrenceListQuery(PageQuery):

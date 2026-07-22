@@ -17,6 +17,7 @@ from lore_audit_api.http.contracts import (
     FileListQuery,
     ImageQuery,
     PageQuery,
+    PayloadBatchBody,
     ReferenceBatchBody,
     SourceContextQuery,
     TableFilterInput,
@@ -32,6 +33,7 @@ from lore_audit.read import (
     AuditReadError,
     ChunkBatchRequest,
     FileListRequest,
+    PayloadBatchRequest,
     ReferenceBatchRequest,
     TableFilter,
     TablePageRequest,
@@ -122,6 +124,15 @@ def test_batch_neighborhood_and_reference_models_are_closed_and_capped() -> None
     with pytest.raises(AuditReadError) as error:
         ChunkBatchBody(chunk_ids=["a", "b", "c"]).to_request(RUN_ID, limits)
     assert error.value.code == "bounds_exceeded"
+    payloads = PayloadBatchBody(payload_ids=["payload-b", "payload-a"])
+    assert payloads.to_request(RUN_ID, limits) == PayloadBatchRequest(
+        RUN_ID,
+        ("payload-a", "payload-b"),
+        limits.read_bounds(),
+    )
+    with pytest.raises(AuditReadError) as payload_error:
+        PayloadBatchBody(payload_ids=["a", "b", "c"]).to_request(RUN_ID, limits)
+    assert payload_error.value.code == "bounds_exceeded"
     with pytest.raises(ValidationError):
         ChunkNeighborsQuery(before=True, after=1)
     with pytest.raises(ValidationError):

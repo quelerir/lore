@@ -208,6 +208,28 @@ class PayloadRequest:
 
 
 @dataclass(frozen=True)
+class PayloadBatchRequest:
+    run_id: str
+    payload_ids: tuple[str, ...]
+    bounds: ReadBounds = field(default_factory=ReadBounds)
+    schema_version: ClassVar[str] = "audit-read/payload-batch-request/v1"
+
+    def __post_init__(self) -> None:
+        _request_identity(self.run_id, "run_id")
+        payload_ids = tuple(self.payload_ids)
+        for item in payload_ids:
+            _request_identity(item, "payload_id")
+        if (
+            not payload_ids
+            or len(payload_ids) != len(set(payload_ids))
+            or not isinstance(self.bounds, ReadBounds)
+            or len(payload_ids) > self.bounds.max_batch_size
+        ):
+            raise ValueError("invalid payload batch request")
+        object.__setattr__(self, "payload_ids", tuple(sorted(payload_ids)))
+
+
+@dataclass(frozen=True)
 class OccurrenceListRequest:
     run_id: str
     payload_id: str

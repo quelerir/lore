@@ -25,6 +25,7 @@ from lore_audit.read import (
     ImageRequest,
     ManifestRequest,
     OccurrenceListRequest,
+    PayloadBatchRequest,
     PayloadDetail,
     PayloadRequest,
     ReadPage,
@@ -208,6 +209,18 @@ class AuditReadService:
             for item in result
         ):
             raise AuditReadError("membership_mismatch", resource="chunk")
+        return result
+
+    def get_payloads(self, request: PayloadBatchRequest) -> tuple[PayloadDetail, ...]:
+        result = self._invoke(request, PayloadBatchRequest, self._repository.get_payloads)
+        allowed = set(request.payload_ids)
+        if any(
+            not isinstance(item, PayloadDetail)
+            or item.run_id != request.run_id
+            or item.payload_id not in allowed
+            for item in result
+        ):
+            raise AuditReadError("membership_mismatch", resource="payload")
         return result
 
     def get_payload(self, request: PayloadRequest) -> PayloadDetail:

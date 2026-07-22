@@ -30,6 +30,7 @@ from lore_audit.read import (
     FileCardRequest,
     FileListRequest,
     OccurrenceListRequest,
+    PayloadBatchRequest,
     PayloadDetail,
     PayloadOccurrenceDetail,
     PayloadRequest,
@@ -133,6 +134,10 @@ class AuditCoreReadRepository(Protocol):
     def get_chunks(self, request: ChunkBatchRequest) -> tuple[ChunkPreview, ...]: ...
 
     def get_payload(self, request: PayloadRequest) -> PayloadReadResult: ...
+
+    def get_payloads(
+        self, request: PayloadBatchRequest
+    ) -> tuple[PayloadDetail, ...]: ...
 
     def list_occurrences(self, request: OccurrenceListRequest) -> ReadPage: ...
 
@@ -609,6 +614,61 @@ class PostgresAuditReadRepository:
                     registration=safe_json_to_dict(fact.registration_identity),
                 )
             return PayloadReadResult(detail, token)
+
+        return self._transaction(load, self._timeout(request))
+
+    def get_payloads(self, request: PayloadBatchRequest) -> tuple[PayloadDetail, ...]:
+        """Batch payload-ref lookup for bulk hydration (no S3 token): resolves each
+        requested id to its ``PayloadDetail`` in ONE round-trip, replacing the
+        per-ref N+1. Ids not referenced by this run — or with a malformed
+        registration — are omitted (the caller tolerates a missing ref)."""
+        if not isinstance(request, PayloadBatchRequest):
+            raise AuditReadError("invalid_request")
+        run_id = self._canonical_run_id(request.run_id)
+        ids = list(request.payload_ids)
+
+        def load(cursor: Any) -> tuple[PayloadDetail, ...]:
+            # Occurrence counts both scope each payload to THIS run (membership)
+            # and feed the registration parse; zero occurrences -> not a member.
+            counts: dict[str, int] = {}
+            for row in self._rows(
+                cursor,
+                "SELECT payload_id, count(*) FROM lore_core.payload_occurrences "
+                "WHERE run_id=%s AND payload_id = ANY(%s) GROUP BY payload_id",
+                (run_id, ids),
+            ):
+                counts[row[0]] = int(row[1])
+            rows = self._rows(
+                cursor,
+                "SELECT payload_id, kind, storage, storage_uri, content_hash, metadata "
+                "FROM lore_core.payloads WHERE payload_id = ANY(%s)",
+                (ids,),
+            )
+            details: list[PayloadDetail] = []
+            for row in rows:
+                count = counts.get(row[0])
+                if not count:  # not referenced by this run -> omit
+                    continue
+                try:
+                    fact = parse_payload_registration(row[0], row[1], row[5], count)
+                except ValueError:
+                    continue  # malformed registration -> omit (tolerant batch)
+                details.append(
+                    PayloadDetail(
+                        run_id=run_id,
+                        payload_id=row[0],
+                        kind=row[1],
+                        registered=fact.registered,
+                        availability=(
+                            Availability.AVAILABLE
+                            if fact.registered
+                            else Availability.UNAVAILABLE
+                        ),
+                        summary=fact.summary,
+                        reason_code=None if fact.registered else "unregistered",
+                    )
+                )
+            return tuple(sorted(details, key=lambda item: item.sort_key))
 
         return self._transaction(load, self._timeout(request))
 

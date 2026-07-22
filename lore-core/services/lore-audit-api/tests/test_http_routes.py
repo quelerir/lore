@@ -23,6 +23,7 @@ from lore_audit.read import (
     ImageRequest,
     ManifestRequest,
     OccurrenceListRequest,
+    PayloadBatchRequest,
     PayloadRequest,
     PayloadDetail,
     ReferenceBatchRequest,
@@ -87,7 +88,7 @@ class RecordingService:
             if name in self.results:
                 return self.results[name]
             result = Projection(name)
-            if name in {"get_chunk_neighbors", "get_chunks", "resolve_references"}:
+            if name in {"get_chunk_neighbors", "get_chunks", "get_payloads", "resolve_references"}:
                 return (result, Projection(name, "second"))
             return result
 
@@ -113,6 +114,7 @@ CASES = [
     ("post", f"/api/v1/audit/runs/{RUN_A}/chunks/query", {"chunk_ids": ["chunk-2", CHUNK]}, "get_chunks", ChunkBatchRequest(RUN_A, ("chunk-2", CHUNK), _bounds())),
     ("get", f"/api/v1/audit/runs/{RUN_A}/chunks/{CHUNK}?max_text_bytes=100&display_continuation=d&full_continuation=f&vector_continuation=v", None, "get_chunk", ChunkDetailRequest(RUN_A, CHUNK, _bounds(max_text_bytes=100), "d", "f", "v")),
     ("get", f"/api/v1/audit/runs/{RUN_A}/chunks/{CHUNK}/neighbors?before=2&after=3", None, "get_chunk_neighbors", ChunkNeighborsRequest(RUN_A, CHUNK, 2, 3, _bounds())),
+    ("post", f"/api/v1/audit/runs/{RUN_A}/payloads/query", {"payload_ids": ["payload-2", PAYLOAD]}, "get_payloads", PayloadBatchRequest(RUN_A, ("payload-2", PAYLOAD), _bounds())),
     ("get", f"/api/v1/audit/runs/{RUN_A}/payloads/{PAYLOAD}", None, "get_payload", PayloadRequest(RUN_A, PAYLOAD)),
     ("get", f"/api/v1/audit/runs/{RUN_A}/payloads/{PAYLOAD}/occurrences?cursor=next&page_size=4", None, "list_occurrences", OccurrenceListRequest(RUN_A, PAYLOAD, "next", _bounds(page_size=4))),
     ("get", f"/api/v1/audit/runs/{RUN_A}/payloads/{PAYLOAD}/table/profile", None, "get_table_profile", TableProfileRequest(RUN_A, PAYLOAD, _bounds())),
@@ -139,7 +141,7 @@ def test_ordinary_routes_delegate_once_with_exact_request_and_projection(
 
     assert response.status_code == 200, response.text
     expected_result = Projection(operation)
-    if operation in {"get_chunk_neighbors", "get_chunks", "resolve_references"}:
+    if operation in {"get_chunk_neighbors", "get_chunks", "get_payloads", "resolve_references"}:
         assert response.json() == [expected_result.to_dict(), Projection(operation, "second").to_dict()]
     else:
         assert response.json() == expected_result.to_dict()
@@ -363,6 +365,7 @@ EXPECTED_OPERATIONS = {
     ("post", "/api/v1/audit/runs/{run_id}/chunks/query"),
     ("get", "/api/v1/audit/runs/{run_id}/chunks/{chunk_id}"),
     ("get", "/api/v1/audit/runs/{run_id}/chunks/{chunk_id}/neighbors"),
+    ("post", "/api/v1/audit/runs/{run_id}/payloads/query"),
     ("get", "/api/v1/audit/runs/{run_id}/payloads/{payload_id}"),
     ("get", "/api/v1/audit/runs/{run_id}/payloads/{payload_id}/occurrences"),
     ("get", "/api/v1/audit/runs/{run_id}/payloads/{payload_id}/table/profile"),
@@ -406,7 +409,7 @@ def test_openapi_is_exact_deterministic_and_read_only() -> None:
     assert rendered == rerendered
     assert _operations(first) == EXPECTED_OPERATIONS
     assert sum(method == "get" for method, _ in EXPECTED_OPERATIONS) == 15
-    assert sum(method == "post" for method, _ in EXPECTED_OPERATIONS) == 4
+    assert sum(method == "post" for method, _ in EXPECTED_OPERATIONS) == 5
     assert first["info"] == {
         "title": "Lore Splitter Audit Read API",
         "description": "Bounded read-only inspection facade for persisted splitter evidence.",
