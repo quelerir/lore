@@ -133,6 +133,7 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
                 state.get("groups", []),
                 state["resolution"],
                 state.get("sql_results", []),
+                state.get("table_candidates", []),
             )
         except Exception as exc:
             # Answer generation failed (model 403/timeout/etc). Degrade VISIBLY —

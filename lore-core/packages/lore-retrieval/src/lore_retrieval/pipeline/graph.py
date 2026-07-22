@@ -94,7 +94,9 @@ class RetrievalPipeline:
         drives the SAME three methods as explicit LangGraph nodes."""
         groups, resolution, table_candidates, degradations = await self.retrieve(question)
         sql_results, sql_degr = await self.run_table_sql(question, table_candidates)
-        decision, citations = await self.summarize(question, groups, resolution, sql_results)
+        decision, citations = await self.summarize(
+            question, groups, resolution, sql_results, table_candidates
+        )
         return PipelineResult(
             decision=decision,
             groups=groups,
@@ -135,30 +137,41 @@ class RetrievalPipeline:
         self._tracer.record("table_sql", {"calls": len(sql_results)})
         return sql_results, degradations
 
-    async def summarize(self, question, groups, resolution, sql_results):
+    async def summarize(self, question, groups, resolution, sql_results, table_candidates):
         """Stage 3: top-level arbitration (final answer) + citation resolution."""
         decision = await arbitrate_and_answer(self._chat_model, question, groups, sql_results)
         self._tracer.record(
             "arbitration",
             {"note": decision.note, "used_sql": len(decision.used_sql_payload_ids)},
         )
-        citations = await self._cite(decision, resolution.resolved)
+        citations = await self._cite(
+            decision, resolution.resolved, sql_results, table_candidates
+        )
         return decision, citations
 
-    async def _cite(self, decision, envelopes):
-        """Dedicated cite step: resolve the model's [n] markers into Citations."""
-        if not decision.evidence_map:
+    async def _cite(self, decision, envelopes, sql_results, table_candidates):
+        """Dedicated cite step: resolve the model's [n] markers (text + table) into
+        Citations, with a deterministic top-N fallback when nothing resolved."""
+        if not decision.evidence_map and not decision.sql_evidence_map:
             return []
         envelope_by_chunk = {e.chunk_id: e for e in envelopes}
-        run_ids = list({e.run_id for e in envelopes})
+        sql_result_by_chunk = {r.chunk_id: r for r in sql_results}
+        table_candidate_by_chunk = {c.chunk_id: c for c in table_candidates}
+        run_ids = {e.run_id for e in envelopes}
+        run_ids |= {c.run_id for c in table_candidates if c.run_id}
         file_key_by_run = (
-            await self._file_key_resolver.resolve(run_ids) if self._file_key_resolver else {}
+            await self._file_key_resolver.resolve(list(run_ids))
+            if self._file_key_resolver
+            else {}
         )
         citations = build_citations(
             decision.answer,
             decision.evidence_map,
             envelope_by_chunk,
             file_key_by_run,
+            sql_evidence_map=decision.sql_evidence_map,
+            sql_result_by_chunk=sql_result_by_chunk,
+            table_candidate_by_chunk=table_candidate_by_chunk,
             preview_chars=self._citation_preview_chars,
             limit=self._citation_limit,
         )

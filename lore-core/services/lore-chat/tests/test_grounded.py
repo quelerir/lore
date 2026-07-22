@@ -31,7 +31,7 @@ class _FakePipe:
         self.calls.append(("run_table_sql", table_candidates))
         return ([_sqlres()], ["degr2"])
 
-    async def summarize(self, q, groups, resolution, sql_results):
+    async def summarize(self, q, groups, resolution, sql_results, table_candidates):
         self.calls.append(("summarize", q, sql_results))
         decision = SimpleNamespace(
             answer="Каневский — Помощник Юриста", note="", used_sql_payload_ids=[]
@@ -88,7 +88,7 @@ def test_no_table_candidate_marks_sql_branch_explicitly():
 def test_empty_answer_falls_back_to_message():
     pipe = _FakePipe()
 
-    async def _summarize(q, g, r, s):
+    async def _summarize(q, g, r, s, tc):
         return (SimpleNamespace(answer="", note="", used_sql_payload_ids=[]), [])
 
     pipe.summarize = _summarize
