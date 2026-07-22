@@ -7,7 +7,7 @@ from lore_retrieval.fakes import (
     InMemoryEvidenceResolver,
     InMemoryGraphExpansion,
 )
-from lore_retrieval.observability import NullTracer, RecordingTracer
+from lore_retrieval.observability import CompositeTracer, NullTracer, RecordingTracer
 from lore_retrieval.pipeline.graph import RetrievalPipeline
 from lore_retrieval.projection_model import build_structural_projection
 from lore_retrieval.source import SourceChunk
@@ -52,3 +52,21 @@ async def test_tracer_records_every_stage():
 async def test_default_tracer_is_noop_and_pipeline_still_works():
     result = await _pipeline(NullTracer()).answer("премия формула")
     assert result.decision.answer == "ответ [1]"     # no-op tracer doesn't disturb the flow
+
+
+def test_composite_tracer_fans_out_to_all_children():
+    a, b = RecordingTracer(), RecordingTracer()
+    CompositeTracer([a, b]).record("text_fanout", {"fused": 3})
+    assert a.events == [("text_fanout", {"fused": 3})]
+    assert b.events == [("text_fanout", {"fused": 3})]
+
+
+def test_composite_tracer_isolates_a_failing_child():
+    class Boom:
+        def record(self, stage, payload):
+            raise RuntimeError("sink down")
+
+    good = RecordingTracer()
+    # A broken sink must not stop the others, nor break the pipeline.
+    CompositeTracer([Boom(), good]).record("cite", {"citations": 1})
+    assert good.events == [("cite", {"citations": 1})]

@@ -65,6 +65,17 @@ def _build_pipeline(*, tracer=None):
             sql_runner = toast_sql_runner()
     except Exception:
         sql_runner = None
+    # Live turns default to the ContextTracer (chat debug view). When Langfuse creds
+    # are present, fan out to BOTH so the debug view stays intact AND stages export
+    # to Langfuse. An explicit tracer (Studio's LangSmithTracer) is left untouched.
+    if tracer is None:
+        from lore_retrieval.observability import CompositeTracer, ContextTracer
+
+        from langfuse_tracing import build_langfuse_tracer
+
+        langfuse = build_langfuse_tracer()
+        if langfuse is not None:
+            tracer = CompositeTracer([ContextTracer(), langfuse])
     return build_live_pipeline(
         driver=driver,
         database=s.neo4j_database,

@@ -41,6 +41,22 @@ class NullTracer:
         return None
 
 
+class CompositeTracer:
+    """Fans a stage record out to several tracers (e.g. the per-turn ContextTracer
+    that feeds the chat debug view AND a Langfuse sink). A failing child never stops
+    the others, and tracing never breaks the pipeline."""
+
+    def __init__(self, tracers: list) -> None:
+        self._tracers = list(tracers)
+
+    def record(self, stage: str, payload: dict) -> None:
+        for tracer in self._tracers:
+            try:
+                tracer.record(stage, payload)
+            except Exception:
+                continue
+
+
 class RecordingTracer:
     """Collects records in memory (tests, and a basis for the Langfuse adapter)."""
 
