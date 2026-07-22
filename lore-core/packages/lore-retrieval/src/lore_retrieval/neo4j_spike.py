@@ -9,6 +9,8 @@ identifiers are interpolated into Cypher.
 Projection and search require a live Neo4j (deferred to creds during P0). ``rrf_fuse``
 is pure and unit-tested offline.
 """
+import asyncio
+
 from neo4j import AsyncDriver
 
 from lore_retrieval.identity import projection_id, section_id
@@ -90,7 +92,10 @@ async def vector_search(
     driver: AsyncDriver, database: str, index_version: str, query: str, embedder, top_k: int = 50
 ) -> list[tuple[str, float]]:
     text_label, _ = _labels(index_version)
-    qvec = embedder.embed_query(query)
+    # Ollama embed_query is blocking; run it off the event loop so concurrent
+    # Neo4j/asyncpg operations aren't starved (starvation drops connections ->
+    # ConnectionError / vector_search_failed under load).
+    qvec = await asyncio.to_thread(embedder.embed_query, query)
     async with driver.session(database=database) as sess:
         res = await sess.run(
             "CALL db.index.vector.queryNodes($index, $k, $qvec) YIELD node, score "
@@ -117,7 +122,10 @@ async def table_vector_search(
     driver: AsyncDriver, database: str, index_version: str, query: str, embedder, top_k: int = 20
 ) -> list[tuple[str, float]]:
     _, table_label = _labels(index_version)
-    qvec = embedder.embed_query(query)
+    # Ollama embed_query is blocking; run it off the event loop so concurrent
+    # Neo4j/asyncpg operations aren't starved (starvation drops connections ->
+    # ConnectionError / vector_search_failed under load).
+    qvec = await asyncio.to_thread(embedder.embed_query, query)
     async with driver.session(database=database) as sess:
         res = await sess.run(
             "CALL db.index.vector.queryNodes($index, $k, $qvec) YIELD node, score "
