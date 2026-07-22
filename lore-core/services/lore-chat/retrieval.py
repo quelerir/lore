@@ -33,7 +33,10 @@ def retrieval_configured() -> bool:
     return bool(s.neo4j_uri and s.neo4j_password and s.lore_core_effective_dsn)
 
 
-def _build_pipeline():
+def _build_pipeline(*, tracer=None):
+    """Assemble the live pipeline. ``tracer`` overrides the default per-turn
+    ContextTracer — the Studio/LangSmith debug export injects a LangSmithTracer
+    here so internal pipeline stages surface as spans."""
     from neo4j import AsyncGraphDatabase
 
     from lore_retrieval.adapters.chat_openrouter import OpenRouterChatModel
@@ -67,6 +70,7 @@ def _build_pipeline():
         chat_model=chat_model,
         index_version=s.index_version,
         sql_runner=sql_runner,
+        tracer=tracer,
     )
 
 

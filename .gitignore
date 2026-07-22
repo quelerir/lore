@@ -29,3 +29,6 @@ studio/.langgraph_api/
 # Референс-отчёт и выгрузки из loreagent_test с реальными ПД — не коммитить
 problem-questions-report.html
 sqls/
+
+# LangGraph dev server local state
+.langgraph_api/

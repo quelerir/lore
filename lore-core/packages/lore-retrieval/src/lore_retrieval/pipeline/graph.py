@@ -127,7 +127,9 @@ class RetrievalPipeline:
         except Exception as exc:
             degradations.append("table_lane_unavailable")
             self._tracer.record(
-                "table_sql", {"calls": 0, "degraded": True, "error": type(exc).__name__}
+                "table_sql",
+                {"calls": 0, "degraded": True,
+                 "error": type(exc).__name__, "detail": repr(exc)},
             )
             return [], degradations
         self._tracer.record("table_sql", {"calls": len(sql_results)})
@@ -181,7 +183,9 @@ class RetrievalPipeline:
             degradations.append("structural_expansion_failed")
             # Record the error type so a logic bug isn't fully silent behind degradation.
             self._tracer.record(
-                "text_expansion", {"expanded": 0, "degraded": True, "error": type(exc).__name__}
+                "text_expansion",
+                {"expanded": 0, "degraded": True,
+                 "error": type(exc).__name__, "detail": repr(exc)},
             )
 
         candidate_ids = _dedup(
@@ -233,7 +237,10 @@ class RetrievalPipeline:
             chunks = await self._context_loader.load(chunk_ids)
         except Exception as exc:
             degradations.append("context_load_failed")
-            self._tracer.record("text_context", {"loaded": 0, "error": type(exc).__name__})
+            self._tracer.record(
+                "text_context",
+                {"loaded": 0, "error": type(exc).__name__, "detail": repr(exc)},
+            )
             chunks = []
         self._tracer.record("text_context", {"loaded": len(chunks)})
         projection = build_structural_projection(chunks)
@@ -292,6 +299,8 @@ class RetrievalPipeline:
         except Exception as exc:
             degradations.append("table_lane_unavailable")
             self._tracer.record(
-                "table_discover", {"candidates": 0, "degraded": True, "error": type(exc).__name__}
+                "table_discover",
+                {"candidates": 0, "degraded": True,
+                 "error": type(exc).__name__, "detail": repr(exc)},
             )
             return []

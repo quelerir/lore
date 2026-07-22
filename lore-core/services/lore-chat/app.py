@@ -84,7 +84,7 @@ async def chat_profiles() -> list[cl.ChatProfile]:
             name="fast",
             display_name="Быстрый",
             markdown_description=(
-                "Grounded-граф по базе знаний: retrieve (neo4j) → sql → "
+                "Grounded-граф по базе знаний: neo4j_retrieve → toast_sql → "
                 "summarize. Ответ обоснован источниками, ход виден в трейсе."
             ),
             default=True,
@@ -186,8 +186,8 @@ async def _render_run_steps(
     """Render one LangGraph ``updates`` payload: a step per node, and under it the
     node's tool calls plus the retrieval-pipeline stages produced while that node
     ran. Pipeline stages come from the per-turn trace via a cursor, so each stage
-    nests under the node that produced it (retrieve → neo4j stages, sql → SQL
-    queries, summarize → arbitration/cite). Uses ``async with`` so steps nest
+    nests under the node that produced it (neo4j_retrieve → neo4j stages, toast_sql
+    → SQL queries, summarize → arbitration/cite). Uses ``async with`` so steps nest
     under the on_message run (bare .send() leaves parent_id unset → frontend drops
     them)."""
     trace = (container or {}).get("trace") or []

@@ -1,5 +1,8 @@
 {
   "dependencies": ["."],
-  "graphs": { "sql_tool": "./graph.py:graph" },
+  "graphs": {
+    "sql_tool": "./graph.py:graph",
+    "grounded": "./grounded_graph.py:graph"
+  },
   "env": "../.env"
 }

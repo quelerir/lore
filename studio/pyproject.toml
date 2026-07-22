@@ -11,7 +11,14 @@ dependencies = [
     "asyncpg",
     "pydantic-settings",
     "sqlglot>=30.12.0",
+    # Grounded graph: the retrieval package (pulls neo4j / langchain-ollama /
+    # asyncpg / httpx transitively) + langsmith for the stage tracer.
+    "lore-retrieval",
+    "langsmith",
 ]
+
+[tool.uv.sources]
+lore-retrieval = { path = "../lore-core/packages/lore-retrieval", editable = true }
 
 [dependency-groups]
 dev = ["pytest>=8.0"]

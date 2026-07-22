@@ -2,13 +2,19 @@
 
 Runs the retrieval pipeline's three stages as explicit LangGraph nodes:
 
-    START → retrieve → sql → summarize → END
+    START → neo4j_retrieve → toast_sql → summarize → END
 
 so the answer is grounded end-to-end (no chat agent re-paraphrasing it) and the
 debug trace shows each stage as its own node. The nodes call the SAME
 ``RetrievalPipeline`` methods that ``pipeline.answer`` composes — one source of
 truth. ``summarize`` emits the final ``AIMessage`` (streamed to the user) and the
 resolved citations in the graph state.
+
+Each node also writes a compact ``*_detail`` object into the state so a viewer
+(LangGraph Studio's node inspector, or any state dump) sees what happened at a
+glance — counts, table candidates, per-table SQL status/rows — without needing
+the LangSmith trace. The deep per-stage spans (neo4j fanout, the nested toast SQL
+graph) still live in the LangSmith trace.
 """
 from typing import Annotated, Any, TypedDict
 
@@ -26,6 +32,10 @@ class GroundedState(TypedDict, total=False):
     sql_results: list
     citations: list
     degradations: list
+    # Compact, human-readable per-node summaries (for Studio / state dumps).
+    neo4j_detail: dict
+    sql_detail: list
+    answer_detail: dict
 
 
 def _question(messages: list[BaseMessage]) -> str:
@@ -36,8 +46,12 @@ def _question(messages: list[BaseMessage]) -> str:
     return str(messages[-1].content) if messages else ""
 
 
+def _status(value: Any) -> str:
+    return str(getattr(value, "value", value))
+
+
 def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
-    async def retrieve(state: GroundedState) -> dict:
+    async def neo4j_retrieve(state: GroundedState) -> dict:
         groups, resolution, table_candidates, degradations = await pipeline.retrieve(
             _question(state["messages"])
         )
@@ -46,13 +60,37 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
             "resolution": resolution,
             "table_candidates": table_candidates,
             "degradations": degradations,
+            "neo4j_detail": {
+                "context_groups": len(groups),
+                "resolved_evidence": len(resolution.resolved),
+                "rejected_evidence": len(resolution.rejected),
+                "table_candidates": [
+                    {"table": tc.payload_id, "chunk": tc.chunk_id, "score": round(tc.score, 4)}
+                    for tc in table_candidates
+                ],
+                "degradations": degradations,
+            },
         }
 
-    async def sql(state: GroundedState) -> dict:
+    async def toast_sql(state: GroundedState) -> dict:
         results, degr = await pipeline.run_table_sql(
             _question(state["messages"]), state.get("table_candidates", [])
         )
-        return {"sql_results": results, "degradations": state.get("degradations", []) + degr}
+        return {
+            "sql_results": results,
+            "degradations": state.get("degradations", []) + degr,
+            "sql_detail": [
+                {
+                    "table": r.payload_id,
+                    "chunk": r.chunk_id,
+                    "status": _status(r.status),
+                    "rows": len(r.rows),
+                    "answer": r.answer_summary,
+                    "error": r.error,
+                }
+                for r in results
+            ],
+        }
 
     async def summarize(state: GroundedState) -> dict:
         decision, citations = await pipeline.summarize(
@@ -62,14 +100,22 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
             state.get("sql_results", []),
         )
         answer = decision.answer or "В базе знаний нет ответа на этот вопрос."
-        return {"messages": [AIMessage(content=answer)], "citations": citations}
+        return {
+            "messages": [AIMessage(content=answer)],
+            "citations": citations,
+            "answer_detail": {
+                "note": decision.note,
+                "used_sql_payloads": list(decision.used_sql_payload_ids),
+                "citations": len(citations),
+            },
+        }
 
     g = StateGraph(GroundedState)
-    g.add_node("retrieve", retrieve)
-    g.add_node("sql", sql)
+    g.add_node("neo4j_retrieve", neo4j_retrieve)
+    g.add_node("toast_sql", toast_sql)
     g.add_node("summarize", summarize)
-    g.add_edge(START, "retrieve")
-    g.add_edge("retrieve", "sql")
-    g.add_edge("sql", "summarize")
+    g.add_edge(START, "neo4j_retrieve")
+    g.add_edge("neo4j_retrieve", "toast_sql")
+    g.add_edge("toast_sql", "summarize")
     g.add_edge("summarize", END)
     return g.compile()
