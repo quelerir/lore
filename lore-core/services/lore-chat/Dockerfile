@@ -17,6 +17,7 @@ WORKDIR /workspace
 COPY pyproject.toml uv.lock ./
 COPY packages/lore-core-domain/pyproject.toml packages/lore-core-domain/pyproject.toml
 COPY packages/lore-audit-core/pyproject.toml packages/lore-audit-core/pyproject.toml
+COPY packages/lore-retrieval/pyproject.toml packages/lore-retrieval/pyproject.toml
 COPY services/lore-audit-api/pyproject.toml services/lore-audit-api/pyproject.toml
 COPY services/lore-chat/pyproject.toml services/lore-chat/pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -25,6 +26,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Теперь исходники всех задействованных членов воркспейса.
 COPY packages/lore-core-domain packages/lore-core-domain
 COPY packages/lore-audit-core packages/lore-audit-core
+COPY packages/lore-retrieval packages/lore-retrieval
 COPY services/lore-audit-api services/lore-audit-api
 COPY services/lore-chat services/lore-chat
 RUN --mount=type=cache,target=/root/.cache/uv \
