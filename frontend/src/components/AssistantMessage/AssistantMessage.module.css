@@ -228,3 +228,24 @@
     font-size: 15px;
   }
 }
+
+/* Inline [n] citation superscript + the target card's flash-on-jump. */
+.citationMarker {
+  cursor: pointer;
+  color: #4c7dff;
+  font-weight: 600;
+  padding: 0 1px;
+}
+
+.flash {
+  animation: citation-flash 1.2s ease-out;
+}
+
+@keyframes citation-flash {
+  from {
+    background: rgba(76, 125, 255, 0.25);
+  }
+  to {
+    background: transparent;
+  }
+}

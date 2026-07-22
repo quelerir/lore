@@ -4,6 +4,7 @@ import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import { rehypeCitationMarkers } from "../../chat/citationMarkers";
 import { copyText } from "../../chat/copyText";
 import { useSessionUi } from "../../chat/sessionUi";
 import Citations from "../Citations/Citations";
@@ -39,6 +40,20 @@ export default function AssistantMessage() {
   const isActive = id === activeMessageId;
   const [isCopied, setIsCopied] = useState(false);
 
+  // Inline [n] superscripts link to their citation card — only once the cards are
+  // rendered (i.e. not while streaming) and only for markers that have a card.
+  const markerSet = new Set(
+    citations.map((c) => c.marker).filter((m): m is number => m != null),
+  );
+  const useMarkers = !isActive && markerSet.size > 0;
+  const jumpToCitation = (marker: number) => {
+    const el = document.getElementById(`citation-${marker}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add(styles.flash);
+    window.setTimeout(() => el.classList.remove(styles.flash), 1200);
+  };
+
   const handleCopy = async () => {
     const copied = await copyText(text);
     if (!copied) return;
@@ -53,7 +68,36 @@ export default function AssistantMessage() {
         <ExecutionSteps steps={steps} running={isActive} />
         <div className={styles.bubble}>
           {text ? (
-            <Markdown remarkPlugins={REMARK_PLUGINS}>{text}</Markdown>
+            <Markdown
+              remarkPlugins={REMARK_PLUGINS}
+              rehypePlugins={useMarkers ? [[rehypeCitationMarkers, markerSet]] : []}
+              components={
+                useMarkers
+                  ? {
+                      sup: ({ node, children, ...props }) => {
+                        const marker = node?.properties?.dataMarker;
+                        if (marker == null) return <sup {...props}>{children}</sup>;
+                        const n = Number(marker);
+                        return (
+                          <sup
+                            className={styles.citationMarker}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => jumpToCitation(n)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") jumpToCitation(n);
+                            }}
+                          >
+                            {n}
+                          </sup>
+                        );
+                      },
+                    }
+                  : undefined
+              }
+            >
+              {text}
+            </Markdown>
           ) : isActive ? (
             <TypingIndicator />
           ) : null}
