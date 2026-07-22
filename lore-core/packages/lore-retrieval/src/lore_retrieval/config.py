@@ -48,8 +48,10 @@ class Settings(BaseSettings):
     embedding_model: str = "bge-m3"
     embedding_dim: int = 1024
 
-    # Active Neo4j projection the chat queries (a separate indexing job populates it).
-    index_version: str = "v1"
+    # Active Neo4j projection the chat queries (a separate indexing job populates
+    # it). v2 = full current lore_core corpus (19k chunks); v1 kept in Neo4j as
+    # rollback. Override per-env with RETRIEVAL_INDEX_VERSION.
+    index_version: str = "v2"
 
     # --- Chat (OpenRouter) — reuse the SAME shared-root .env vars lore-chat uses
     # (non-prefixed via validation_alias), so we never duplicate the key. ---
