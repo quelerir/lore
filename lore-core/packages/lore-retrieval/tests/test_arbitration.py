@@ -49,3 +49,22 @@ async def test_no_evidence_returns_limitation_without_calling_model():
     assert d.note == "no_grounded_evidence"
     assert d.answer == ""
     assert model.calls == []                                 # no invented facts
+
+
+async def test_sql_successes_continue_the_marker_sequence():
+    model = FakeChatModel(lambda p: "ответ [1] [2]")
+    g = group("sec1", "текст группы", ["c1"])               # text -> [1]
+    ok = SQLResult(payload_id="p1", chunk_id="a1", status=SQLStatus.success, answer_summary="итог")
+    d = await arbitrate_and_answer(model, "вопрос", [g], [ok])   # SQL success -> [2]
+    assert d.evidence_map == {1: ["c1"]}
+    assert d.sql_evidence_map == {2: "a1"}
+    assert "[2] payload p1" in model.calls[0]
+
+
+async def test_sql_only_grounding_still_prompts_for_markers():
+    model = FakeChatModel(lambda p: "ответ [1]")
+    ok = SQLResult(payload_id="p1", chunk_id="a1", status=SQLStatus.success, answer_summary="s")
+    d = await arbitrate_and_answer(model, "вопрос", [], [ok])
+    assert d.sql_evidence_map == {1: "a1"}
+    assert "[1] payload p1" in model.calls[0]
+    assert "маркер" in model.calls[0].lower()

@@ -18,11 +18,15 @@ def _build_prompt(
         parts.append("Текстовые свидетельства (ссылайся на источник номером [n]):")
         parts.extend(f"[{i}] {g.text}" for i, g in enumerate(groups, 1))
     if successes:
-        parts.append("Результаты SQL (каждый отдельно, не объединять):")
-        parts.extend(f"- payload {r.payload_id}: {r.answer_summary}" for r in successes)
+        base = len(groups)
+        parts.append("Результаты SQL (каждый отдельно, не объединять; ссылайся номером [n]):")
+        parts.extend(
+            f"[{base + k}] payload {r.payload_id}: {r.answer_summary}"
+            for k, r in enumerate(successes, 1)
+        )
     if note == "conflicting_sql_results":
         parts.append("ВНИМАНИЕ: результаты SQL расходятся — представь их раздельно.")
-    if groups:
+    if groups or successes:
         parts.append("Ставь маркер [n] к каждому утверждению из свидетельства n.")
     return "\n".join(parts)
 
@@ -59,6 +63,9 @@ async def arbitrate_and_answer(
     used_sql = [r.payload_id for r in successes]
     # index [n] shown to the model -> that group's contributing chunk_ids
     evidence_map = {i: list(g.citations) for i, g in enumerate(groups, 1)}
+    # SQL successes continue the [n] sequence after the text groups -> anchor chunk_id
+    base = len(groups)
+    sql_evidence_map = {base + k: r.chunk_id for k, r in enumerate(successes, 1)}
 
     answer = await model.generate(_build_prompt(question, groups, successes, note))
     return AgentDecision(
@@ -68,4 +75,5 @@ async def arbitrate_and_answer(
         citations=citations,
         note=note,
         evidence_map=evidence_map,
+        sql_evidence_map=sql_evidence_map,
     )
