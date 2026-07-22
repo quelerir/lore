@@ -37,6 +37,21 @@ describe("extractCitations", () => {
     expect(cites).toHaveLength(1);
     expect(cites[0].chunkId).toBe("c1");
   });
+
+  it("maps kind and marker, defaulting to text/null", () => {
+    const cites = extractCitations(
+      step({
+        citations: [
+          { ...raw, chunk_id: "a1", deep_link: "/files?...&tab=payloads", kind: "table", marker: 2 },
+          raw, // legacy shape: no kind/marker
+        ],
+      }),
+    );
+    expect(cites[0].kind).toBe("table");
+    expect(cites[0].marker).toBe(2);
+    expect(cites[1].kind).toBe("text");
+    expect(cites[1].marker).toBeNull();
+  });
 });
 
 describe("collectCitationsByMessage", () => {

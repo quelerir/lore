@@ -15,6 +15,8 @@ export interface Citation {
   previewText: string;
   headingPath: string[];
   deepLink: string;
+  kind: "text" | "table";
+  marker: number | null;
 }
 
 interface RawCitation {
@@ -24,6 +26,8 @@ interface RawCitation {
   preview_text?: unknown;
   heading_path?: unknown;
   deep_link?: unknown;
+  kind?: unknown;
+  marker?: unknown;
 }
 
 const asString = (value: unknown): string => (typeof value === "string" ? value : "");
@@ -40,6 +44,8 @@ const toCitation = (raw: RawCitation): Citation | null => {
     previewText: asString(raw.preview_text),
     headingPath: Array.isArray(raw.heading_path) ? raw.heading_path.map(asString) : [],
     deepLink,
+    kind: raw.kind === "table" ? "table" : "text",
+    marker: typeof raw.marker === "number" ? raw.marker : null,
   };
 };
 
