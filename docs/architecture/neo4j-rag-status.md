@@ -79,6 +79,24 @@ src/lore_retrieval/
 
 ## Overnight changes (2026-07-21 night)
 
-mypy (clean) + property tests · Neo4j backends + P1 structural write (code-ahead) · frontend citation
-extraction + integration guide · observability Tracer seam · message-metadata builder · degradation
-hardening (vector/fulltext/reranker/auto-merge) · `build_offline_pipeline` factory. 72 → 97 tests.
+mypy (clean) + property tests · Neo4j backends + P1 structural write · frontend citation extraction +
+integration guide · observability Tracer seam · message-metadata builder · degradation hardening
+(vector/fulltext/reranker/auto-merge) · `build_offline_pipeline` factory · code-review fixes (H1/H2/M/L).
+
+## Resume / how to run (2026-07-22)
+
+- **Branch:** `lore-agent-merge`, working tree clean. Package: `lore-core/packages/lore-retrieval/`.
+  **100 tests, ruff + mypy clean.** Solo — no parallel writer now.
+- **Neo4j is LIVE:** Community 5.26.28, reachable over **VPN** via plain **`bolt://`** (server not
+  TLS on 7687). Creds in the **shared root `.env`** as `RETRIEVAL_NEO4J_URI/USER/PASSWORD/DATABASE`
+  (config finds root by `docker-compose.yml`/`.git` marker; never per-package .env).
+- **Run tests:** `cd lore-core/packages/lore-retrieval && uv run pytest -q` (also `ruff check src tests`,
+  `mypy`).
+- **Run a spike** (needs `src` on path): `PYTHONPATH=src uv run python spikes/<name>.py`.
+  `probe_capabilities.py` (done) and `live_validate_neo4j.py` (done, self-cleans) both work.
+- **Verified live:** Neo4j chunk/table search + graph expansion + `project_batch`/`project_structure`.
+- **Next spikes need:** Ollama + `bge-m3` (`ollama pull bge-m3`) and `RETRIEVAL_LORE_CORE_DSN`
+  (loreagent_test) in the root `.env` → then run projection of a real run → analyzer eval
+  (`run_analyzer_eval.py`) → latency (`run_latency.py`), filling `neo4j-p0-decisions.md` §2/§3/§5.
+- **Still pending elsewhere:** embeddings provider decision (interim bge-m3/Ollama); frontend Phase C
+  render on Node 20; lore-chat LangGraph `cite` node + Langfuse adapter to the Tracer seam.
