@@ -16,6 +16,18 @@ def test_profile_mapping():
     assert PROFILE_TO_MODE["deep"] is Mode.DEEP
 
 
+def test_deep_prompt_mandates_grounding_for_company_questions():
+    """DEEP has no structural grounding guarantee (retrieval is an optional tool),
+    so the prompt must explicitly REQUIRE calling knowledge_base for company
+    questions and forbid answering them from general knowledge."""
+    from agents.base import DEEP_PROMPT
+
+    p = DEEP_PROMPT.lower()
+    assert "обязательно" in p  # mandatory directive, not a mere suggestion
+    assert "knowledge_base" in p
+    assert "не отвечай" in p and "общих знаний" in p  # forbid parametric answers
+
+
 def test_build_agent_both_modes():
     model = FakeListChatModel(responses=["x"])
     assert build_agent(Mode.FAST, model=model) is not None
