@@ -581,6 +581,28 @@ export default function FilesPage({ onNavigateHome }: FilesPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFocusChunkId, filteredChunks.length]);
 
+  // A deep-linked (cited) chunk can sit BEYOND the preview cap (MAX_CHUNKS), so it
+  // never streams in — no card exists to select/scroll, and the citation looks
+  // broken. Once the stream has settled, if the target still isn't present, fetch
+  // that one chunk by id and inject it so the pending-focus effect above can find,
+  // select and scroll it.
+  const fetchedPendingRef = useRef<string | null>(null);
+  useEffect(() => {
+    const runId = selectedRunId;
+    const fileId = selectedFileId;
+    const target = pendingFocusChunkId;
+    if (!runId || !fileId || !target || previewsLoading) return; // wait for the stream
+    if (selectedRun?.chunks.some((c) => c.id === target)) return; // already loaded
+    if (fetchedPendingRef.current === target) return; // dedup one fetch per target
+    fetchedPendingRef.current = target;
+    void filesProvider
+      .loadChunkDetail(runId, target)
+      .then((chunk) => setAllFiles((prev) => appendRunChunks(prev, fileId, runId, [chunk])))
+      .catch(() => {
+        fetchedPendingRef.current = null;
+      });
+  }, [pendingFocusChunkId, previewsLoading, selectedRun, selectedRunId, selectedFileId]);
+
   useEffect(() => {
     writeFilesUrlState({
       fileId: selectedFileId,
