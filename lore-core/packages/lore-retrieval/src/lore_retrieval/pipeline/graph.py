@@ -35,7 +35,7 @@ from lore_retrieval.pipeline.table_lane import (
     run_sql_fanout,
     select_table_candidates,
 )
-from lore_retrieval.observability import NullTracer
+from lore_retrieval.observability import NullTracer, stage_io
 from lore_retrieval.projection_model import StructuralProjection, build_structural_projection
 
 
@@ -144,7 +144,20 @@ class RetrievalPipeline:
         decision = await arbitrate_and_answer(self._chat_model, question, groups, sql_results)
         self._tracer.record(
             "arbitration",
-            {"note": decision.note, "used_sql": len(decision.used_sql_payload_ids)},
+            stage_io(
+                input={
+                    "question": question,
+                    "groups": [
+                        {"section_path": list(g.section_path), "preview": g.text[:200]}
+                        for g in groups
+                    ],
+                    "sql": [
+                        {"payload_id": r.payload_id, "answer_summary": r.answer_summary}
+                        for r in sql_results
+                    ],
+                },
+                output={"answer": decision.answer, "note": decision.note},
+            ),
         )
         citations = await self._cite(
             decision, resolution.resolved, sql_results, table_candidates
@@ -177,7 +190,27 @@ class RetrievalPipeline:
             preview_chars=self._citation_preview_chars,
             limit=self._citation_limit,
         )
-        self._tracer.record("cite", {"citations": len(citations)})
+        self._tracer.record(
+            "cite",
+            stage_io(
+                input={
+                    "has_evidence_map": bool(decision.evidence_map),
+                    "has_sql_map": bool(decision.sql_evidence_map),
+                },
+                output={
+                    "citations": [
+                        {
+                            "marker": c.marker,
+                            "file": c.logical_file_key,
+                            "chunk": c.chunk_id,
+                            "kind": c.kind,
+                            "preview": c.preview_text,
+                        }
+                        for c in citations
+                    ]
+                },
+            ),
+        )
         return citations
 
     async def _text_lane(self, question: str, degradations: list[str]):
