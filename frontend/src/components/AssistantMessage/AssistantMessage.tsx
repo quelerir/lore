@@ -37,6 +37,11 @@ export default function AssistantMessage() {
   const steps = traceByMessage.get(id) ?? [];
   const citations = citationsByMessage.get(id) ?? [];
   const warnings = warningsByMessage.get(id) ?? [];
+  // Hard failures / "база недоступна" show as a banner at the START of the message
+  // (deterministic, from metadata — never left to the LLM to phrase); soft
+  // degradations stay as chips below the answer.
+  const bannerWarnings = warnings.filter((w) => w.level === "error");
+  const chipWarnings = warnings.filter((w) => w.level === "warning");
   const isActive = id === activeMessageId;
   const [isCopied, setIsCopied] = useState(false);
 
@@ -66,6 +71,7 @@ export default function AssistantMessage() {
     <div className={styles.row}>
       <div className={styles.content}>
         <ExecutionSteps steps={steps} running={isActive} />
+        {!isActive ? <Warnings items={bannerWarnings} /> : null}
         <div className={styles.bubble}>
           {text ? (
             <Markdown
@@ -102,7 +108,7 @@ export default function AssistantMessage() {
             <TypingIndicator />
           ) : null}
         </div>
-        {!isActive ? <Warnings items={warnings} /> : null}
+        {!isActive ? <Warnings items={chipWarnings} /> : null}
         {!isActive ? <Citations items={citations} /> : null}
         <div className={styles.actions}>
           <button

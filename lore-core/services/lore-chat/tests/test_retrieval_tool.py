@@ -64,7 +64,11 @@ def test_tool_soft_fails_without_capturing(monkeypatch):
     # the old inviting phrasing is gone, and it explicitly forbids parametric answers.
     assert "ответь по общ" not in out.lower()  # no "ответь по общим знаниям" invite
     assert "не отвечай из общих знаний" in out.lower()  # explicit prohibition
-    assert "result" not in container  # nothing captured on failure
+    assert "result" not in container  # no grounded result captured on failure
+    # But the failure IS recorded as a degradation so on_message surfaces a
+    # deterministic error banner (not left to the LLM to mention). DEEP mode has
+    # no other signal — the tool returns text the model then paraphrases.
+    assert "knowledge_base_unavailable" in container.get("degradations", [])
 
 
 def test_optional_langfuse_tracer_survives_missing_module(monkeypatch):

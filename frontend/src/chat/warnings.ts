@@ -16,6 +16,8 @@ export interface Warning {
 // Коды деградаций пайплайна → человекочитаемый русский текст.
 const DEGRADATION_LABELS: Record<string, string> = {
   answer_generation_failed: "Модель недоступна — ответ не сформирован",
+  answer_unavailable_degraded: "База знаний недоступна — ответ не получен",
+  knowledge_base_unavailable: "База знаний недоступна",
   table_lane_unavailable: "Таблицы недоступны — ответ по тексту",
   vector_search_failed: "Смысловой поиск недоступен",
   fulltext_search_failed: "Лексический поиск недоступен",
@@ -25,8 +27,20 @@ const DEGRADATION_LABELS: Record<string, string> = {
   auto_merging_failed: "Группировка недоступна — отдельные фрагменты",
 };
 
+// Жёсткие сбои / «база недоступна» — показываются баннером В НАЧАЛЕ сообщения
+// (level "error"), а не чипом снизу. Остальные деградации мягкие: ответ всё же
+// сформирован по оставшимся данным — им место в чипах.
+const BANNER_DEGRADATIONS = new Set<string>([
+  "answer_generation_failed",
+  "answer_unavailable_degraded",
+  "knowledge_base_unavailable",
+]);
+
 const degradationText = (code: string): string =>
   DEGRADATION_LABELS[code] ?? `Ограничение: ${code}`;
+
+const degradationLevel = (code: string): Warning["level"] =>
+  BANNER_DEGRADATIONS.has(code) ? "error" : "warning";
 
 /** Read degradations + hard error from a step's metadata → typed warnings (deduped). */
 export function extractWarnings(step: IStep): Warning[] {
@@ -37,7 +51,7 @@ export function extractWarnings(step: IStep): Warning[] {
     for (const code of meta.degradations) {
       if (typeof code === "string" && !seen.has(code)) {
         seen.add(code);
-        out.push({ level: "warning", text: degradationText(code) });
+        out.push({ level: degradationLevel(code), text: degradationText(code) });
       }
     }
   }

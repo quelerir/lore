@@ -128,6 +128,12 @@ async def knowledge_base(query: str) -> str:
         # общим знаниям" here is what made the model hallucinate "база недоступна,
         # но вот общая информация" (grounding violation, defect #1).
         logging.exception("knowledge_base retrieval failed for query=%r", query)
+        # Record the failure so on_message surfaces a deterministic error banner
+        # (metadata degradation). In DEEP mode this is the ONLY signal — the tool
+        # hands text back to the LLM, which then paraphrases; without this flag the
+        # frontend can't show the error at the top of the message.
+        if container is not None:
+            container.setdefault("degradations", []).append("knowledge_base_unavailable")
         return (
             "Не удалось обратиться к базе знаний — она временно недоступна. "
             "Сообщи об этом пользователю и НЕ отвечай из общих знаний."

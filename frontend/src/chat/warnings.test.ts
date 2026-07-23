@@ -32,9 +32,11 @@ describe("extractWarnings", () => {
   it("has a human label for every known backend degradation code", () => {
     const BACKEND_CODES = [
       "answer_generation_failed",
+      "answer_unavailable_degraded",
       "auto_merging_failed",
       "context_load_failed",
       "fulltext_search_failed",
+      "knowledge_base_unavailable",
       "reranker_failed",
       "structural_expansion_failed",
       "table_lane_unavailable",
@@ -51,6 +53,24 @@ describe("extractWarnings", () => {
   it("surfaces a hard error as an error-level warning", () => {
     const w = extractWarnings(step({ error: "HTTPStatusError" }));
     expect(w).toEqual([{ level: "error", text: "Ошибка при обработке запроса" }]);
+  });
+
+  it("classifies 'база недоступна' / hard-failure degradations as error-level (top banner)", () => {
+    for (const code of [
+      "answer_generation_failed",
+      "answer_unavailable_degraded",
+      "knowledge_base_unavailable",
+    ]) {
+      const [w] = extractWarnings(step({ degradations: [code] }));
+      expect(w.level, code).toBe("error");
+    }
+  });
+
+  it("keeps soft pipeline degradations at warning-level (chips, not banner)", () => {
+    for (const code of ["reranker_failed", "table_lane_unavailable", "auto_merging_failed"]) {
+      const [w] = extractWarnings(step({ degradations: [code] }));
+      expect(w.level, code).toBe("warning");
+    }
   });
 });
 
