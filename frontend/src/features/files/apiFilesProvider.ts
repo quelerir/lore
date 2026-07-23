@@ -59,7 +59,13 @@ export class ApiFilesProvider implements FilesProvider {
     const page = await auditGet<PageDto<RunDetailDto>>("/runs", {
       logical_file_key: logicalFileKey,
     });
-    return page.items.map(mapRun);
+    // Newest run first, so runs[0] is the LATEST run everywhere (sidebar status
+    // badge, default selection). The API order isn't guaranteed; without this the
+    // badge could show an older (e.g. failed) run's status after hydration even
+    // though the current run loaded fine. ISO timestamps sort lexicographically.
+    return page.items
+      .map(mapRun)
+      .sort((a, b) => b.processedAt.localeCompare(a.processedAt));
   }
 
   // Stream a run's chunk previews (metadata only — no text) page by page via

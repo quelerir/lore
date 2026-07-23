@@ -186,3 +186,25 @@ describe("ApiFilesProvider.hydrateRunTables", () => {
     expect(tables.map((t) => t.id)).toEqual(["ok"]);
   });
 });
+
+describe("hydrateFileRuns ordering", () => {
+  const runDto = (id: string, status: string, claimedAt: string) =>
+    ({
+      schema_version: "v1", run_id: id, logical_file_key: "f", status,
+      source_content_hash: "", config_hash: "", claimed_at: claimedAt,
+      finished_at: null, chunk_count: 0, payload_count: 0,
+      warning_count: 0, error_count: 0,
+    });
+
+  it("returns runs newest-first so runs[0] is the latest run", async () => {
+    auditGet.mockResolvedValue({
+      items: [
+        runDto("old", "failed", "2026-07-20T10:00:00Z"),
+        runDto("new", "success", "2026-07-23T10:00:00Z"),
+      ],
+    });
+    const runs = await new ApiFilesProvider().hydrateFileRuns("f");
+    expect(runs.map((r) => r.id)).toEqual(["new", "old"]);
+    expect(runs[0].status).toBe("success"); // sidebar badge reads runs[0].status
+  });
+});
