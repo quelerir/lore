@@ -35,5 +35,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # chainlit ищет app.py + config.py в рабочем каталоге (pyproject pythonpath=["."]).
 WORKDIR /workspace/services/lore-chat
 
+# datacraft-chainlit — виртуальный член uv-воркспейса (нет [build-system]), uv его
+# НЕ устанавливает, поэтому его каталог не попадает в sys.path. Стартовые импорты
+# работают лишь потому, что cwd = этот каталог; отложенные импорты соседних loose-
+# модулей (toast_binding, langfuse_tracing внутри retrieval) падают, как только cwd
+# уже не здесь. Кладём каталог на путь явно — тогда любой модуль импортируется
+# откуда угодно, независимо от cwd.
+ENV PYTHONPATH=/workspace/services/lore-chat
+
 EXPOSE 8000
 CMD ["chainlit", "run", "app.py", "--host", "0.0.0.0", "--port", "8000"]

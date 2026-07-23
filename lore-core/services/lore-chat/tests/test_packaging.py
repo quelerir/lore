@@ -36,3 +36,12 @@ def test_runtime_imported_modules_are_all_packaged():
         "loose modules imported by packaged code but absent from py-modules "
         f"(they won't ship in the wheel): {missing}"
     )
+
+
+def test_container_puts_lore_chat_on_pythonpath():
+    """datacraft-chainlit is a virtual uv member (no [build-system]) → uv doesn't
+    install it, so its directory isn't on sys.path in the container. The Dockerfile
+    must add it explicitly (PYTHONPATH), otherwise deferred sibling imports
+    (toast_binding / langfuse_tracing inside retrieval) fail once cwd moves."""
+    dockerfile = (_ROOT / "Dockerfile").read_text()
+    assert "PYTHONPATH=/workspace/services/lore-chat" in dockerfile
