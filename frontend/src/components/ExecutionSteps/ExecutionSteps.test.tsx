@@ -62,4 +62,19 @@ describe("ExecutionSteps", () => {
     const host = await render([run]);
     expect(host.querySelectorAll("pre").length).toBe(0);
   });
+
+  it("рендерит и input, и output блока (единый контракт)", async () => {
+    const s = step({
+      id: "io1",
+      type: "run",
+      name: "summarize",
+      input: '{\n  "groups": 2\n}',
+      output: '{\n  "answer": "текст ответа",\n  "citations": []\n}',
+    });
+    const host = await render([s]);
+    const pres = host.querySelectorAll("pre");
+    expect(pres.length).toBe(2); // input + output
+    expect(host.textContent).toContain("groups");
+    expect(host.textContent).toContain("текст ответа");
+  });
 });
