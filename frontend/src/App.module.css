@@ -1,17 +1,17 @@
 .shell {
   height: 100dvh;
-  background: #f5f7fb;
+  background: var(--app-shell-bg);
   padding: 12px;
 }
 
 .frame {
   height: calc(100dvh - 24px);
-  background: rgba(248, 250, 252, 0.9);
-  border: 1px solid rgba(232, 236, 240, 0.9);
+  background: var(--app-frame-bg);
+  border: 1px solid var(--app-frame-border);
   border-radius: 24px;
   overflow: hidden;
   display: flex;
-  box-shadow: 0 18px 56px rgba(205, 214, 224, 0.24);
+  box-shadow: var(--app-frame-shadow);
 }
 
 .content {
@@ -56,7 +56,7 @@
   padding: 0 18px 10px;
   text-align: center;
   font-size: 12px;
-  color: #8c97a8;
+  color: var(--app-muted-text);
 }
 
 .modalOverlay {
@@ -186,6 +186,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #475569;
+  color: var(--app-text);
   font-size: 14px;
 }

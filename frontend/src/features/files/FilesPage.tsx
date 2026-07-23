@@ -830,20 +830,6 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
             <h1 className={styles.title}>Lore File Viewer</h1>
           </div>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-          {currentUser ? (
-            <>
-              <span style={{ fontSize: 14, opacity: 0.85 }}>{currentUser.identifier}</span>
-              <button className={styles.primaryButton} type="button" onClick={() => void handleLogout()}>
-                Выйти
-              </button>
-            </>
-          ) : (
-            <button className={styles.primaryButton} type="button" onClick={() => void handleLogin()}>
-              Войти
-            </button>
-          )}
-        </div>
       </header>
 
       <div className={styles.layout}>

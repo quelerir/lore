@@ -1,4 +1,5 @@
 import { useMessage } from "@assistant-ui/react";
+import { renderHighlightedText, useSearchHighlightQuery } from "../MessageList/searchHighlight";
 import styles from "./UserMessage.module.css";
 
 export default function UserMessage() {
@@ -8,11 +9,16 @@ export default function UserMessage() {
       .map((part) => ("text" in part ? part.text : ""))
       .join("\n"),
   );
+  const searchQuery = useSearchHighlightQuery();
 
   return (
-    <div className={styles.row}>
+    <div
+      className={styles.row}
+      data-chat-search-item="true"
+      data-chat-search-text={text}
+    >
       <div className={styles.bubble}>
-        <p>{text}</p>
+        <p>{renderHighlightedText(text, searchQuery, styles.searchHit)}</p>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ export interface Chat {
   id: string;
   title: string;
   description: string;
+  createdAt: string;
   time: string;
 }
 

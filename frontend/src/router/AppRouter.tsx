@@ -20,6 +20,11 @@ export default function AppRouter() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem("lore-theme");
+    document.documentElement.dataset.theme = storedTheme === "dark" ? "dark" : "light";
+  }, []);
+
   if (pathname === "/files") {
     return <FilesPage onNavigateHome={() => navigateTo("/")} />;
   }
