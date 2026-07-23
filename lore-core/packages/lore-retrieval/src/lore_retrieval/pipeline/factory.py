@@ -78,6 +78,7 @@ def build_live_pipeline(
         Neo4jGraphExpansionBackend,
         Neo4jTableSearchBackend,
     )
+    from lore_retrieval.adapters.sql_callable import UnavailableSqlRunner
     from lore_retrieval.observability import ContextTracer
 
     kwargs = dict(
@@ -86,7 +87,9 @@ def build_live_pipeline(
         reranker=reranker or IdentityReranker(),  # P0: no cross-encoder; keep fusion order
         resolver=PostgresEvidenceResolver(dsn),
         table_search=Neo4jTableSearchBackend(driver, database, index_version, embedder),
-        sql_runner=sql_runner or FakeSqlRunner({}),  # text-lane citations: no live TOAST
+        # No silent fake in the live path: an unwired SQL tool reports an honest
+        # 'unsupported' (not a masking 'not_applicable'). Text-lane answers unaffected.
+        sql_runner=sql_runner or UnavailableSqlRunner(),
         chat_model=chat_model,
         context_loader=PostgresChunkContextLoader(dsn),
         file_key_resolver=file_key_resolver or PostgresFileKeyResolver(dsn),

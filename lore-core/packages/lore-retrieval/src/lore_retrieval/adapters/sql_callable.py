@@ -13,7 +13,7 @@ The binding the integration layer must provide, per SqlRequest:
 """
 from collections.abc import Awaitable, Callable
 
-from lore_retrieval.contracts import SqlRequest, SQLResult
+from lore_retrieval.contracts import SqlRequest, SQLResult, SQLStatus
 
 
 class CallableSqlRunner:
@@ -25,3 +25,23 @@ class CallableSqlRunner:
 
     async def run(self, request: SqlRequest) -> SQLResult:
         return await self._fn(request)
+
+
+class UnavailableSqlRunner:
+    """Honest stand-in when the live TOAST SQL tool could not be wired. Returns an
+    explicit ``unsupported`` status with a reason — NEVER a masking
+    ``not_applicable`` (that reads like a real per-table verdict and misleads both
+    users and coders into thinking the tables were checked). Used by the LIVE
+    factory instead of a silent fake, so an SQL outage is visible, not disguised."""
+
+    def __init__(self) -> None:
+        self.seen: list[str] = []
+
+    async def run(self, request: SqlRequest) -> SQLResult:
+        self.seen.append(request.payload_id)
+        return SQLResult(
+            payload_id=request.payload_id,
+            chunk_id=request.chunk_id,
+            status=SQLStatus.unsupported,
+            error="SQL-инструмент недоступен (живой TOAST не подключён)",
+        )
