@@ -68,3 +68,9 @@ class RecordingTracer:
 
     def stages(self) -> list[str]:
         return [stage for stage, _ in self.events]
+
+
+def stage_io(*, input=None, output=None) -> dict:
+    """Uniform trace payload: what a block received and produced. Emit this from
+    every tracer.record() so the renderer can show input/output generically."""
+    return {"input": input, "output": output}

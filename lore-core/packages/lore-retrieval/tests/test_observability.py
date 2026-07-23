@@ -87,3 +87,18 @@ def test_composite_tracer_isolates_a_failing_child():
     # A broken sink must not stop the others, nor break the pipeline.
     CompositeTracer([Boom(), good]).record("cite", {"citations": 1})
     assert good.events == [("cite", {"citations": 1})]
+
+
+from lore_retrieval.observability import stage_io  # noqa: E402
+
+
+def test_stage_io_shapes_input_and_output():
+    assert stage_io(input={"q": "x"}, output={"n": 1}) == {
+        "input": {"q": "x"},
+        "output": {"n": 1},
+    }
+
+
+def test_stage_io_defaults_to_none():
+    assert stage_io() == {"input": None, "output": None}
+    assert stage_io(output={"a": 1}) == {"input": None, "output": {"a": 1}}
