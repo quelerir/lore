@@ -43,10 +43,12 @@ async def test_tracer_records_every_stage():
         "text_fanout", "text_expansion", "text_rerank", "text_resolve",
         "grouping", "table_discover", "table_sql", "arbitration", "cite",
     } <= stages
-    # payloads carry bounded counts, not content
     by_stage = dict(tracer.events)
+    # un-migrated stages keep their bounded-count payload
     assert "fused" in by_stage["text_fanout"]
-    assert by_stage["cite"]["citations"] >= 0
+    # arbitration + cite now carry the uniform {input, output} with real content
+    assert "answer" in by_stage["arbitration"]["output"]
+    assert isinstance(by_stage["cite"]["output"]["citations"], list)
 
 
 async def test_default_tracer_is_noop_and_pipeline_still_works():
