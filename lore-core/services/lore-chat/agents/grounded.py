@@ -33,7 +33,16 @@ from langchain_core.messages import AIMessage, BaseMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
+from lore_retrieval.observability import stage_io
 from lore_retrieval.pipeline.degradation import is_degraded_empty
+
+
+def _last_write(_current: Any, new: Any) -> Any:
+    """Reducer for node_io: the two diamond branches (neo4j_only ∥ toast_sql) both
+    write node_io in one superstep, so a plain LastValue channel errors. We only
+    read node_io per-node from the ``updates`` stream (not the final channel), so
+    last-write-wins is all the channel needs to accept concurrent writes."""
+    return new
 
 
 class GroundedState(TypedDict, total=False):
@@ -49,6 +58,7 @@ class GroundedState(TypedDict, total=False):
     variant1_detail: dict
     sql_detail: list
     answer_detail: dict
+    node_io: Annotated[dict, _last_write]
 
 
 def _question(messages: list[BaseMessage]) -> str:
@@ -63,26 +73,42 @@ def _status(value: Any) -> str:
     return str(getattr(value, "value", value))
 
 
+def _cit_view(c: Any) -> dict:
+    """Compact citation view for the trace. Tolerant of test doubles; real
+    citations are Citation objects carrying these attributes."""
+    return {
+        "marker": getattr(c, "marker", None),
+        "file": getattr(c, "logical_file_key", None),
+        "chunk": getattr(c, "chunk_id", None),
+        "kind": getattr(c, "kind", None),
+        "preview": getattr(c, "preview_text", None),
+    }
+
+
 def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
     async def neo4j_retrieve(state: GroundedState) -> dict:
         groups, resolution, table_candidates, degradations = await pipeline.retrieve(
             _question(state["messages"])
         )
+        detail = {
+            "context_groups": len(groups),
+            "resolved_evidence": len(resolution.resolved),
+            "rejected_evidence": len(resolution.rejected),
+            "table_candidates": [
+                {"table": tc.payload_id, "chunk": tc.chunk_id, "score": round(tc.score, 4)}
+                for tc in table_candidates
+            ],
+            "degradations": degradations,
+        }
         return {
             "groups": groups,
             "resolution": resolution,
             "table_candidates": table_candidates,
             "degradations": degradations,
-            "neo4j_detail": {
-                "context_groups": len(groups),
-                "resolved_evidence": len(resolution.resolved),
-                "rejected_evidence": len(resolution.rejected),
-                "table_candidates": [
-                    {"table": tc.payload_id, "chunk": tc.chunk_id, "score": round(tc.score, 4)}
-                    for tc in table_candidates
-                ],
-                "degradations": degradations,
-            },
+            "neo4j_detail": detail,
+            "node_io": stage_io(
+                input={"question": _question(state["messages"])}, output=detail
+            ),
         }
 
     async def neo4j_only(state: GroundedState) -> dict:
@@ -90,7 +116,11 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
         # passthrough that marks the pure-neo4j branch AND keeps both variants the
         # same length so summarize joins them in one superstep.
         groups = state.get("groups", [])
-        return {"variant1_detail": {"variant": "pure_neo4j", "context_groups": len(groups)}}
+        detail = {"variant": "pure_neo4j", "context_groups": len(groups)}
+        return {
+            "variant1_detail": detail,
+            "node_io": stage_io(input={"context_groups": len(groups)}, output=detail),
+        }
 
     async def toast_sql(state: GroundedState) -> dict:
         candidates = state.get("table_candidates", [])
@@ -99,32 +129,42 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
             # (стр. 56-57: "table discovery does not imply SQL execution"). Make
             # the empty branch HONEST — an explicit "no candidate" outcome rather
             # than a silent empty, so the trace shows the SQL path was reached.
+            detail = [
+                {
+                    "status": "no_candidate",
+                    "note": "таблица-кандидат в neo4j не найдена — SQL не запускался",
+                }
+            ]
             return {
                 "sql_results": [],
-                "sql_detail": [
-                    {
-                        "status": "no_candidate",
-                        "note": "таблица-кандидат в neo4j не найдена — SQL не запускался",
-                    }
-                ],
+                "sql_detail": detail,
+                "node_io": stage_io(input={"candidates": []}, output=detail),
             }
         results, degr = await pipeline.run_table_sql(
             _question(state["messages"]), candidates
         )
+        detail = [
+            {
+                "table": r.payload_id,
+                "chunk": r.chunk_id,
+                "status": _status(r.status),
+                "rows": len(r.rows),
+                "answer": r.answer_summary,
+                "error": r.error,
+            }
+            for r in results
+        ]
         return {
             "sql_results": results,
             "degradations": state.get("degradations", []) + degr,
-            "sql_detail": [
-                {
-                    "table": r.payload_id,
-                    "chunk": r.chunk_id,
-                    "status": _status(r.status),
-                    "rows": len(r.rows),
-                    "answer": r.answer_summary,
-                    "error": r.error,
-                }
-                for r in results
-            ],
+            "sql_detail": detail,
+            "node_io": stage_io(
+                input={
+                    "question": _question(state["messages"]),
+                    "candidates": [tc.payload_id for tc in candidates],
+                },
+                output=detail,
+            ),
         }
 
     async def summarize(state: GroundedState) -> dict:
@@ -169,6 +209,17 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
                 "used_sql_payloads": list(decision.used_sql_payload_ids),
                 "citations": len(citations),
             },
+            "node_io": stage_io(
+                input={
+                    "groups": len(state.get("groups", [])),
+                    "sql": list(decision.used_sql_payload_ids),
+                },
+                output={
+                    "answer": answer,
+                    "note": decision.note,
+                    "citations": [_cit_view(c) for c in citations],
+                },
+            ),
         }
         if extra_degr:
             result["degradations"] = degradations + extra_degr

@@ -119,3 +119,28 @@ def test_degraded_empty_shows_infra_message_and_flag():
     state = asyncio.run(agent.ainvoke({"messages": [HumanMessage(content="q")]}))
     assert "Не удалось обратиться" in state["messages"][-1].content
     assert "answer_unavailable_degraded" in state["degradations"]
+
+
+def test_nodes_emit_node_io_input_and_output():
+    """Each node yields a uniform node_io (input+output) in its update, so the
+    chat trace can render input/output for every block."""
+    pipe = _FakePipe()
+    agent = build_grounded_agent(pipe)
+
+    async def _collect():
+        seen = {}
+        async for delta in agent.astream(
+            {"messages": [HumanMessage(content="ФИО юристов?")]}, stream_mode="updates"
+        ):
+            for node, d in delta.items():
+                if isinstance(d, dict) and "node_io" in d:
+                    seen[node] = d["node_io"]
+        return seen
+
+    seen = asyncio.run(_collect())
+    assert {"neo4j_retrieve", "toast_sql", "summarize"} <= set(seen)
+    for io in seen.values():
+        assert set(io) == {"input", "output"}
+    assert seen["summarize"]["output"]["answer"] == "Каневский — Помощник Юриста"
+    assert isinstance(seen["summarize"]["output"]["citations"], list)
+    assert seen["neo4j_retrieve"]["input"]["question"] == "ФИО юристов?"
