@@ -68,6 +68,28 @@ export class ApiFilesProvider implements FilesProvider {
   // ONE batched pass across all chunks — see resolvePayloadRefs. Capped at
   // MAX_CHUNKS for huge runs; a failed chunk degrades to its preview rather than
   // dropping out of the list.
+  async listRunChunkPreviews(
+    runId: string,
+    onPage: (chunks: FileChunk[], meta: { done: boolean }) => void,
+  ): Promise<void> {
+    const encodedRun = encodeURIComponent(runId);
+    let cursor: string | undefined;
+    let count = 0;
+    do {
+      const page = await auditGet<PageDto<ChunkPreviewDto>>(
+        `/runs/${encodedRun}/chunks`,
+        { cursor },
+      );
+      const remaining = MAX_CHUNKS - count;
+      const items = page.items.slice(0, Math.max(0, remaining));
+      count += items.length;
+      cursor = page.next_cursor ?? undefined;
+      const done = !cursor || count >= MAX_CHUNKS;
+      onPage(items.map(mapChunkPreview), { done });
+      if (done) return;
+    } while (cursor);
+  }
+
   async hydrateRunChunks(runId: string): Promise<FileChunk[]> {
     const encodedRun = encodeURIComponent(runId);
 

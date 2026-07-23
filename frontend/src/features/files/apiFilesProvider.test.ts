@@ -157,6 +157,42 @@ describe("ApiFilesProvider.loadChunkDetail", () => {
   });
 });
 
+describe("ApiFilesProvider.listRunChunkPreviews", () => {
+  it("streams preview pages without fetching per-chunk detail", async () => {
+    auditGet.mockImplementation((path: string, params?: { cursor?: string }) => {
+      expect(path).toBe("/runs/run-1/chunks");
+      if (!params?.cursor) {
+        return Promise.resolve({
+          schema_version: "v1",
+          items: [preview("chunk-1", 1)],
+          order_key: "ordinal,chunk_id",
+          next_cursor: "c2",
+          truncated: false,
+        });
+      }
+      return Promise.resolve({
+        schema_version: "v1",
+        items: [preview("chunk-2", 2)],
+        order_key: "ordinal,chunk_id",
+        next_cursor: null,
+        truncated: false,
+      });
+    });
+
+    const pages: Array<{ ids: string[]; done: boolean }> = [];
+    await new ApiFilesProvider().listRunChunkPreviews("run-1", (chunks, meta) =>
+      pages.push({ ids: chunks.map((c) => c.id), done: meta.done }),
+    );
+
+    expect(pages).toEqual([
+      { ids: ["chunk-1"], done: false },
+      { ids: ["chunk-2"], done: true },
+    ]);
+    // Only the two /chunks list calls were made — no /chunks/{id} detail GETs.
+    expect(auditGet).toHaveBeenCalledTimes(2);
+  });
+});
+
 const profile = (id: string): TableProfileDto => ({
   schema_version: "v1",
   payload_id: id,
