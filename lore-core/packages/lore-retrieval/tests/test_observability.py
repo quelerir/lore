@@ -22,7 +22,7 @@ CORPUS = [
 ]
 
 
-def _pipeline(tracer):
+def _pipeline(tracer, *, rerank_floor: float = 0.0):
     projection = build_structural_projection(CORPUS)
     backend = InMemoryChunkSearchBackend(CORPUS)
     return RetrievalPipeline(
@@ -31,7 +31,7 @@ def _pipeline(tracer):
         table_search=backend, sql_runner=FakeSqlRunner({}),
         chat_model=FakeChatModel(lambda _p: "ответ [1]"),
         context_loader=InMemoryChunkContextLoader(CORPUS),
-        tracer=tracer,
+        tracer=tracer, rerank_floor=rerank_floor,
     )
 
 
@@ -52,6 +52,23 @@ async def test_tracer_records_every_stage():
 async def test_default_tracer_is_noop_and_pipeline_still_works():
     result = await _pipeline(NullTracer()).answer("премия формула")
     assert result.decision.answer == "ответ [1]"     # no-op tracer doesn't disturb the flow
+
+
+async def test_rerank_floor_drops_weak_seeds_but_never_empties():
+    tracer = RecordingTracer()
+    # A floor above every FakeReranker score drops all but the top seed — the
+    # pipeline still produces evidence (never empty) and records what was floored.
+    result = await _pipeline(tracer, rerank_floor=100.0).answer("премия формула")
+    ev = dict(tracer.events)["text_rerank"]
+    assert ev["candidates"] >= 1
+    assert ev["floored"] >= 1
+    assert result.groups
+
+
+async def test_rerank_floor_zero_is_a_noop():
+    tracer = RecordingTracer()
+    await _pipeline(tracer, rerank_floor=0.0).answer("премия формула")
+    assert dict(tracer.events)["text_rerank"]["floored"] == 0
 
 
 def test_composite_tracer_fans_out_to_all_children():

@@ -66,6 +66,7 @@ class RetrievalPipeline:
         index_version: str = "spike1",
         seed_count: int = 10,
         rerank_top_k: int = 12,
+        rerank_floor: float = 0.0,
         table_floor: float = 0.0,
         max_sql: int = 5,
         citation_limit: int = 8,
@@ -84,6 +85,7 @@ class RetrievalPipeline:
         self._index_version = index_version
         self._seed_count = seed_count
         self._rerank_top_k = rerank_top_k
+        self._rerank_floor = rerank_floor
         self._table_floor = table_floor
         self._max_sql = max_sql
         self._citation_limit = citation_limit
@@ -223,7 +225,15 @@ class RetrievalPipeline:
                 (cid, 1.0 / (i + 1)) for i, cid in enumerate(candidate_ids[: self._rerank_top_k])
             ]
             degradations.append("reranker_failed")
-        self._tracer.record("text_rerank", {"candidates": len(reranked)})
+        # Optional precision floor: drop weak seeds so the LLM sees only strong
+        # evidence. Only meaningful with a calibrated cross-encoder (default 0.0 =
+        # off, IdentityReranker's positional scores untouched). Never empties.
+        dropped = 0
+        if self._rerank_floor > 0.0 and reranked:
+            kept = [(cid, score) for cid, score in reranked if score >= self._rerank_floor]
+            dropped = len(reranked) - len(kept)
+            reranked = kept or reranked[:1]
+        self._tracer.record("text_rerank", {"candidates": len(reranked), "floored": dropped})
 
         resolution = await resolve_evidence(
             self._resolver, [cid for cid, _ in reranked], index_version=self._index_version

@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     # (P0 no-op, keeps RRF-fusion order). Set to sharpen top-k precision.
     reranker_endpoint: str = Field(default="", validation_alias="RERANKER_ENDPOINT")
     reranker_model: str = "bge-reranker-v2-m3"
+    # Drop text-lane seeds scoring below this after rerank (precision; never empties).
+    # 0.0 = off. Only meaningful with a calibrated cross-encoder — tune to its scores.
+    rerank_floor: float = Field(default=0.0, validation_alias="RERANK_FLOOR")
 
     # Active Neo4j projection the chat queries (a separate indexing job populates
     # it). v2 = full current lore_core corpus (19k chunks); v1 kept in Neo4j as

@@ -90,6 +90,7 @@ def _build_pipeline(*, tracer=None):
         index_version=s.index_version,
         sql_runner=sql_runner,
         reranker=reranker,
+        rerank_floor=s.rerank_floor,
         tracer=tracer,
     )
 
