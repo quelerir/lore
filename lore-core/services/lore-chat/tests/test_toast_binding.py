@@ -80,3 +80,17 @@ def test_missing_chunk_is_not_applicable(monkeypatch):
     res = asyncio.run(toast_binding._run(_req()))
     assert res.status == SQLStatus.not_applicable
     assert res.rows == []
+
+
+def test_sql_trace_entry_carries_input_and_output():
+    from toast_binding import _sql_trace_entry
+
+    entry = _sql_trace_entry(
+        "toast_tbl_x", "сколько юристов?",
+        {"sql": "SELECT count(*)", "ok": True, "row_count": 3, "error": None},
+    )
+    assert entry["stage"] == "sql"
+    assert entry["data"]["input"] == {"table": "toast_tbl_x", "question": "сколько юристов?"}
+    out = entry["data"]["output"]
+    assert out["sql"] == "SELECT count(*)"
+    assert out["ok"] is True and out["rows"] == 3

@@ -15,7 +15,7 @@ from lore_retrieval.adapters.context_postgres import PostgresChunkContextLoader
 from lore_retrieval.adapters.sql_callable import CallableSqlRunner
 from lore_retrieval.config import get_settings as _settings
 from lore_retrieval.contracts import SQLResult, SQLStatus, SqlRequest
-from lore_retrieval.observability import trace_sink
+from lore_retrieval.observability import stage_io, trace_sink
 
 from toast.executor import PgExecutor
 from toast.models import ok_rows
@@ -69,6 +69,23 @@ def _ensure():
     return _graph, _loader
 
 
+def _sql_trace_entry(table: str, question: str, attempt: dict) -> dict:
+    """Uniform trace entry for one SQL attempt: input (table + question) and output
+    (generated SQL + execution result)."""
+    return {
+        "stage": "sql",
+        "data": stage_io(
+            input={"table": table, "question": question},
+            output={
+                "sql": attempt.get("sql", ""),
+                "ok": attempt.get("ok"),
+                "rows": attempt.get("row_count", 0),
+                "error": attempt.get("error"),
+            },
+        ),
+    }
+
+
 async def _run(request: SqlRequest) -> SQLResult:
     graph, loader = _ensure()
     # desc comes from the canonical chunk; `table` is the trusted payload_id.
@@ -94,13 +111,7 @@ async def _run(request: SqlRequest) -> SQLResult:
     sink = trace_sink.get()
     if sink is not None:
         for a in state.get("attempts", []):
-            sink.append({"stage": "sql", "data": {
-                "table": request.payload_id,
-                "sql": a.get("sql", ""),
-                "ok": a.get("ok"),
-                "rows": a.get("row_count", 0),
-                "error": a.get("error"),
-            }})
+            sink.append(_sql_trace_entry(request.payload_id, request.question, a))
     status = _STATUS_MAP.get(state.get("status", ""), SQLStatus.execution_error)
     answer = state.get("answer") or None
     return SQLResult(
