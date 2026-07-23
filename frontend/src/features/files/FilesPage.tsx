@@ -7,6 +7,7 @@ import {
   ListCollapse,
   ListTree,
   X,
+  ArrowLeft,
   CircleHelp,
   Copy,
   FileWarning,
@@ -259,7 +260,7 @@ const deriveFileStats = (file: FileRecord, comments: ReviewComment[]) => {
   };
 };
 
-export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPageProps) {
+export default function FilesPage({ onNavigateHome }: FilesPageProps) {
   const initialUrlState = readFilesUrlState();
   const [search, setSearch] = useState(initialUrlState.search);
   const [documentSearch, setDocumentSearch] = useState(initialUrlState.documentSearch);
@@ -970,6 +971,9 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     <div className={styles.page}>
       <header className={styles.topbar}>
         <div className={styles.topbarLeft}>
+          <button className={styles.secondaryButton} type="button" onClick={onNavigateHome}>
+            <ArrowLeft size={15} /> В чат
+          </button>
           <div>
             <h1 className={styles.title}>Lore File Viewer</h1>
           </div>
