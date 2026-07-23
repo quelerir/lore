@@ -295,6 +295,11 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [previewsLoading, setPreviewsLoading] = useState(false);
+  // Chunk id that arrived via deep link / citation and still needs scroll+flash.
+  const [pendingFocusChunkId, setPendingFocusChunkId] = useState<string | null>(
+    initialUrlState.chunkId,
+  );
+  const [flashChunkId, setFlashChunkId] = useState<string | null>(null);
   // chunkId -> card element, for IntersectionObserver + scroll-to.
   const cardRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   // chunkIds whose detail load is in-flight or done (dedup guard, not render state).
@@ -546,6 +551,40 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
       map.delete(chunkId);
     }
   };
+
+  // A citation click uses navigateTo, which fires popstate. When we're already on
+  // /files, re-read the URL so file/run/chunk follow the citation, and mark the
+  // target chunk for scroll+flash.
+  useEffect(() => {
+    const onPopState = () => {
+      if (window.location.pathname !== "/files") return;
+      const next = readFilesUrlState();
+      if (next.fileId) setSelectedFileId(next.fileId);
+      if (next.runId) setSelectedRunId(next.runId);
+      if (next.chunkId) {
+        setSelectedChunkId(next.chunkId);
+        setPendingFocusChunkId(next.chunkId);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // Once the pending (deep-linked) chunk's card is mounted, prioritize its detail,
+  // scroll it into view, and flash it so the user sees exactly which chunk the
+  // citation pointed to. Clears the pending marker after firing once.
+  useEffect(() => {
+    if (!pendingFocusChunkId) return;
+    const el = cardRefs.current.get(pendingFocusChunkId);
+    if (!el) return; // card not rendered yet; effect re-runs when list grows
+    loadDetail(pendingFocusChunkId);
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashChunkId(pendingFocusChunkId);
+    setPendingFocusChunkId(null);
+    const timer = window.setTimeout(() => setFlashChunkId(null), 1800);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFocusChunkId, filteredChunks.length]);
 
   useEffect(() => {
     writeFilesUrlState({
@@ -1169,7 +1208,7 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
                       key={chunk.id}
                       ref={registerCard(chunk.id)}
                       data-chunk-id={chunk.id}
-                      className={`${styles.chunkCard} ${selectedChunk?.id === chunk.id ? styles.chunkCardActive : ""}`}
+                      className={`${styles.chunkCard} ${selectedChunk?.id === chunk.id ? styles.chunkCardActive : ""} ${flashChunkId === chunk.id ? styles.chunkCardFlash : ""}`}
                       onClick={() => setSelectedChunkId(chunk.id)}
                       type="button"
                     >
