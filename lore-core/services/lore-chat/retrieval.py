@@ -48,6 +48,27 @@ def _optional_langfuse_tracer():
         return None
 
 
+def _build_sql_runner():
+    """Wire the live TOAST SQL runner. On ANY failure (import / not configured /
+    build) log loudly and return an explicit UnavailableSqlRunner — NEVER a silent
+    fake that masks the outage as a real per-table 'not applicable' verdict."""
+    from lore_retrieval.adapters.sql_callable import UnavailableSqlRunner
+
+    try:
+        from toast_binding import toast_configured, toast_sql_runner
+    except Exception:
+        logging.exception("toast_binding import failed — SQL tool unavailable")
+        return UnavailableSqlRunner()
+    if not toast_configured():
+        logging.warning("TOAST not configured (no lore_core DSN) — SQL tool unavailable")
+        return UnavailableSqlRunner()
+    try:
+        return toast_sql_runner()
+    except Exception:
+        logging.exception("toast_sql_runner build failed — SQL tool unavailable")
+        return UnavailableSqlRunner()
+
+
 def _build_pipeline(*, tracer=None):
     """Assemble the live pipeline. ``tracer`` overrides the default per-turn
     ContextTracer — the Studio/LangSmith debug export injects a LangSmithTracer
@@ -77,14 +98,7 @@ def _build_pipeline(*, tracer=None):
     reranker = build_reranker(s.reranker_endpoint)
     # Live table lane: bind the toast SQL graph when TOAST is configured; else the
     # factory falls back to a no-op SqlRunner (text-lane answers unaffected).
-    sql_runner = None
-    try:
-        from toast_binding import toast_configured, toast_sql_runner
-
-        if toast_configured():
-            sql_runner = toast_sql_runner()
-    except Exception:
-        sql_runner = None
+    sql_runner = _build_sql_runner()
     # Live turns default to the ContextTracer (chat debug view). When Langfuse creds
     # are present, fan out to BOTH so the debug view stays intact AND stages export
     # to Langfuse. An explicit tracer (Studio's LangSmithTracer) is left untouched.

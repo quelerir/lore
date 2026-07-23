@@ -89,3 +89,33 @@ def test_metadata_carries_citations_snake_case():
     md = to_message_metadata(_result("a", [_citation()]))
     assert [c["chunk_id"] for c in md["citations"]] == ["c1"]
     assert md["citations"][0]["deep_link"].startswith("/files?")
+
+
+def test_build_sql_runner_unavailable_and_loud_when_toast_not_configured(monkeypatch, caplog):
+    """When TOAST isn't configured, the SQL runner is the honest Unavailable one
+    (never a silent fake) and the reason is logged — not swallowed."""
+    import logging
+
+    import toast_binding
+
+    monkeypatch.setattr(toast_binding, "toast_configured", lambda: False)
+    with caplog.at_level(logging.WARNING):
+        runner = retrieval._build_sql_runner()
+    assert type(runner).__name__ == "UnavailableSqlRunner"
+    assert "SQL" in caplog.text or "TOAST" in caplog.text
+
+
+def test_build_sql_runner_unavailable_and_logged_when_wiring_raises(monkeypatch, caplog):
+    import logging
+
+    import toast_binding
+
+    def _boom():
+        raise RuntimeError("toast wiring blew up")
+
+    monkeypatch.setattr(toast_binding, "toast_configured", lambda: True)
+    monkeypatch.setattr(toast_binding, "toast_sql_runner", _boom)
+    with caplog.at_level(logging.ERROR):
+        runner = retrieval._build_sql_runner()
+    assert type(runner).__name__ == "UnavailableSqlRunner"
+    assert "toast wiring blew up" in caplog.text  # real cause surfaced, not swallowed
