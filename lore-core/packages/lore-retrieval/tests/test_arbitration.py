@@ -31,12 +31,53 @@ async def test_single_sql_success_is_used():
 
 async def test_conflicting_sql_successes_stay_explicit():
     model = FakeChatModel()
-    a = SQLResult(payload_id="pay1", chunk_id="t1", status=SQLStatus.success, answer_summary="42")
-    b = SQLResult(payload_id="pay2", chunk_id="t2", status=SQLStatus.success, answer_summary="99")
+    a = SQLResult(payload_id="pay1", chunk_id="t1", status=SQLStatus.success,
+                  rows=[{"n": 42}], answer_summary="42")
+    b = SQLResult(payload_id="pay2", chunk_id="t2", status=SQLStatus.success,
+                  rows=[{"n": 99}], answer_summary="99")
     d = await arbitrate_and_answer(model, "сколько?", [], [a, b])
     assert d.note == "conflicting_sql_results"
     assert set(d.used_sql_payload_ids) == {"pay1", "pay2"}   # both kept, not merged
     assert "расходятся" in model.calls[0]
+
+
+async def test_same_row_values_different_summaries_not_conflict():
+    # Same underlying data, differently-worded LLM summaries -> NOT a conflict.
+    model = FakeChatModel()
+    a = SQLResult(payload_id="pay1", chunk_id="t1", status=SQLStatus.success,
+                  rows=[{"n": 42}], answer_summary="сорок два")
+    b = SQLResult(payload_id="pay2", chunk_id="t2", status=SQLStatus.success,
+                  rows=[{"n": 42}], answer_summary="42 штуки")
+    d = await arbitrate_and_answer(model, "сколько?", [], [a, b])
+    assert d.note is None
+
+
+async def test_numeric_formatting_equivalence_not_conflict():
+    # 1 vs 1.0 are the same value -> no false conflict.
+    model = FakeChatModel()
+    a = SQLResult(payload_id="p1", chunk_id="t1", status=SQLStatus.success, rows=[{"n": 1}])
+    b = SQLResult(payload_id="p2", chunk_id="t2", status=SQLStatus.success, rows=[{"n": 1.0}])
+    d = await arbitrate_and_answer(model, "сколько?", [], [a, b])
+    assert d.note is None
+
+
+async def test_row_order_permutation_not_conflict():
+    # Same rows in different order -> same signature -> no conflict.
+    model = FakeChatModel()
+    a = SQLResult(payload_id="p1", chunk_id="t1", status=SQLStatus.success,
+                  rows=[{"n": 1}, {"n": 2}])
+    b = SQLResult(payload_id="p2", chunk_id="t2", status=SQLStatus.success,
+                  rows=[{"n": 2}, {"n": 1}])
+    d = await arbitrate_and_answer(model, "?", [], [a, b])
+    assert d.note is None
+
+
+async def test_different_row_values_conflict():
+    model = FakeChatModel()
+    a = SQLResult(payload_id="p1", chunk_id="t1", status=SQLStatus.success, rows=[{"n": 1}])
+    b = SQLResult(payload_id="p2", chunk_id="t2", status=SQLStatus.success, rows=[{"n": 2}])
+    d = await arbitrate_and_answer(model, "?", [], [a, b])
+    assert d.note == "conflicting_sql_results"
 
 
 async def test_no_evidence_returns_limitation_without_calling_model():

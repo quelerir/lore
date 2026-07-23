@@ -6,8 +6,37 @@ first non-empty SQL result is not automatically correct; results from different
 tables are attributed separately, never summed/unioned/joined; conflicting
 successes stay explicit; when nothing grounds the question, no answer is invented.
 """
+import json
+from decimal import Decimal, InvalidOperation
+
 from lore_retrieval.contracts import AgentDecision, ContextGroup, SQLResult, SQLStatus
 from lore_retrieval.interfaces import ChatModel
+
+
+def _canon_cell(value: object) -> object:
+    """Normalize one cell so cosmetic differences don't read as data conflicts:
+    numbers collapse across int/float/Decimal formatting (1 == 1.0 == 1.00),
+    strings are stripped, None/bool are preserved. bool is checked before int
+    because ``isinstance(True, int)`` is True."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float, Decimal)):
+        try:
+            return str(Decimal(str(value)).normalize())
+        except (InvalidOperation, ValueError):
+            return str(value)
+    return str(value).strip()
+
+
+def _result_signature(result: SQLResult) -> str:
+    """Canonical signature of a SQL success from its ROW VALUES (never the
+    LLM-written ``answer_summary``): normalized cells, key-sorted rows, and an
+    order-independent row list. Two successes conflict when signatures differ."""
+    rows = [{key: _canon_cell(row[key]) for key in sorted(row)} for row in result.rows]
+    rows.sort(key=lambda r: json.dumps(r, sort_keys=True, default=str))
+    return json.dumps(rows, sort_keys=True, default=str)
 
 
 def _section_label(group: ContextGroup) -> str:
@@ -62,11 +91,10 @@ async def arbitrate_and_answer(
 ) -> AgentDecision:
     successes = [r for r in sql_results if r.status is SQLStatus.success]
 
-    # Judge conflict on real content: use the summary when present, else the rows,
-    # so two successes with distinct rows but no summary aren't collapsed to {None}.
-    signatures = {
-        r.answer_summary if r.answer_summary is not None else repr(r.rows) for r in successes
-    }
+    # Judge conflict on the actual row VALUES (normalized), never the LLM-written
+    # answer_summary: same data phrased differently must not read as a conflict,
+    # and 1 vs 1.0 / row-order differences must not either.
+    signatures = {_result_signature(r) for r in successes}
     note: str | None = None
     if len(successes) > 1 and len(signatures) > 1:
         note = "conflicting_sql_results"  # keep explicit; never merge across tables
