@@ -19,13 +19,13 @@
 .warning {
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.45);
-  color: #92600a;
+  color: var(--warning-text);
 }
 
 .error {
   background: rgba(239, 68, 68, 0.09);
   border: 1px solid rgba(239, 68, 68, 0.5);
-  color: #991b1b;
+  color: var(--error-text);
 }
 
 .icon {

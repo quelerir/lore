@@ -6,7 +6,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #8a94a3;
+  color: var(--citation-title);
   margin-bottom: 6px;
 }
 
@@ -26,16 +26,16 @@
   flex-direction: column;
   gap: 3px;
   padding: 8px 10px;
-  background: rgba(241, 245, 249, 0.7);
-  border: 1px solid #d7dee6;
+  background: var(--citation-card-bg);
+  border: 1px solid var(--citation-border);
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease;
 }
 
 .card:hover {
-  background: rgba(226, 232, 240, 0.95);
-  border-color: #3b6ea5;
+  background: var(--citation-card-hover-bg);
+  border-color: var(--citation-accent);
 }
 
 .head {
@@ -46,7 +46,7 @@
 }
 
 .icon {
-  color: #3b6ea5;
+  color: var(--citation-accent);
   flex-shrink: 0;
 }
 
@@ -54,7 +54,7 @@
   min-width: 0;
   font-size: 13px;
   font-weight: 600;
-  color: #2b3443;
+  color: var(--citation-heading);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -62,7 +62,7 @@
 
 .preview {
   font-size: 12.5px;
-  color: #55606f;
+  color: var(--citation-preview);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;

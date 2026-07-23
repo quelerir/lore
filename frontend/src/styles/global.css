@@ -105,6 +105,15 @@
   --files-code-bg: #ffffff;
   --files-code-block-bg: #eef2f7;
   --files-table-border: rgba(226, 232, 240, 0.95);
+  --citation-title: #8a94a3;
+  --citation-card-bg: rgba(241, 245, 249, 0.7);
+  --citation-card-hover-bg: rgba(226, 232, 240, 0.95);
+  --citation-border: #d7dee6;
+  --citation-accent: #3b6ea5;
+  --citation-heading: #2b3443;
+  --citation-preview: #55606f;
+  --warning-text: #92600a;
+  --error-text: #991b1b;
   font-family:
     "Manrope",
     "Segoe UI",
@@ -226,6 +235,15 @@
   --files-code-bg: #141b23;
   --files-code-block-bg: #0f151d;
   --files-table-border: rgba(74, 85, 101, 0.34);
+  --citation-title: #8f9cae;
+  --citation-card-bg: #1c222a;
+  --citation-card-hover-bg: rgba(255, 255, 255, 0.06);
+  --citation-border: rgba(74, 85, 101, 0.34);
+  --citation-accent: #7ba7dd;
+  --citation-heading: #eef2f7;
+  --citation-preview: #b7c2d0;
+  --warning-text: #fbbf24;
+  --error-text: #f87171;
   color: #eef2f7;
   background: #10161d;
 }

@@ -987,11 +987,16 @@ export default function FilesPage({ onNavigateHome }: FilesPageProps) {
     <div className={styles.page}>
       <header className={styles.topbar}>
         <div className={styles.topbarLeft}>
-          <button className={styles.secondaryButton} type="button" onClick={onNavigateHome}>
+          <span className={styles.brand} aria-label="Lore">
+            <span className={styles.brandLetter}>L</span>
+            <span className={styles.brandDot} aria-hidden="true" />
+            <span className={styles.brandLetter}>RE</span>
+          </span>
+          <button className={styles.primaryButton} type="button" onClick={onNavigateHome}>
             <ArrowLeft size={15} /> В чат
           </button>
           <div>
-            <h1 className={styles.title}>Lore File Viewer</h1>
+            <h1 className={styles.title}>File Viewer</h1>
           </div>
         </div>
       </header>

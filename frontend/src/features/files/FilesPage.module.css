@@ -28,8 +28,40 @@
 
 .topbarLeft {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
+}
+
+/* L•RE brand wordmark — mirrors the chat sidebar logo so the FileViewer reads
+   as the same app (green dot accent, theme-aware letters). */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family:
+    "Styrene A Web",
+    "Inter",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  color: var(--files-text);
+  line-height: 1;
+}
+
+.brandLetter {
+  display: inline-block;
+}
+
+.brandDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #9cea35;
+  flex-shrink: 0;
+  margin-inline: 0 -1px;
 }
 
 .topbarActions,
@@ -332,6 +364,13 @@
 .chunkHeader strong {
   display: block;
   font-size: 13px;
+}
+
+/* File names in the left bar are bold text inside a <button>, which does not
+   inherit a theme color — pin it to the themed text var so they stay readable
+   in dark mode (were rendering dark-on-dark). */
+.fileCardHeader strong {
+  color: var(--files-text);
 }
 
 .panelHeaderLarge h2,
