@@ -5,6 +5,7 @@ import {
   firstUnloadedTableIds,
   isDetailLoaded,
   mergeRunTables,
+  resolveSelection,
 } from "./chunkState";
 import type { FileChunk, FileRecord, FileTablePayload } from "./types";
 
@@ -72,5 +73,67 @@ describe("chunkState helpers", () => {
       ],
     });
     expect(firstUnloadedTableIds(c, new Set(["t1"]))).toEqual(["t2"]);
+  });
+});
+
+describe("resolveSelection", () => {
+  const files = [file([chunk("a", 1), chunk("b", 2), chunk("c", 3)])];
+
+  it("defaults to first file/run/chunk when nothing is selected", () => {
+    const sel = resolveSelection({
+      files,
+      selectedFileId: null,
+      selectedRunId: null,
+      selectedChunkId: null,
+      pendingFocusChunkId: null,
+    });
+    expect(sel).toEqual({ fileId: "f1", runId: "r1", chunkId: "a" });
+  });
+
+  it("keeps a selected chunk that exists in the run", () => {
+    const sel = resolveSelection({
+      files,
+      selectedFileId: "f1",
+      selectedRunId: "r1",
+      selectedChunkId: "b",
+      pendingFocusChunkId: null,
+    });
+    expect(sel.chunkId).toBe("b");
+  });
+
+  it("falls back to the first chunk when the selected chunk is absent and no deep-link is pending", () => {
+    const sel = resolveSelection({
+      files,
+      selectedFileId: "f1",
+      selectedRunId: "r1",
+      selectedChunkId: "missing",
+      pendingFocusChunkId: null,
+    });
+    expect(sel.chunkId).toBe("a");
+  });
+
+  it("KEEPS the deep-linked chunk target while it is still loading (does NOT clobber to first)", () => {
+    // The citation target "c" is set but the run hasn't loaded it yet (only "a"
+    // is present). Must keep "c", not fall back to "a" — that overwrite is sticky.
+    const partiallyLoaded = [file([chunk("a", 1)])];
+    const sel = resolveSelection({
+      files: partiallyLoaded,
+      selectedFileId: "f1",
+      selectedRunId: "r1",
+      selectedChunkId: "c",
+      pendingFocusChunkId: "c",
+    });
+    expect(sel.chunkId).toBe("c");
+  });
+
+  it("selects the deep-linked chunk once it has loaded", () => {
+    const sel = resolveSelection({
+      files,
+      selectedFileId: "f1",
+      selectedRunId: "r1",
+      selectedChunkId: "c",
+      pendingFocusChunkId: "c",
+    });
+    expect(sel.chunkId).toBe("c");
   });
 });

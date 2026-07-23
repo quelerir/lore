@@ -40,6 +40,7 @@ import {
   firstUnloadedTableIds,
   isDetailLoaded,
   mergeRunTables,
+  resolveSelection,
 } from "./chunkState";
 import type {
   FileChunk,
@@ -453,29 +454,18 @@ export default function FilesPage({ onNavigateHome }: FilesPageProps) {
   useEffect(() => {
     if (!filteredFiles.length) return;
 
-    const selectedFile =
-      filteredFiles.find((file) => file.id === selectedFileId) ?? filteredFiles[0];
+    const next = resolveSelection({
+      files: filteredFiles,
+      selectedFileId,
+      selectedRunId,
+      selectedChunkId,
+      pendingFocusChunkId,
+    });
 
-    if (selectedFile.id !== selectedFileId) {
-      setSelectedFileId(selectedFile.id);
-    }
-
-    const selectedRun =
-      selectedFile.runs.find((run) => run.id === selectedRunId) ?? selectedFile.runs[0];
-
-    if (selectedRun && selectedRun.id !== selectedRunId) {
-      setSelectedRunId(selectedRun.id);
-    }
-
-    const selectedChunk =
-      selectedRun?.chunks.find((chunk) => chunk.id === selectedChunkId) ??
-      selectedRun?.chunks[0] ??
-      null;
-
-    if (selectedChunk?.id !== selectedChunkId) {
-      setSelectedChunkId(selectedChunk?.id ?? null);
-    }
-  }, [filteredFiles, selectedChunkId, selectedFileId, selectedRunId]);
+    if (next.fileId !== selectedFileId) setSelectedFileId(next.fileId);
+    if (next.runId && next.runId !== selectedRunId) setSelectedRunId(next.runId);
+    if (next.chunkId !== selectedChunkId) setSelectedChunkId(next.chunkId);
+  }, [filteredFiles, selectedChunkId, selectedFileId, selectedRunId, pendingFocusChunkId]);
 
   const selectedFile = filteredFiles.find((file) => file.id === selectedFileId) ?? null;
   const selectedRun = selectedFile?.runs.find((run) => run.id === selectedRunId) ?? selectedFile?.runs[0] ?? null;
