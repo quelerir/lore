@@ -78,3 +78,34 @@ async def test_auto_merging_failure_yields_singleton_groups(monkeypatch):
     assert "auto_merging_failed" in result.degradations
     assert result.groups                               # individual chunks kept, not lost
     assert all(len(g.chunk_ids) == 1 for g in result.groups)
+
+
+from lore_retrieval.pipeline.degradation import (  # noqa: E402
+    RETRIEVAL_BLOCKING_DEGRADATIONS,
+    is_degraded_empty,
+)
+
+
+def test_is_degraded_empty_blocking_code_at_empty_time():
+    # A backend that should have produced evidence was unreachable -> untrustworthy empty.
+    assert is_degraded_empty("no_grounded_evidence", ["vector_search_failed"]) is True
+
+
+def test_is_degraded_empty_quality_only_is_honest():
+    # Rerank fell back but the lane still ran -> the empty is trustworthy.
+    assert is_degraded_empty("no_grounded_evidence", ["reranker_failed"]) is False
+
+
+def test_is_degraded_empty_non_empty_note_is_honest():
+    assert is_degraded_empty(None, ["vector_search_failed"]) is False
+
+
+def test_is_degraded_empty_no_degradations_is_honest():
+    assert is_degraded_empty("no_grounded_evidence", []) is False
+
+
+def test_blocking_set_excludes_quality_only_codes():
+    assert "reranker_failed" not in RETRIEVAL_BLOCKING_DEGRADATIONS
+    assert "structural_expansion_failed" not in RETRIEVAL_BLOCKING_DEGRADATIONS
+    assert "auto_merging_failed" not in RETRIEVAL_BLOCKING_DEGRADATIONS
+    assert "vector_search_failed" in RETRIEVAL_BLOCKING_DEGRADATIONS
