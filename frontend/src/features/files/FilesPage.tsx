@@ -344,6 +344,7 @@ export default function FilesPage({ onNavigateHome }: FilesPageProps) {
   // Lazily load the selected run's chunk previews; the length guard skips
   // runs whose chunks are already loaded.
   const hydratedRunsRef = useRef<Set<string>>(new Set());
+  const streamRunIdRef = useRef<string | null>(null);
   useEffect(() => {
     const fileId = selectedFileId;
     const runId = selectedRunId;
@@ -352,28 +353,31 @@ export default function FilesPage({ onNavigateHome }: FilesPageProps) {
     if (!run || run.chunks.length > 0) return;
     hydratedRunsRef.current.add(runId);
     detailRequestedRef.current = new Set();
+    // Supersede by runId, NOT by effect cleanup. This effect keeps `allFiles` in
+    // its deps (so it can retry once a deep-linked run's chunks hydrate), and the
+    // stream's own setAllFiles(appendRunChunks) mutates `allFiles` — a cleanup-based
+    // cancel would then abort the stream on its FIRST batch, dropping the rest and
+    // leaving the spinner stuck (detailLoading never cleared). Only a genuine run
+    // switch (a newer runId starts streaming) supersedes this one.
+    streamRunIdRef.current = runId;
     setDetailLoading(true);
     setDetailError(false);
     setPreviewsLoading(true);
-    let cancelled = false;
     void filesProvider
       .listRunChunkPreviews(runId, (chunks, meta) => {
-        if (cancelled) return;
+        if (streamRunIdRef.current !== runId) return;
         setAllFiles((prev) => appendRunChunks(prev, fileId, runId, chunks));
         if (meta.done) setPreviewsLoading(false);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (streamRunIdRef.current !== runId) return;
         hydratedRunsRef.current.delete(runId);
         setDetailError(true);
         setPreviewsLoading(false);
       })
       .finally(() => {
-        if (!cancelled) setDetailLoading(false);
+        if (streamRunIdRef.current === runId) setDetailLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
   }, [allFiles, selectedFileId, selectedRunId]);
 
   // Load one chunk's detail on demand (viewport or selection), dedup by chunkId,
