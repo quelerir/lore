@@ -1,3 +1,5 @@
+import logging
+
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph.state import CompiledStateGraph
 
@@ -25,5 +27,14 @@ def build_agent(
 
             return build_grounded_agent(get_pipeline())
     except Exception:
-        pass
+        # Retrieval IS configured but the grounded graph failed to build. Do NOT
+        # swallow this: a silent fall-through downgrades the whole (cached) session
+        # to the optional-tool fast agent, so mandatory grounding is lost until the
+        # chat is restarted. Log loudly so the real cause is visible; we still fall
+        # back to a usable agent below.
+        logging.exception(
+            "grounded agent build failed despite retrieval being configured — "
+            "falling back to the optional-tool fast agent; grounding is NOT "
+            "guaranteed for this session"
+        )
     return build_fast_agent(model or build_model(), make_tools())

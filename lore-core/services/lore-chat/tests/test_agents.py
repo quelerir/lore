@@ -22,6 +22,28 @@ def test_build_agent_both_modes():
     assert build_agent(Mode.DEEP, model=model) is not None
 
 
+def test_fast_grounded_build_failure_is_logged_not_swallowed(monkeypatch, caplog):
+    """FAST configured but the grounded pipeline fails to build: the error must be
+    LOGGED (not silently swallowed by `except: pass`), while still returning a
+    usable fallback agent. A silent swallow is what hid the sticky downgrade."""
+    import logging
+
+    import retrieval
+
+    monkeypatch.setattr(retrieval, "retrieval_configured", lambda: True)
+
+    def _boom():
+        raise RuntimeError("neo4j driver init failed")
+
+    monkeypatch.setattr(retrieval, "get_pipeline", _boom)
+
+    model = FakeListChatModel(responses=["x"])
+    with caplog.at_level(logging.ERROR):
+        agent = build_agent(Mode.FAST, model=model)
+    assert agent is not None  # still returns a usable fallback agent
+    assert "neo4j driver init failed" in caplog.text  # real error surfaced, not swallowed
+
+
 # --- калькулятор -------------------------------------------------------------
 
 
