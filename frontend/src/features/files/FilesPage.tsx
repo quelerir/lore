@@ -1178,9 +1178,13 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
                           <span>{formatChunkMetaLabel(chunk)}</span>
                         </div>
                       ) : null}
-                      <strong className={styles.chunkTitle}>
-                        {renderHighlightedText(isImageCard ? attachmentPreview.image.title : cardContent.title)}
-                      </strong>
+                      {isDetailLoaded(chunk) || isImageCard ? (
+                        <strong className={styles.chunkTitle}>
+                          {renderHighlightedText(isImageCard ? attachmentPreview.image.title : cardContent.title)}
+                        </strong>
+                      ) : (
+                        <div className={styles.chunkTitleSkeleton} aria-hidden="true" />
+                      )}
                       {attachmentPreview?.kind === "table" ? (
                         <div className={styles.chunkTablePreview}>
                           <table>
@@ -1234,6 +1238,10 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
                     </button>
                   );
                 })}
+
+                {previewsLoading && !normalizedDocumentSearch ? (
+                  <div className={styles.chunkLoadingRow}>Загрузка чанков…</div>
+                ) : null}
 
                 {documentSearch.trim() && !filteredChunks.length ? (
                   <div className={styles.emptyBlock}>По этому документу ничего не найдено.</div>
