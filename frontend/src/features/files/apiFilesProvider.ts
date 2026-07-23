@@ -62,12 +62,10 @@ export class ApiFilesProvider implements FilesProvider {
     return page.items.map(mapRun);
   }
 
-  // Eagerly loads a run's chunks WITH text and payload types, so the user sees
-  // everything at once (no per-chunk click). Text comes from the per-chunk detail
-  // endpoint (fetched with bounded concurrency); payload refs are then resolved in
-  // ONE batched pass across all chunks — see resolvePayloadRefs. Capped at
-  // MAX_CHUNKS for huge runs; a failed chunk degrades to its preview rather than
-  // dropping out of the list.
+  // Stream a run's chunk previews (metadata only — no text) page by page via
+  // `onPage`, so the list can render placeholders as they arrive instead of
+  // blocking on a full fan-out. Detail is loaded lazily via loadChunkDetail.
+  // Capped at MAX_CHUNKS; the final delivered page carries meta.done = true.
   async listRunChunkPreviews(
     runId: string,
     onPage: (chunks: FileChunk[], meta: { done: boolean }) => void,
@@ -88,56 +86,6 @@ export class ApiFilesProvider implements FilesProvider {
       onPage(items.map(mapChunkPreview), { done });
       if (done) return;
     } while (cursor);
-  }
-
-  async hydrateRunChunks(runId: string): Promise<FileChunk[]> {
-    const encodedRun = encodeURIComponent(runId);
-
-    const previews: ChunkPreviewDto[] = [];
-    let cursor: string | undefined;
-    do {
-      const page = await auditGet<PageDto<ChunkPreviewDto>>(
-        `/runs/${encodedRun}/chunks`,
-        { cursor },
-      );
-      previews.push(...page.items);
-      cursor = page.next_cursor ?? undefined;
-    } while (cursor && previews.length < MAX_CHUNKS);
-
-    // Fetch each chunk's detail (text + payload_refs); a failed chunk degrades to
-    // its metadata-only preview (and carries no refs).
-    const detailed = await mapPooled(
-      previews.slice(0, MAX_CHUNKS),
-      CONCURRENCY,
-      async (preview): Promise<{ chunk: FileChunk; refs: string[] }> => {
-        try {
-          const dto = await auditGet<ChunkDetailDto>(
-            `/runs/${encodedRun}/chunks/${encodeURIComponent(preview.chunk_id)}`,
-          );
-          return { chunk: mapChunkDetail(dto), refs: dto.payload_refs };
-        } catch {
-          return { chunk: mapChunkPreview(preview), refs: [] };
-        }
-      },
-    );
-
-    // Resolve every referenced payload in one batched pass (deduped across
-    // chunks), replacing the per-ref N+1. A ref that fails to resolve is omitted.
-    const refs = await this.resolvePayloadRefs(
-      encodedRun,
-      detailed.flatMap((entry) => entry.refs),
-    );
-
-    const chunks = detailed.map((entry) => {
-      if (entry.refs.length === 0) return entry.chunk;
-      const payloads = entry.refs
-        .map((id) => refs.get(id))
-        .filter((ref): ref is FileChunkPayloadRef => ref !== undefined);
-      return { ...entry.chunk, payloads };
-    });
-
-    chunks.sort((a, b) => a.ordinal - b.ordinal);
-    return chunks;
   }
 
   // Load a single chunk's detail (text + coordinates) and resolve its payload

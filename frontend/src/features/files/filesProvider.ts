@@ -21,8 +21,6 @@ export interface FilesProvider {
   listFiles(params?: ListFilesParams): Promise<ListFilesResult>;
   /** Load a file's runs on selection (metadata only; chunks hydrate later). */
   hydrateFileRuns(logicalFileKey: string): Promise<FileRun[]>;
-  /** Load a run's chunks on selection — eagerly, with text and payload types. */
-  hydrateRunChunks(runId: string): Promise<FileChunk[]>;
   /** Stream a run's chunk previews (metadata only) page by page. */
   listRunChunkPreviews(
     runId: string,
