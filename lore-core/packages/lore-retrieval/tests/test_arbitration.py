@@ -68,3 +68,14 @@ async def test_sql_only_grounding_still_prompts_for_markers():
     assert d.sql_evidence_map == {1: "a1"}
     assert "[1] payload p1" in model.calls[0]
     assert "маркер" in model.calls[0].lower()
+
+
+async def test_prompt_carries_grounding_directive_and_section_provenance():
+    model = FakeChatModel(lambda p: "ответ [1]")
+    g = group("sec1", "текст премии", ["c1"])   # section_path=("Root",) from the helper
+    await arbitrate_and_answer(model, "премия", [g], [])
+    prompt = model.calls[0]
+    assert "СТРОГО на основе свидетельств" in prompt       # grounding directive
+    assert "в базе знаний нет ответа" in prompt            # decline instruction
+    assert "(Root)" in prompt                              # section-path provenance on [1]
+    assert "Правила ответа" in prompt

@@ -10,16 +10,31 @@ from lore_retrieval.contracts import AgentDecision, ContextGroup, SQLResult, SQL
 from lore_retrieval.interfaces import ChatModel
 
 
+def _section_label(group: ContextGroup) -> str:
+    """Heading path as inline provenance, e.g. ``(Компенсации › Премия) ``."""
+    path = " › ".join(group.section_path)
+    return f"({path}) " if path else ""
+
+
 def _build_prompt(
     question: str, groups: list[ContextGroup], successes: list[SQLResult], note: str | None
 ) -> str:
-    parts = [f"Вопрос: {question}", ""]
+    parts = [
+        "Ты — ассистент базы знаний datacraft. Отвечай СТРОГО на основе свидетельств "
+        "ниже. Если в них нет ответа — прямо скажи, что в базе знаний нет ответа; не "
+        "добавляй фактов извне.",
+        "",
+        f"Вопрос: {question}",
+        "",
+    ]
     if groups:
-        parts.append("Текстовые свидетельства (ссылайся на источник номером [n]):")
-        parts.extend(f"[{i}] {g.text}" for i, g in enumerate(groups, 1))
+        parts.append(
+            "Текстовые свидетельства (самые релевантные — первыми; ссылайся номером [n]):"
+        )
+        parts.extend(f"[{i}] {_section_label(g)}{g.text}" for i, g in enumerate(groups, 1))
     if successes:
         base = len(groups)
-        parts.append("Результаты SQL (каждый отдельно, не объединять; ссылайся номером [n]):")
+        parts.append("Результаты SQL (каждый отдельно, НЕ объединять; ссылайся номером [n]):")
         parts.extend(
             f"[{base + k}] payload {r.payload_id}: {r.answer_summary}"
             for k, r in enumerate(successes, 1)
@@ -27,7 +42,15 @@ def _build_prompt(
     if note == "conflicting_sql_results":
         parts.append("ВНИМАНИЕ: результаты SQL расходятся — представь их раздельно.")
     if groups or successes:
-        parts.append("Ставь маркер [n] к каждому утверждению из свидетельства n.")
+        parts.extend(
+            [
+                "",
+                "Правила ответа:",
+                "- Используй только сведения из свидетельств выше.",
+                "- К каждому утверждению ставь маркер [n] источника.",
+                "- Если сведений недостаточно — скажи об этом, не догадывайся.",
+            ]
+        )
     return "\n".join(parts)
 
 
