@@ -1,0 +1,58 @@
+# Production Lore docker-compose.
+# Useless in local deployment.
+#
+# Pulls pre-built images (build action added separately) and connects to
+# EXTERNAL, already-provisioned authentik (SSO) + PostgreSQL. No bundled
+# authentik / postgres containers here.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod pull
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# The env file is used two ways: `--env-file` fills the ${...} below (image
+# version, ports, authentik base URL) and `env_file:` feeds the rest straight
+# into the chat container.
+#
+# Prereqs:
+#   - the external chainlit PostgreSQL already has the schema from
+#     lore-core/services/lore-chat/init/schema.sql applied;
+#   - the frontend image was built with VITE_CHAINLIT_URL == CHAINLIT_PUBLIC_URL.
+
+x-chat-image: &chat-image cr.selcloud.ru/adventum/lore-chat:${LORE_VERSION}
+x-frontend-image: &frontend-image cr.selcloud.ru/adventum/lore-frontend:${LORE_VERSION}
+
+services:
+  chat:
+    image: *chat-image
+    container_name: lore_chat
+    restart: unless-stopped
+    env_file:
+      - ./.env.prod
+    environment:
+      # Only DERIVED values live here — env_file can't transform variables.
+      # Chainlit builds the OAuth redirect_uri from CHAINLIT_URL; the three OIDC
+      # endpoints derive from the single external authentik base URL.
+      CHAINLIT_URL: ${CHAINLIT_PUBLIC_URL}
+      OAUTH_GENERIC_CLIENT_ID: ${AUTHENTIK_CLIENT_ID}
+      OAUTH_GENERIC_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET}
+      OAUTH_GENERIC_AUTH_URL: ${AUTHENTIK_PUBLIC_URL}/application/o/authorize/
+      OAUTH_GENERIC_TOKEN_URL: ${AUTHENTIK_PUBLIC_URL}/application/o/token/
+      OAUTH_GENERIC_USER_INFO_URL: ${AUTHENTIK_PUBLIC_URL}/application/o/userinfo/
+    ports:
+      - ${BACKEND_PORT}:8000
+    extra_hosts:
+      # Lets the container reach an Ollama on the host, if used. Harmless with openrouter.
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      # curl is absent in python-slim — probe with the stdlib.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    image: *frontend-image
+    container_name: lore_frontend
+    restart: unless-stopped
+    ports:
+      - ${FRONTEND_PORT}:80
