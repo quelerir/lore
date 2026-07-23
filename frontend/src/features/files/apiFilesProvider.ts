@@ -118,6 +118,24 @@ export class ApiFilesProvider implements FilesProvider {
     return chunks;
   }
 
+  // Load a single chunk's detail (text + coordinates) and resolve its payload
+  // refs. Used for lazy, on-demand loading — the list shows previews and only
+  // the visible/selected chunk pays for its detail. Payload refs for one chunk
+  // go through the same batched endpoint (one POST here, deduped).
+  async loadChunkDetail(runId: string, chunkId: string): Promise<FileChunk> {
+    const encodedRun = encodeURIComponent(runId);
+    const dto = await auditGet<ChunkDetailDto>(
+      `/runs/${encodedRun}/chunks/${encodeURIComponent(chunkId)}`,
+    );
+    const chunk = mapChunkDetail(dto);
+    if (dto.payload_refs.length === 0) return chunk;
+    const resolved = await this.resolvePayloadRefs(encodedRun, dto.payload_refs);
+    const payloads = dto.payload_refs
+      .map((id) => resolved.get(id))
+      .filter((ref): ref is FileChunkPayloadRef => ref !== undefined);
+    return { ...chunk, payloads };
+  }
+
   // Resolve payload refs to their type/label via the batch endpoint, deduping ids
   // and chunking into PAYLOAD_BATCH-sized POSTs. A failed batch degrades to empty
   // (those refs simply don't render), matching the old per-ref catch.

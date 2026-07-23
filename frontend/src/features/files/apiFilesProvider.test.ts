@@ -127,6 +127,36 @@ describe("ApiFilesProvider.hydrateRunChunks payload batching", () => {
   });
 });
 
+describe("ApiFilesProvider.loadChunkDetail", () => {
+  it("loads one chunk's detail and resolves its payload refs", async () => {
+    auditGet.mockImplementation((path: string) => {
+      expect(path).toBe("/runs/run-1/chunks/chunk-1");
+      return Promise.resolve(detail("chunk-1", 1, ["p1", "p2"]));
+    });
+    auditPost.mockImplementation((_path: string, body: { payload_ids: string[] }) =>
+      Promise.resolve(body.payload_ids.map(payload)),
+    );
+
+    const chunk = await new ApiFilesProvider().loadChunkDetail("run-1", "chunk-1");
+
+    expect(chunk.id).toBe("chunk-1");
+    expect(chunk.displayText).toBe("display chunk-1");
+    expect(chunk.payloads.map((p) => p.id)).toEqual(["p1", "p2"]);
+    // exactly one detail GET and one batched payload POST for this chunk
+    expect(auditGet).toHaveBeenCalledTimes(1);
+    expect(auditPost).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns the chunk with no payloads when it has no refs", async () => {
+    auditGet.mockResolvedValue(detail("chunk-9", 9, []));
+
+    const chunk = await new ApiFilesProvider().loadChunkDetail("run-1", "chunk-9");
+
+    expect(chunk.payloads).toEqual([]);
+    expect(auditPost).not.toHaveBeenCalled();
+  });
+});
+
 const profile = (id: string): TableProfileDto => ({
   schema_version: "v1",
   payload_id: id,
