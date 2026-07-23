@@ -95,3 +95,27 @@ def test_empty_answer_falls_back_to_message():
     agent = build_grounded_agent(pipe)
     state = asyncio.run(agent.ainvoke({"messages": [HumanMessage(content="x")]}))
     assert "нет ответа" in state["messages"][-1].content
+
+
+def test_degraded_empty_shows_infra_message_and_flag():
+    """Empty answer caused by a retrieval backend being down surfaces a distinct
+    'couldn't reach the base' message + an explicit degradation flag — not the
+    honest 'not in KB' text."""
+    pipe = _FakePipe()
+
+    async def _retrieve(q):
+        pipe.calls.append(("retrieve", q))
+        return ([], SimpleNamespace(resolved=[], rejected=[]), [], ["vector_search_failed"])
+
+    async def _summarize(q, g, r, s, tc):
+        return (
+            SimpleNamespace(answer="", note="no_grounded_evidence", used_sql_payload_ids=[]),
+            [],
+        )
+
+    pipe.retrieve = _retrieve
+    pipe.summarize = _summarize
+    agent = build_grounded_agent(pipe)
+    state = asyncio.run(agent.ainvoke({"messages": [HumanMessage(content="q")]}))
+    assert "Не удалось обратиться" in state["messages"][-1].content
+    assert "answer_unavailable_degraded" in state["degradations"]

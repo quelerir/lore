@@ -33,6 +33,7 @@ from langchain_core.messages import AIMessage, BaseMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
+from lore_retrieval.pipeline.degradation import is_degraded_empty
 
 
 class GroundedState(TypedDict, total=False):
@@ -149,8 +150,18 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
                 "degradations": state.get("degradations", []) + ["answer_generation_failed"],
                 "answer_detail": {"error": type(exc).__name__, "detail": repr(exc)},
             }
-        answer = decision.answer or "В базе знаний нет ответа на этот вопрос."
-        return {
+        degradations = state.get("degradations", [])
+        extra_degr: list = []
+        if decision.answer:
+            answer = decision.answer
+        elif is_degraded_empty(decision.note, degradations):
+            # Empty because a retrieval backend was unreachable — say so, don't
+            # pass it off as an honest "not in the KB".
+            answer = "⚠️ Не удалось обратиться к базе знаний — попробуйте ещё раз позже."
+            extra_degr = ["answer_unavailable_degraded"]
+        else:
+            answer = "В базе знаний нет ответа на этот вопрос."
+        result = {
             "messages": [AIMessage(content=answer)],
             "citations": citations,
             "answer_detail": {
@@ -159,6 +170,9 @@ def build_grounded_agent(pipeline: Any) -> CompiledStateGraph:
                 "citations": len(citations),
             },
         }
+        if extra_degr:
+            result["degradations"] = degradations + extra_degr
+        return result
 
     g = StateGraph(GroundedState)
     g.add_node("neo4j_retrieve", neo4j_retrieve)
