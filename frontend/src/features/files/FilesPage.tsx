@@ -7,6 +7,7 @@ import {
   ListCollapse,
   ListTree,
   X,
+  ArrowLeft,
   CircleHelp,
   Copy,
   FileWarning,
@@ -33,6 +34,13 @@ import {
   upsertComment,
 } from "./reviewStorage";
 import { DEFAULT_FILES_URL_STATE, readFilesUrlState, writeFilesUrlState } from "./urlState";
+import {
+  appendRunChunks,
+  applyChunkDetail,
+  firstUnloadedTableIds,
+  isDetailLoaded,
+  mergeRunTables,
+} from "./chunkState";
 import type {
   FileChunk,
   FileImagePayload,
@@ -252,7 +260,7 @@ const deriveFileStats = (file: FileRecord, comments: ReviewComment[]) => {
   };
 };
 
-export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPageProps) {
+export default function FilesPage({ onNavigateHome }: FilesPageProps) {
   const initialUrlState = readFilesUrlState();
   const [search, setSearch] = useState(initialUrlState.search);
   const [documentSearch, setDocumentSearch] = useState(initialUrlState.documentSearch);
@@ -287,6 +295,17 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
   const [allFiles, setAllFiles] = useState<FileRecord[]>([]);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [previewsLoading, setPreviewsLoading] = useState(false);
+  // Chunk id that arrived via deep link / citation and still needs scroll+flash.
+  const [pendingFocusChunkId, setPendingFocusChunkId] = useState<string | null>(
+    initialUrlState.chunkId,
+  );
+  const [flashChunkId, setFlashChunkId] = useState<string | null>(null);
+  // chunkId -> card element, for IntersectionObserver + scroll-to.
+  const cardRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  // chunkIds whose detail load is in-flight or done (dedup guard, not render state).
+  const detailRequestedRef = useRef<Set<string>>(new Set());
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Load files only once we know there's a session; the audit API 401s otherwise.
   useEffect(() => {
@@ -331,52 +350,62 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     const run = allFiles.find((f) => f.id === fileId)?.runs.find((r) => r.id === runId);
     if (!run || run.chunks.length > 0) return;
     hydratedRunsRef.current.add(runId);
+    detailRequestedRef.current = new Set();
     setDetailLoading(true);
     setDetailError(false);
+    setPreviewsLoading(true);
+    let cancelled = false;
     void filesProvider
-      .hydrateRunChunks(runId)
-      .then((chunks) => {
-        setAllFiles((prev) =>
-          prev.map((file) =>
-            file.id !== fileId
-              ? file
-              : { ...file, runs: file.runs.map((r) => (r.id === runId ? { ...r, chunks } : r)) },
-          ),
-        );
-        // Populate table detail so the payloads tab (and Phase D table citations)
-        // render real tables. Best-effort: failures leave run.tables empty.
-        const tableIds = [
-          ...new Set(
-            chunks.flatMap((c) =>
-              c.payloads.filter((p) => p.type === "table").map((p) => p.id),
-            ),
-          ),
-        ];
+      .listRunChunkPreviews(runId, (chunks, meta) => {
+        if (cancelled) return;
+        setAllFiles((prev) => appendRunChunks(prev, fileId, runId, chunks));
+        if (meta.done) setPreviewsLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        hydratedRunsRef.current.delete(runId);
+        setDetailError(true);
+        setPreviewsLoading(false);
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [allFiles, selectedFileId, selectedRunId]);
+
+  // Load one chunk's detail on demand (viewport or selection), dedup by chunkId,
+  // merge its text and any table payloads into the nested files state. On error
+  // we drop the guard so a later intersection/click retries.
+  const loadDetail = (chunkId: string) => {
+    const fileId = selectedFileId;
+    const runId = selectedRunId;
+    if (!fileId || !runId) return;
+    if (detailRequestedRef.current.has(chunkId)) return;
+    detailRequestedRef.current.add(chunkId);
+    void filesProvider
+      .loadChunkDetail(runId, chunkId)
+      .then((chunk) => {
+        setAllFiles((prev) => applyChunkDetail(prev, fileId, runId, chunk));
+        const run = allFiles.find((f) => f.id === fileId)?.runs.find((r) => r.id === runId);
+        const known = new Set((run?.tables ?? []).map((t) => t.id));
+        const tableIds = firstUnloadedTableIds(chunk, known);
         if (tableIds.length) {
           void filesProvider
             .hydrateRunTables(runId, tableIds)
             .then((tables) => {
-              if (!tables.length) return;
-              setAllFiles((prev) =>
-                prev.map((file) =>
-                  file.id !== fileId
-                    ? file
-                    : {
-                        ...file,
-                        runs: file.runs.map((r) => (r.id === runId ? { ...r, tables } : r)),
-                      },
-                ),
-              );
+              if (tables.length) {
+                setAllFiles((prev) => mergeRunTables(prev, fileId, runId, tables));
+              }
             })
             .catch(() => {});
         }
       })
       .catch(() => {
-        hydratedRunsRef.current.delete(runId);
-        setDetailError(true);
-      })
-      .finally(() => setDetailLoading(false));
-  }, [allFiles, selectedFileId, selectedRunId]);
+        detailRequestedRef.current.delete(chunkId);
+      });
+  };
 
   useEffect(() => {
     void listComments().then(setComments);
@@ -486,6 +515,77 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     [documentMatchIds, normalizedDocumentSearch, selectedRun],
   );
   const currentMatchIndex = documentMatches.findIndex((chunk) => chunk.id === selectedChunk?.id);
+
+  // Lazily load detail for chunks as their cards enter the viewport. Re-runs when
+  // the visible chunk set changes (list grows / run switches); the card ref
+  // callback observes each card as it mounts.
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const chunkId = (entry.target as HTMLElement).dataset.chunkId;
+          if (chunkId) loadDetail(chunkId);
+        }
+      },
+      { rootMargin: "200px 0px" },
+    );
+    observerRef.current = observer;
+    for (const el of cardRefs.current.values()) observer.observe(el);
+    return () => {
+      observer.disconnect();
+      observerRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRunId, filteredChunks.length]);
+
+  // Ref callback for each chunk card: track the element for scroll-to and
+  // register/unregister it with the live IntersectionObserver.
+  const registerCard = (chunkId: string) => (el: HTMLButtonElement | null) => {
+    const map = cardRefs.current;
+    const existing = map.get(chunkId);
+    if (existing && observerRef.current) observerRef.current.unobserve(existing);
+    if (el) {
+      map.set(chunkId, el);
+      observerRef.current?.observe(el);
+    } else {
+      map.delete(chunkId);
+    }
+  };
+
+  // A citation click uses navigateTo, which fires popstate. When we're already on
+  // /files, re-read the URL so file/run/chunk follow the citation, and mark the
+  // target chunk for scroll+flash.
+  useEffect(() => {
+    const onPopState = () => {
+      if (window.location.pathname !== "/files") return;
+      const next = readFilesUrlState();
+      if (next.fileId) setSelectedFileId(next.fileId);
+      if (next.runId) setSelectedRunId(next.runId);
+      if (next.chunkId) {
+        setSelectedChunkId(next.chunkId);
+        setPendingFocusChunkId(next.chunkId);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // Once the pending (deep-linked) chunk's card is mounted, prioritize its detail,
+  // scroll it into view, and flash it so the user sees exactly which chunk the
+  // citation pointed to. Clears the pending marker after firing once.
+  useEffect(() => {
+    if (!pendingFocusChunkId) return;
+    const el = cardRefs.current.get(pendingFocusChunkId);
+    if (!el) return; // card not rendered yet; effect re-runs when list grows
+    loadDetail(pendingFocusChunkId);
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashChunkId(pendingFocusChunkId);
+    setPendingFocusChunkId(null);
+    const timer = window.setTimeout(() => setFlashChunkId(null), 1800);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFocusChunkId, filteredChunks.length]);
 
   useEffect(() => {
     writeFilesUrlState({
@@ -871,6 +971,9 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
     <div className={styles.page}>
       <header className={styles.topbar}>
         <div className={styles.topbarLeft}>
+          <button className={styles.secondaryButton} type="button" onClick={onNavigateHome}>
+            <ArrowLeft size={15} /> В чат
+          </button>
           <div>
             <h1 className={styles.title}>Lore File Viewer</h1>
           </div>
@@ -1107,7 +1210,9 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
                   return (
                     <button
                       key={chunk.id}
-                      className={`${styles.chunkCard} ${selectedChunk?.id === chunk.id ? styles.chunkCardActive : ""}`}
+                      ref={registerCard(chunk.id)}
+                      data-chunk-id={chunk.id}
+                      className={`${styles.chunkCard} ${selectedChunk?.id === chunk.id ? styles.chunkCardActive : ""} ${flashChunkId === chunk.id ? styles.chunkCardFlash : ""}`}
                       onClick={() => setSelectedChunkId(chunk.id)}
                       type="button"
                     >
@@ -1116,9 +1221,13 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
                           <span>{formatChunkMetaLabel(chunk)}</span>
                         </div>
                       ) : null}
-                      <strong className={styles.chunkTitle}>
-                        {renderHighlightedText(isImageCard ? attachmentPreview.image.title : cardContent.title)}
-                      </strong>
+                      {isDetailLoaded(chunk) || isImageCard ? (
+                        <strong className={styles.chunkTitle}>
+                          {renderHighlightedText(isImageCard ? attachmentPreview.image.title : cardContent.title)}
+                        </strong>
+                      ) : (
+                        <div className={styles.chunkTitleSkeleton} aria-hidden="true" />
+                      )}
                       {attachmentPreview?.kind === "table" ? (
                         <div className={styles.chunkTablePreview}>
                           <table>
@@ -1172,6 +1281,10 @@ export default function FilesPage({ onNavigateHome: _onNavigateHome }: FilesPage
                     </button>
                   );
                 })}
+
+                {previewsLoading && !normalizedDocumentSearch ? (
+                  <div className={styles.chunkLoadingRow}>Загрузка чанков…</div>
+                ) : null}
 
                 {documentSearch.trim() && !filteredChunks.length ? (
                   <div className={styles.emptyBlock}>По этому документу ничего не найдено.</div>

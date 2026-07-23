@@ -21,8 +21,13 @@ export interface FilesProvider {
   listFiles(params?: ListFilesParams): Promise<ListFilesResult>;
   /** Load a file's runs on selection (metadata only; chunks hydrate later). */
   hydrateFileRuns(logicalFileKey: string): Promise<FileRun[]>;
-  /** Load a run's chunks on selection — eagerly, with text and payload types. */
-  hydrateRunChunks(runId: string): Promise<FileChunk[]>;
+  /** Stream a run's chunk previews (metadata only) page by page. */
+  listRunChunkPreviews(
+    runId: string,
+    onPage: (chunks: FileChunk[], meta: { done: boolean }) => void,
+  ): Promise<void>;
+  /** Load one chunk's detail (text + payloads) on demand. */
+  loadChunkDetail(runId: string, chunkId: string): Promise<FileChunk>;
   /** Load table detail (columns + sampled rows) for the run's table payloads, so
    *  the payloads-tab inspector renders real tables. Best-effort. */
   hydrateRunTables(runId: string, tablePayloadIds: string[]): Promise<FileTablePayload[]>;

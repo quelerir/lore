@@ -1307,3 +1307,53 @@
   border: 1px solid rgba(148, 163, 184, 0.4);
   padding: 4px 8px;
 }
+
+@keyframes chunkShimmer {
+  0% { background-position: -320px 0; }
+  100% { background-position: 320px 0; }
+}
+
+.chunkTitleSkeleton {
+  height: 14px;
+  margin-top: 7px;
+  width: 72%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eef1f4 25%, #f6f8fa 37%, #eef1f4 63%);
+  background-size: 640px 100%;
+  animation: chunkShimmer 1.4s infinite linear;
+}
+
+.chunkLoadingRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  margin-bottom: 9px;
+  border: 1px dashed rgba(178, 192, 208, 0.7);
+  border-radius: 18px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.chunkLoadingRow::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  border-top-color: rgba(100, 116, 139, 0.9);
+  animation: chunkSpin 0.8s linear infinite;
+}
+
+@keyframes chunkSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes chunkFlash {
+  0% { background: #fde68a; box-shadow: 0 0 0 2px #f59e0b; }
+  100% { background: rgba(255, 255, 255, 0.92); box-shadow: none; }
+}
+
+.chunkCardFlash {
+  animation: chunkFlash 1.8s ease-out;
+}
