@@ -67,6 +67,20 @@ def test_tool_soft_fails_without_capturing(monkeypatch):
     assert "result" not in container  # nothing captured on failure
 
 
+def test_optional_langfuse_tracer_survives_missing_module(monkeypatch):
+    """Optional observability must NEVER sink the pipeline build. A missing/broken
+    langfuse_tracing must degrade to 'no tracer', not raise ModuleNotFoundError —
+    which is exactly what silently downgraded the whole grounded session."""
+    import sys
+
+    import retrieval
+
+    # Simulate the module being absent in the deployed image (sys.modules[x]=None
+    # makes `import x` raise ImportError).
+    monkeypatch.setitem(sys.modules, "langfuse_tracing", None)
+    assert retrieval._optional_langfuse_tracer() is None  # degrades, does not raise
+
+
 def test_metadata_carries_citations_snake_case():
     md = to_message_metadata(_result("a", [_citation()]))
     assert [c["chunk_id"] for c in md["citations"]] == ["c1"]

@@ -34,6 +34,20 @@ def retrieval_configured() -> bool:
     return bool(s.neo4j_uri and s.neo4j_password and s.lore_core_effective_dsn)
 
 
+def _optional_langfuse_tracer():
+    """Best-effort Langfuse tracer. Optional observability must NEVER sink the core
+    pipeline build: a missing/broken ``langfuse_tracing`` module (e.g. absent from a
+    deployed image) degrades to no Langfuse tracer instead of raising — otherwise the
+    whole grounded pipeline fails to build and the session silently downgrades."""
+    try:
+        from langfuse_tracing import build_langfuse_tracer
+
+        return build_langfuse_tracer()
+    except Exception:
+        logging.exception("langfuse tracer unavailable — continuing without it")
+        return None
+
+
 def _build_pipeline(*, tracer=None):
     """Assemble the live pipeline. ``tracer`` overrides the default per-turn
     ContextTracer — the Studio/LangSmith debug export injects a LangSmithTracer
@@ -77,9 +91,7 @@ def _build_pipeline(*, tracer=None):
     if tracer is None:
         from lore_retrieval.observability import CompositeTracer, ContextTracer
 
-        from langfuse_tracing import build_langfuse_tracer
-
-        langfuse = build_langfuse_tracer()
+        langfuse = _optional_langfuse_tracer()
         if langfuse is not None:
             tracer = CompositeTracer([ContextTracer(), langfuse])
     return build_live_pipeline(
