@@ -16,7 +16,8 @@ come in a later slice; this harness is the structure they plug into.
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from lore_retrieval.contracts import PipelineResult
+from lore_retrieval.contracts import PipelineResult, SQLStatus
+from lore_retrieval.eval.judge import Judge, JudgeVerdict, aggregate_judge
 from lore_retrieval.pipeline.factory import build_offline_pipeline
 from lore_retrieval.source import SourceChunk
 
@@ -101,9 +102,22 @@ def aggregate(metrics: list[CaseMetrics]) -> dict:
     }
 
 
-async def run_eval(cases: Sequence[EvalCase]) -> dict:
-    """Run each case through a fresh offline pipeline and aggregate the metrics."""
+def _evidence_texts(result: PipelineResult) -> list[str]:
+    """What the model was shown: text groups + successful SQL summaries."""
+    texts = [group.text for group in result.groups]
+    texts += [
+        r.answer_summary or ""
+        for r in result.sql_results
+        if r.status is SQLStatus.success
+    ]
+    return texts
+
+
+async def run_eval(cases: Sequence[EvalCase], *, judge: Judge | None = None) -> dict:
+    """Run each case through a fresh offline pipeline and aggregate the metrics.
+    With a ``judge``, also score each answer's quality (adds ``judge_*`` keys)."""
     metrics: list[CaseMetrics] = []
+    verdicts: list[JudgeVerdict] = []
     for case in cases:
         pipeline = build_offline_pipeline(
             case.corpus, chat_responder=case.responder, file_keys=case.file_keys
@@ -112,11 +126,18 @@ async def run_eval(cases: Sequence[EvalCase]) -> dict:
         metrics.append(
             evaluate_case(result, case.gold_chunk_ids, expect_answer=case.expect_answer)
         )
-    return aggregate(metrics)
+        if judge is not None:
+            verdicts.append(
+                await judge.judge(case.query, result.decision.answer, _evidence_texts(result))
+            )
+    report = aggregate(metrics)
+    if judge is not None:
+        report.update(aggregate_judge(verdicts))
+    return report
 
 
 def format_report(report: dict) -> str:
-    return (
+    line = (
         f"cases={report['n']} (gold={report['n_gold']}) "
         f"retrieval_recall={report['retrieval_recall']:.2f} "
         f"citation_recall={report['citation_recall']:.2f} "
@@ -125,3 +146,10 @@ def format_report(report: dict) -> str:
         f"answer_rate={report['answer_rate']:.2f} "
         f"decline_correct={report['decline_correct']:.2f}"
     )
+    if "judge_score" in report:
+        line += (
+            f" | judge_score={report['judge_score']:.2f} "
+            f"faithful={report['judge_faithful']:.2f} "
+            f"addressed={report['judge_addressed']:.2f}"
+        )
+    return line
