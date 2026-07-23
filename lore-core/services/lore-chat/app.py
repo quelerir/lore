@@ -22,7 +22,7 @@ from agents import PROFILE_TO_MODE, Mode, build_agent
 from audit_mount import attach_audit_router
 from auth import verify_ticket
 from config import get_settings
-from run_trace import ToolCallTracker, iter_node_updates
+from run_trace import ToolCallTracker, iter_node_updates, step_io_fields
 
 # Optional: grounded knowledge-base citations. If lore-retrieval is unavailable,
 # the chat runs unchanged (no capture, no citation metadata).
@@ -193,11 +193,16 @@ async def _render_run_steps(
     them)."""
     trace = (container or {}).get("trace") or []
     cursor = (container or {}).get("_trace_cursor", 0)
-    for node_name, msgs in iter_node_updates(payload):
+    for node_name, msgs, node_io in iter_node_updates(payload):
         events = tracker.observe(msgs)
         new_trace = trace[cursor:]
         cursor = len(trace)
-        async with cl.Step(name=node_name, type="run"):
+        async with cl.Step(name=node_name, type="run") as node_step:
+            if node_io:
+                inp, out = step_io_fields(node_io)
+                if inp is not None:
+                    node_step.input = inp
+                node_step.output = out
             for ev in events:
                 async with cl.Step(name=ev["name"], type="tool") as tool_step:
                     tool_step.input = json.dumps(ev["args"], ensure_ascii=False, indent=2)
@@ -205,7 +210,10 @@ async def _render_run_steps(
             for te in new_trace:
                 name, step_type = _trace_step_meta(te)
                 async with cl.Step(name=name, type=step_type) as stage_step:
-                    stage_step.output = json.dumps(te.get("data", {}), ensure_ascii=False, indent=2)
+                    inp, out = step_io_fields(te.get("data", {}))
+                    if inp is not None:
+                        stage_step.input = inp
+                    stage_step.output = out
     if container is not None:
         container["_trace_cursor"] = cursor
 

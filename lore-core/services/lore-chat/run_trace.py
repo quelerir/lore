@@ -11,7 +11,32 @@ keyed by ``tool_call_id``). ``ToolCallTracker`` remembers pending calls and
 resolves each one when its result arrives, so the caller can render the tool
 under the node where it completed.
 """
+import json
+import os
 from typing import Any
+
+
+def preview(obj: Any, cap: int | None = None) -> str:
+    """JSON-serialize `obj` (Unicode kept) and truncate to `cap` chars with a
+    `…(+N chars)` marker. Truncation is display-only; never throws."""
+    if cap is None:
+        cap = int(os.getenv("TRACE_PREVIEW_CHARS", "2000"))
+    text = json.dumps(obj, ensure_ascii=False, indent=2, default=str)
+    if len(text) <= cap:
+        return text
+    return text[:cap] + f"\n…(+{len(text) - cap} chars)"
+
+
+def step_io_fields(data: Any, cap: int | None = None) -> tuple[str | None, str]:
+    """(input_text_or_None, output_text) for a trace entry. Uniform {input, output}
+    entries split onto the step's input/output; legacy count-only entries render
+    the whole data as output (back-compat)."""
+    if isinstance(data, dict) and ("input" in data or "output" in data):
+        inp = data.get("input")
+        out = data.get("output")
+        input_text = preview(inp, cap) if inp is not None else None
+        return input_text, preview(out, cap)
+    return None, preview(data, cap)
 
 
 def content_to_text(content: Any) -> str:
@@ -60,12 +85,17 @@ class ToolCallTracker:
 
 
 def iter_node_updates(payload: Any):
-    """Yield ``(node_name, messages)`` from one LangGraph ``updates`` payload.
+    """Yield ``(node_name, messages, node_io)`` from one LangGraph ``updates`` payload.
 
-    Shape is ``{node_name: {"messages": [...], ...}}`` (possibly several nodes).
-    Non-dict payloads / nodes without messages yield an empty message list."""
+    Shape is ``{node_name: {"messages": [...], "node_io": {...}, ...}}``. Non-dict
+    payloads / nodes without those keys yield empty messages / ``None`` node_io."""
     if not isinstance(payload, dict):
         return
     for node_name, delta in payload.items():
-        messages = delta.get("messages", []) if isinstance(delta, dict) else []
-        yield node_name, messages
+        if isinstance(delta, dict):
+            messages = delta.get("messages", [])
+            node_io = delta.get("node_io")
+        else:
+            messages = []
+            node_io = None
+        yield node_name, messages, node_io
