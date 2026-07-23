@@ -58,7 +58,12 @@ def test_tool_soft_fails_without_capturing(monkeypatch):
         out = asyncio.run(retrieval.knowledge_base.ainvoke({"query": "вопрос"}))
     finally:
         retrieval.turn_capture.reset(token)
-    assert "базе знаний" in out  # soft fallback message
+    assert "базе знаний" in out  # honest failure message names the KB
+    # Must NOT invite the model to answer from general/parametric knowledge — that
+    # is exactly the grounding-violation bug (defect #1). It must steer AWAY:
+    # the old inviting phrasing is gone, and it explicitly forbids parametric answers.
+    assert "ответь по общ" not in out.lower()  # no "ответь по общим знаниям" invite
+    assert "не отвечай из общих знаний" in out.lower()  # explicit prohibition
     assert "result" not in container  # nothing captured on failure
 
 

@@ -14,6 +14,7 @@ shared object bound in the parent's context is visible everywhere — so capture
 robust whether the tool runs in the same task or a subtask, for both fast and deep.
 """
 import contextvars
+import logging
 
 from langchain_core.tools import BaseTool, tool
 
@@ -111,7 +112,14 @@ async def knowledge_base(query: str) -> str:
     try:
         result = await get_pipeline().answer(query)
     except Exception:
-        return "Не удалось обратиться к базе знаний. Ответь по общим знаниям, если это уместно."
+        # Honest failure — never invite a parametric answer. Inviting "ответь по
+        # общим знаниям" here is what made the model hallucinate "база недоступна,
+        # но вот общая информация" (grounding violation, defect #1).
+        logging.exception("knowledge_base retrieval failed for query=%r", query)
+        return (
+            "Не удалось обратиться к базе знаний — она временно недоступна. "
+            "Сообщи об этом пользователю и НЕ отвечай из общих знаний."
+        )
     if container is not None:
         container["result"] = result  # captured for on_message (citations metadata)
     return result.decision.answer or "В базе знаний нет ответа на этот вопрос."
