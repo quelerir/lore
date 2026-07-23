@@ -38,11 +38,10 @@ export default function ChatListItem({
         <div className={styles.header}>
           <div className={styles.title}>{chat.title}</div>
         </div>
-        <div className={styles.description}>{chat.description}</div>
+        <div className={styles.description}>{chat.time}</div>
       </button>
 
       <div className={`${styles.topRight} ${isMenuOpen ? styles.topRightOpen : ""}`}>
-        <div className={styles.time}>{chat.time}</div>
         <button
           className={styles.menuButton}
           type="button"

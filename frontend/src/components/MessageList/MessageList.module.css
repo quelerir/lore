@@ -37,24 +37,61 @@
 }
 
 .empty {
-  margin: auto;
-  max-width: 420px;
+  min-height: calc(100dvh - 220px);
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  color: #475569;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(214, 221, 229, 0.9);
-  border-radius: 16px;
-  padding: 24px 28px;
+  color: #64748b;
+  padding: 12px 20px;
 }
 
 .empty h3 {
-  margin: 0 0 6px;
-  color: #111827;
+  margin: 0 0 8px;
+  color: var(--empty-title-text);
+  font-size: clamp(28px, 4vw, 34px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
 }
 
-.empty p {
-  margin: 0;
-  font-size: 14px;
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  vertical-align: baseline;
+  font-family:
+    "Styrene A Web",
+    "Inter",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  color: var(--empty-wordmark-text);
+}
+
+.wordmarkLetter {
+  display: inline-block;
+}
+
+.wordmarkDot {
+  width: 0.72em;
+  height: 0.72em;
+  border-radius: 50%;
+  background: #9cea35;
+  flex-shrink: 0;
+  margin-inline: 0 -0.04em;
+}
+
+.searchMatch {
+  border-radius: 18px;
+}
+
+.searchActive {
 }
 
 /* Мягкий лоадер на время переключения чата (вместо мигания пустотой) */

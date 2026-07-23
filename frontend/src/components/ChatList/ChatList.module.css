@@ -25,7 +25,6 @@
 .groupItems {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .list::-webkit-scrollbar {

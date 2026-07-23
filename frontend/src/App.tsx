@@ -18,32 +18,48 @@ type ChatModalState =
   | { type: "delete"; chatId: string }
   | null;
 
+type ThemeMode = "light" | "dark";
+
 interface AppContentProps {
   user: AuthUser;
   activeThreadId: string | null;
   mode: ChatMode;
+  theme: ThemeMode;
   onModeChange: (mode: ChatMode) => void;
   onSelectThread: (id: string | null) => void;
   registerRefresh: (refresh: () => void) => void;
   onLogout: () => void;
+  onToggleTheme: () => void;
 }
 
 function AppContent({
   user,
   activeThreadId,
   mode,
+  theme,
   onModeChange,
   onSelectThread,
   registerRefresh,
   onLogout,
+  onToggleTheme,
 }: AppContentProps) {
   const { chats, error: threadsError, refresh, rename, remove } = useThreads();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [chatModal, setChatModal] = useState<ChatModalState>(null);
+  const [messageSearchQuery, setMessageSearchQuery] = useState("");
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
+  const [searchState, setSearchState] = useState({ total: 0, active: 0 });
 
   useEffect(() => {
     registerRefresh(() => void refresh());
   }, [refresh, registerRefresh]);
+
+  useEffect(() => {
+    setMessageSearchQuery("");
+    setActiveSearchIndex(0);
+    setSearchState({ total: 0, active: 0 });
+  }, [activeThreadId]);
 
   const activeChat = chats.find((chat) => chat.id === activeThreadId) ?? null;
   const modalChat = chatModal
@@ -109,30 +125,58 @@ function AppContent({
         <Sidebar
           chats={chats}
           activeChatId={activeThreadId}
+          collapsed={isSidebarCollapsed}
           isMobileOpen={isMobileSidebarOpen}
+          theme={theme}
           user={user}
-          mode={mode}
-          onModeChange={onModeChange}
           errorText={threadsError}
           onSelectChat={handleSelectChat}
           onRenameChat={handleRenameChat}
           onDeleteChat={handleDeleteChat}
           onCreateChat={handleCreateChat}
           onCloseMobileMenu={() => setIsMobileSidebarOpen(false)}
+          onToggleCollapsed={() => setIsSidebarCollapsed((value) => !value)}
+          onToggleTheme={onToggleTheme}
           onLogout={onLogout}
         />
 
         <main className={styles.content}>
           <ChatHeader
-            title={activeChat?.title ?? "Lore"}
+            title={activeChat?.title ?? "Новый чат"}
             onOpenSidebar={() => setIsMobileSidebarOpen(true)}
+            searchQuery={messageSearchQuery}
+            searchPosition={searchState.active}
+            searchTotal={searchState.total}
+            onSearchQueryChange={(value) => {
+              setMessageSearchQuery(value);
+              setActiveSearchIndex(0);
+            }}
+            onSearchNext={() => {
+              if (searchState.total === 0) return;
+              setActiveSearchIndex((current) => (current + 1) % searchState.total);
+            }}
+            onSearchPrevious={() => {
+              if (searchState.total === 0) return;
+              setActiveSearchIndex(
+                (current) => (current - 1 + searchState.total) % searchState.total,
+              );
+            }}
+            onSearchClear={() => {
+              setMessageSearchQuery("");
+              setActiveSearchIndex(0);
+              setSearchState({ total: 0, active: 0 });
+            }}
           />
 
-          <MessageList />
+          <MessageList
+            searchQuery={messageSearchQuery}
+            activeSearchIndex={activeSearchIndex}
+            onSearchStateChange={setSearchState}
+          />
           <p className={styles.disclaimer}>
             Lore может допускать ошибки. Рекомендуем проверять важную информацию.
           </p>
-          <ChatComposer />
+          <ChatComposer mode={mode} onModeChange={onModeChange} />
         </main>
       </div>
 
@@ -214,6 +258,11 @@ export default function App() {
   // (например «новый чат» → null поверх null).
   const [sessionNonce, setSessionNonce] = useState(0);
   const [mode, setMode] = useState<ChatMode>("fast");
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") return "light";
+    const stored = window.localStorage.getItem("lore-theme");
+    return stored === "dark" ? "dark" : "light";
+  });
   const refreshThreadsRef = useRef<(() => void) | null>(null);
 
   const activeThreadId = selectedThreadId ?? serverThreadId;
@@ -237,6 +286,11 @@ export default function App() {
   useEffect(() => {
     setOn401(invalidate);
   }, [invalidate]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("lore-theme", theme);
+  }, [theme]);
 
   const registerRefresh = useCallback((refresh: () => void) => {
     refreshThreadsRef.current = refresh;
@@ -274,10 +328,14 @@ export default function App() {
         user={state.user}
         activeThreadId={activeThreadId}
         mode={mode}
+        theme={theme}
         onModeChange={handleModeChange}
         onSelectThread={startSession}
         registerRefresh={registerRefresh}
         onLogout={() => void logout()}
+        onToggleTheme={() =>
+          setTheme((current) => (current === "dark" ? "light" : "dark"))
+        }
       />
     </ChainlitRuntimeProvider>
   );

@@ -5,42 +5,144 @@
 .form {
   width: min(680px, 100%);
   margin: 0 auto;
-  background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  border-radius: 26px;
+  min-height: 72px;
+  background: var(--composer-bg);
+  border-radius: 16px;
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
-  padding: 12px 12px 10px;
+  padding: 16px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   column-gap: 10px;
+  box-sizing: border-box;
 }
 
 .textarea {
   width: 100%;
-  min-height: 34px;
+  min-height: 40px;
   max-height: 180px;
   border: none;
   resize: none;
   overflow-y: hidden;
   outline: none;
   background: transparent;
-  color: #263244;
+  color: var(--composer-text);
   font: inherit;
   font-size: 15px;
-  line-height: 1.45;
-  padding: 6px 4px 5px 2px;
+  line-height: 24px;
+  padding: 8px 0;
+  box-sizing: border-box;
   align-self: end;
 }
 
 .textarea::placeholder {
-  color: #94a3b8;
+  color: var(--composer-placeholder);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modeMenu {
+  position: relative;
+}
+
+.modeTrigger {
+  min-width: 124px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: var(--composer-trigger-bg);
+  color: var(--composer-trigger-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.modeTrigger:hover {
+  background: var(--composer-trigger-hover-bg);
+}
+
+.modeTriggerLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modeChevron,
+.modeChevronOpen {
+  transition: transform 140ms ease;
+}
+
+.modeChevronOpen {
+  transform: rotate(180deg);
+}
+
+.modeDropdown {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  width: 220px;
+  padding: 8px;
+  border-radius: 16px;
+  background: var(--composer-dropdown-bg);
+  box-shadow: var(--composer-dropdown-shadow);
+  border: 1px solid var(--composer-dropdown-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 5;
+}
+
+.modeOption {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--composer-option-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.modeOption:hover {
+  background: var(--composer-option-hover-bg);
+}
+
+.modeOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modeOptionTitle {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.modeOptionHint {
+  font-size: 12px;
+  color: var(--composer-option-hint);
 }
 
 .iconButton {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   border: 1px solid rgba(226, 232, 240, 0.95);
   background: #ffffff;
   color: #64748b;
@@ -62,18 +164,18 @@
 .sendButton {
   margin-left: auto;
   border: none;
-  background: #2b3443;
+  background: var(--composer-send-bg);
   color: white;
 }
 
 .sendButton:hover:not(:disabled) {
-  background: #111827;
+  background: var(--composer-send-hover-bg);
 }
 
 .sendButton:disabled {
   cursor: not-allowed;
   opacity: 0.45;
-  background: #2b3443;
+  background: var(--composer-send-bg);
 }
 
 @media (max-width: 960px) {
@@ -86,12 +188,25 @@
 
   .form {
     width: 100%;
-    border-radius: 22px;
-    padding: 14px;
+    border-radius: 16px;
+    min-height: 72px;
+    padding: 16px;
     column-gap: 10px;
   }
 
   .textarea {
     font-size: 15px;
+  }
+
+  .actions {
+    gap: 10px;
+  }
+
+  .modeTrigger {
+    min-width: 112px;
+  }
+
+  .modeDropdown {
+    width: min(220px, calc(100vw - 56px));
   }
 }
