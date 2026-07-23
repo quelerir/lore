@@ -108,6 +108,12 @@ class Settings(BaseSettings):
     sql_candidates_per_round: int = Field(
         default=2, validation_alias="SQL_CANDIDATES_PER_ROUND"
     )
+    # Per-turn ceiling on total generated SQL queries, shared across ALL candidate
+    # tables in the fan-out — so a query the text lane answers doesn't trigger a
+    # storm of futile DB round-trips (sample/schema reads are not counted).
+    sql_max_queries_per_turn: int = Field(
+        default=5, validation_alias="SQL_MAX_QUERIES_PER_TURN"
+    )
 
     # --- Eval-харнесс: фиксированная модель-судья корректности ответа ---
     eval_judge_model: str = Field(

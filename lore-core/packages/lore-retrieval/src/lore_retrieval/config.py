@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     sql_model: str = Field(default="anthropic/claude-sonnet-4.6", validation_alias="SQL_MODEL")
     sql_max_queries: int = Field(default=3, validation_alias="SQL_MAX_QUERIES")
     sql_candidates_per_round: int = Field(default=2, validation_alias="SQL_CANDIDATES_PER_ROUND")
+    # Per-turn ceiling on total generated SQL queries, shared across ALL candidate
+    # tables in the fan-out (sample/schema reads are not counted).
+    sql_max_queries_per_turn: int = Field(default=5, validation_alias="SQL_MAX_QUERIES_PER_TURN")
 
     # --- lore_core corpus lives on the TOAST/audit instance; reuse those
     # components to build the read-side DSN when RETRIEVAL_LORE_CORE_DSN is unset. ---

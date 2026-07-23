@@ -12,6 +12,7 @@ is identical whether called directly or from a graph node.
 """
 import asyncio
 
+from lore_retrieval.budget import SqlQueryBudget, sql_query_budget
 from lore_retrieval.contracts import ContextGroup, PipelineResult, SQLResult, TableCandidate
 from lore_retrieval.interfaces import (
     ChatModel,
@@ -69,6 +70,7 @@ class RetrievalPipeline:
         rerank_floor: float = 0.0,
         table_floor: float = 0.0,
         max_sql: int = 5,
+        sql_queries_per_turn: int = 5,
         citation_limit: int = 8,
         citation_preview_chars: int = 160,
     ) -> None:
@@ -88,6 +90,7 @@ class RetrievalPipeline:
         self._rerank_floor = rerank_floor
         self._table_floor = table_floor
         self._max_sql = max_sql
+        self._sql_queries_per_turn = sql_queries_per_turn
         self._citation_limit = citation_limit
         self._citation_preview_chars = citation_preview_chars
 
@@ -124,8 +127,11 @@ class RetrievalPipeline:
     async def run_table_sql(
         self, question: str, table_candidates: list[TableCandidate]
     ) -> tuple[list[SQLResult], list[str]]:
-        """Stage 2: bounded parallel SQL over the discovered table candidates."""
+        """Stage 2: bounded parallel SQL over the discovered table candidates. A
+        single per-turn query budget is shared across the fan-out, so the total DB
+        queries stay bounded even when many candidate tables are tried."""
         degradations: list[str] = []
+        token = sql_query_budget.set(SqlQueryBudget(self._sql_queries_per_turn))
         try:
             sql_results = await run_sql_fanout(self._sql_runner, table_candidates, question)
         except Exception as exc:
@@ -136,6 +142,8 @@ class RetrievalPipeline:
                  "error": type(exc).__name__, "detail": repr(exc)},
             )
             return [], degradations
+        finally:
+            sql_query_budget.reset(token)
         self._tracer.record("table_sql", {"calls": len(sql_results)})
         return sql_results, degradations
 

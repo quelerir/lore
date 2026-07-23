@@ -22,6 +22,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from lore_retrieval.budget import sql_query_budget
 
 from toast.llm import generate_candidates, judge_verdict
 from toast.models import (
@@ -104,6 +105,12 @@ class SqlToolNodes:
         """
         tried = {a["sql"] for a in state.attempts}
         unique = [s for s in dict.fromkeys(state.candidates) if s not in tried]
+        # Per-turn budget shared across the parallel table fan-out: run only as many
+        # generated queries as the turn allowance still permits (the sample node is
+        # never counted). When exhausted, run none — the round cap then ends the graph.
+        budget = sql_query_budget.get()
+        if budget is not None:
+            unique = [sql for sql in unique if budget.try_consume()]
         results = await asyncio.gather(
             *(self.executor.run_select(sql, state.table) for sql in unique),
             return_exceptions=True,

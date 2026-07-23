@@ -118,6 +118,7 @@ def _build_pipeline(*, tracer=None):
         sql_runner=sql_runner,
         reranker=reranker,
         rerank_floor=s.rerank_floor,
+        sql_queries_per_turn=s.sql_max_queries_per_turn,
         tracer=tracer,
     )
 
